@@ -1,0 +1,11 @@
+.idea/
+.secrets.json
+coverage/
+coverage.json
+node_modules/
+typechain/
+typechain-types/
+
+#Hardhat files
+cache/
+artifacts/
