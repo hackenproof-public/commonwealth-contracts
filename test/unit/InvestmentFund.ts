@@ -86,8 +86,8 @@ describe('Investment Fund unit tests', () => {
   });
 
   describe('#invest()', () => {
-    [constants.MaxUint256].forEach((amount) => {
-      it.only(`Should invest [amount=${amount}]`, async () => {
+    [1, constants.MaxUint256].forEach((amount) => {
+      it(`Should invest [amount=${amount}]`, async () => {
         const { investmentFund, usdc } = await loadFixture(deployFixture);
 
         expect(await investmentFund.connect(wallet).invest(amount))
@@ -97,7 +97,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it(`Should revert investing if amount is 0`, async () => {
-      const { investmentFund, usdc } = await loadFixture(deployFixture);
+      const { investmentFund } = await loadFixture(deployFixture);
 
       await expect(investmentFund.connect(wallet).invest(0)).to.be.revertedWith('Invalid amount invested');
     });
@@ -119,7 +119,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it(`Should revert investing if investment NFT mint reverts`, async () => {
-      const { investmentFund, usdc, investmentNft } = await loadFixture(deployFixture);
+      const { investmentFund, investmentNft } = await loadFixture(deployFixture);
 
       investmentNft.mint.reverts();
 

@@ -1,10 +1,17 @@
 import '@nomicfoundation/hardhat-toolbox';
 import 'hardhat-abi-exporter';
 import 'hardhat-contract-sizer';
+import 'hardhat-docgen';
 import { HardhatUserConfig } from 'hardhat/config';
 import { etherscanApiKey, privateKey } from './.secrets.json';
 
 const config: HardhatUserConfig = {
+  docgen: {
+    path: './docs',
+    clear: true,
+    runOnCompile: true,
+    except: ['^contracts/test']
+  },
   etherscan: {
     apiKey: etherscanApiKey
   },
@@ -17,14 +24,12 @@ const config: HardhatUserConfig = {
     ethereum: {
       url: 'https://rpc.ankr.com/eth',
       chainId: 1,
-      accounts: [privateKey],
-      timeout: 400000
+      accounts: [privateKey]
     },
     goerli: {
       url: 'https://rpc.ankr.com/eth_goerli',
       chainId: 5,
-      accounts: [privateKey],
-      gas: 415426000
+      accounts: [privateKey]
     },
     sepolia: {
       url: 'https://rpc.sepolia.org',
@@ -43,17 +48,6 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true
-      },
-      outputSelection: {
-        '*': {
-          '*': ['storageLayout']
-        }
-      },
-      metadata: {
-        // do not include the metadata hash, since this is machine dependent
-        // and we want all generated code to be deterministic
-        // https://docs.soliditylang.org/en/v0.8.7/metadata.html
-        bytecodeHash: 'none'
       }
     }
   }

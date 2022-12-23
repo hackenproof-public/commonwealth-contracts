@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -16,8 +16,8 @@ contract InvestmentNFT is ERC721, IInvestmentNFT {
     function mint(address to, uint256 value) external returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
         investmentValue[tokenId] = value;
+        _safeMint(to, tokenId);
         return tokenId;
     }
 
