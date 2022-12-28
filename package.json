@@ -6,14 +6,20 @@
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
-    "coverage": "hardhat coverage",
+    "dev:coverage": "hardhat coverage",
+    "dev:docgen": "hardhat docgen",
+    "dev:lint": "solhint \"contracts/**/*.sol\"",
+    "dev:size-contracts": "hardhat size-contracts",
+    "dev:slither": "slither --solc-args \"--base-path . --include-path node_modules/\" contracts/",
     "export-abi": "hardhat export-abi",
-    "format": "prettier --write \"**/*.ts\" \"contracts/**/*.sol\"",
-    "lint": "solhint \"contracts/**/*.sol\"",
-    "size-contracts": "hardhat size-contracts",
+    "prettier:fix": "prettier --write \"**/*.ts\" \"contracts/**/*.sol\"",
+    "prettier:check": "prettier --check \"**/*.ts\" \"contracts/**/*.sol\"",
     "test": "hardhat test",
     "verify-mainnet": "hardhat verify --network ethereum",
-    "verify-testnet": "hardhat verify --network goerli"
+    "verify-testnet": "hardhat verify --network goerli",
+    "check-style": "yarn prettier:check && yarn dev:lint",
+    "static-analyze": "yarn check-style && yarn dev:size-contracts && yarn dev:slither",
+    "prepare": "yarn clean && yarn compile && yarn static-analyze && yarn dev:coverage && yarn dev:docgen && yarn export-abi"
   },
   "devDependencies": {
     "@defi-wonderland/smock": "^2.3.4",

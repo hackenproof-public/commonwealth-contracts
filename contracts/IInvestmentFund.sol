@@ -12,7 +12,7 @@ interface IInvestmentFund {
      * @param amount Amount of tokens invested
      * @param tokenId Investment NFT token ID minted to investor
      */
-    event Invested(address indexed investor, address indexed currency, uint256 indexed amount, uint256 tokenId);
+    event Invested(address indexed investor, address indexed currency, uint256 amount, uint256 indexed tokenId);
 
     /**
      * @dev Invests `amount` number of USD Coin tokens to investment fund.
@@ -22,8 +22,8 @@ interface IInvestmentFund {
      * - Caller must have been allowed in USD Coin to move this token by {approve}.
      *
      * Emits a {Invested} event.
-     * 
+     *
      * @param amount Amount of tokens to be invested
      */
-    function invest(uint256 amount) external;
+    function invest(uint240 amount) external;
 }

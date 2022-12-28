@@ -9,7 +9,7 @@ const config: HardhatUserConfig = {
   docgen: {
     path: './docs',
     clear: true,
-    runOnCompile: true,
+    runOnCompile: false,
     except: ['^contracts/test']
   },
   etherscan: {
@@ -29,7 +29,8 @@ const config: HardhatUserConfig = {
     goerli: {
       url: 'https://rpc.ankr.com/eth_goerli',
       chainId: 5,
-      accounts: [privateKey]
+      accounts: [privateKey],
+      gas: 415426000
     },
     sepolia: {
       url: 'https://rpc.sepolia.org',
