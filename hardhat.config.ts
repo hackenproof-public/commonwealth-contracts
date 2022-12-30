@@ -1,9 +1,11 @@
 import '@nomicfoundation/hardhat-toolbox';
+import * as dotenv from 'dotenv';
 import 'hardhat-abi-exporter';
 import 'hardhat-contract-sizer';
 import 'hardhat-docgen';
 import { HardhatUserConfig } from 'hardhat/config';
-import { etherscanApiKey, privateKey } from './.secrets.json';
+
+dotenv.config();
 
 const config: HardhatUserConfig = {
   docgen: {
@@ -13,29 +15,29 @@ const config: HardhatUserConfig = {
     except: ['^contracts/test']
   },
   etherscan: {
-    apiKey: etherscanApiKey
+    apiKey: process.env.ETHERSCAN_API_KEY
   },
   gasReporter: {
-    coinmarketcap: process.env.CMC_API_KEY,
-    enabled: !!process.env.REPORT_GAS,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    enabled: process.env.REPORT_GAS?.toLowerCase() === 'true',
     showTimeSpent: true
   },
   networks: {
     ethereum: {
-      url: 'https://rpc.ankr.com/eth',
+      url: process.env.ETHEREUM_RPC_URL,
       chainId: 1,
-      accounts: [privateKey]
+      accounts: !!process.env.ETHEREUM_WALLET_PRIVATE_KEY ? [process.env.ETHEREUM_WALLET_PRIVATE_KEY] : []
     },
     goerli: {
-      url: 'https://rpc.ankr.com/eth_goerli',
+      url: process.env.GOERLI_RPC_URL,
       chainId: 5,
-      accounts: [privateKey],
+      accounts: !!process.env.GOERLI_WALLET_PRIVATE_KEY ? [process.env.GOERLI_WALLET_PRIVATE_KEY] : [],
       gas: 415426000
     },
     sepolia: {
-      url: 'https://rpc.sepolia.org',
+      url: process.env.SEPOLIA_RPC_URL,
       chainId: 11155111,
-      accounts: [privateKey]
+      accounts: !!process.env.SEPOLIA_WALLET_PRIVATE_KEY ? [process.env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     }
   },
   paths: {

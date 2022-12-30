@@ -1,5 +1,5 @@
+.env
 .idea/
-.secrets.json
 coverage/
 coverage.json
 node_modules/

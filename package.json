@@ -19,7 +19,7 @@
     "verify-testnet": "hardhat verify --network goerli",
     "check-style": "yarn prettier:check && yarn dev:lint",
     "static-analyze": "yarn check-style && yarn dev:size-contracts && yarn dev:slither",
-    "prepare": "yarn clean && yarn compile && yarn static-analyze && yarn dev:coverage && yarn dev:docgen && yarn export-abi"
+    "check-full": "yarn clean && yarn compile && yarn static-analyze && yarn dev:coverage && REPORT_GAS=true yarn test && yarn dev:docgen && yarn export-abi"
   },
   "devDependencies": {
     "@defi-wonderland/smock": "^2.3.4",
@@ -36,6 +36,7 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.11.17",
     "chai": "^4.3.7",
+    "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
     "hardhat": "^2.12.4",
     "hardhat-abi-exporter": "^2.10.1",
