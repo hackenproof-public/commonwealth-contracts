@@ -3,21 +3,20 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./IInvestmentFund.sol";
 import "./IInvestmentNFT.sol";
+import "./LibFund.sol";
 
 /**
  * @title Investment Fund contract
  */
 contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
-    uint256 public constant FEE_DIVISOR = 10000;
-
     string public name;
     IERC20 public currency;
     IInvestmentNFT public investmentNft;
     address public treasuryWallet;
     uint16 public managementFee;
+    bytes32 public currentState = LibFund.STATE_EMPTY;
 
     /**
      * @dev Emitted when currency is changed
@@ -61,6 +60,15 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
     }
 
     /**
+     * @dev Limits access for specified state
+     * @param state Allowed state
+     */
+    modifier onlyState(bytes32 state) {
+        require(currentState == state, "Not allowed in current state");
+        _;
+    }
+
+    /**
      * @dev Sets currency address
      * @param currency_ New currency address
      */
@@ -83,15 +91,45 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(uint240 amount) external override nonReentrant {
+    function invest(uint240 amount) external override onlyState(LibFund.STATE_FUNDS_IN) nonReentrant {
         require(amount > 0, "Invalid amount invested");
 
-        uint256 fee = (uint256(amount) * managementFee) / FEE_DIVISOR;
+        uint256 fee = (uint256(amount) * managementFee) / LibFund.FEE_DIVISOR;
         uint256 investment = amount - fee;
+        // todo: perform transition to cap reached if balance + investment = cap
         require(currency.transferFrom(msg.sender, treasuryWallet, fee), "Currency fee transfer failed");
         require(currency.transferFrom(msg.sender, address(this), investment), "Currency transfer failed");
         uint256 tokenId = investmentNft.mint(msg.sender, investment);
 
         emit Invested(msg.sender, address(currency), investment, tokenId);
+    }
+
+    function addProject() external onlyState(LibFund.STATE_EMPTY) {
+        // todo: limit access
+    }
+
+    function startCollectingFunds() external onlyState(LibFund.STATE_EMPTY) {
+        // todo: limit access
+        currentState = LibFund.STATE_FUNDS_IN;
+    }
+
+    function stopCollectingFunds() external onlyState(LibFund.STATE_FUNDS_IN) {
+        // todo: limit access
+        currentState = LibFund.STATE_CAP_REACHED;
+    }
+
+    function deployFunds() external onlyState(LibFund.STATE_CAP_REACHED) {
+        // todo: limit access
+        currentState = LibFund.STATE_FUNDS_DEPLOYED;
+    }
+
+    function activateFund() external onlyState(LibFund.STATE_FUNDS_DEPLOYED) {
+        // todo: limit access
+        currentState = LibFund.STATE_ACTIVE;
+    }
+
+    function closeFund() external onlyState(LibFund.STATE_ACTIVE) {
+        // todo: limit access
+        currentState = LibFund.STATE_CLOSED;
     }
 }

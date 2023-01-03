@@ -1,16 +1,12 @@
-import { smock } from '@defi-wonderland/smock';
 import { Log } from '@ethersproject/providers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import chai, { expect } from 'chai';
+import { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
 import { getLogs } from '../utils';
-
-chai.should();
-chai.use(smock.matchers);
 
 describe('Investment Fund integration tests', () => {
   const managementFee: number = 200;
@@ -54,6 +50,8 @@ describe('Investment Fund integration tests', () => {
     ].forEach((data) => {
       it('Should invest ${amount} USDC if allowance is sufficient', async () => {
         const { investmentFund, usdc, investmentNft } = await loadFixture(deployFixture);
+        await investmentFund.startCollectingFunds();
+
         const initialBalance: BigNumber = await usdc.balanceOf(wallet.address);
 
         await usdc.connect(wallet).approve(investmentFund.address, data.amount);
@@ -73,6 +71,7 @@ describe('Investment Fund integration tests', () => {
 
     it('Should revert investing if allowance is insufficient', async () => {
       const { investmentFund, usdc } = await loadFixture(deployFixture);
+      await investmentFund.startCollectingFunds();
 
       await usdc.connect(wallet).approve(investmentFund.address, 15 * 10 ** 6 - 1);
       await expect(investmentFund.connect(wallet).invest(15 * 10 ** 6)).to.be.revertedWith(

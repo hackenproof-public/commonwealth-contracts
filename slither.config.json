@@ -1,7 +1,7 @@
 {
   "detectors_to_run": "all",
-  "exclude_dependencies": true,
   "detectors_to_exclude": "",
+  "exclude_dependencies": true,
   "exclude_optimization": true,
   "exclude_informational": true,
   "exclude_low": false,
@@ -10,5 +10,6 @@
   "fail_pedantic": false,
   "fail_low": true,
   "fail_medium": true,
-  "fail_high": true
+  "fail_high": true,
+  "filter_paths": "node_modules/"
 }

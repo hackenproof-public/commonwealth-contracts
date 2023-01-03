@@ -113,6 +113,19 @@
   },
   {
     "inputs": [],
+    "name": "FEE_DIVISOR",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "activateFund",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -150,9 +163,9 @@
     "name": "currentState",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "enum InvestmentFund.States",
         "name": "",
-        "type": "bytes32"
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -226,6 +239,19 @@
       }
     ],
     "name": "setCurrency",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum InvestmentFund.States",
+        "name": "newState",
+        "type": "uint8"
+      }
+    ],
+    "name": "setCurrentState",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
