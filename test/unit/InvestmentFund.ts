@@ -241,16 +241,21 @@ describe('Investment Fund unit tests', () => {
       await expect(investmentFund.connect(wallet).invest(1)).to.be.reverted;
     });
 
-    [FundState.Empty, FundState.CapReached, FundState.FundsDeployed, FundState.Active, FundState.Closed].forEach(
-      (state) => {
-        it(`Should revert if in invalid state: ${state}`, async () => {
-          const { investmentFund } = await setupMock();
-          await investmentFund.setVariable('currentState', formatBytes32String(state));
+    [
+      FundState.Empty,
+      FundState.CapReached,
+      FundState.FundsDeployed,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
+      it(`Should revert if in invalid state: ${state}`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-          await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
-        });
-      }
-    );
+        await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
+      });
+    });
   });
 
   describe('#addProject()', () => {
@@ -261,16 +266,21 @@ describe('Investment Fund unit tests', () => {
       await expect(investmentFund.addProject()).not.to.be.reverted;
     });
 
-    [FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed, FundState.Active, FundState.Closed].forEach(
-      (state) => {
-        it(`Should revert if in invalid state: ${state}`, async () => {
-          const { investmentFund } = await setupMock();
-          await investmentFund.setVariable('currentState', formatBytes32String(state));
+    [
+      FundState.FundsIn,
+      FundState.CapReached,
+      FundState.FundsDeployed,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
+      it(`Should revert if in invalid state: ${state}`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-          await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
-        });
-      }
-    );
+        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+      });
+    });
   });
 
   describe('#startCollectingFunds()', () => {
@@ -283,16 +293,21 @@ describe('Investment Fund unit tests', () => {
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.FundsIn);
     });
 
-    [FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed, FundState.Active, FundState.Closed].forEach(
-      (state) => {
-        it(`Should revert if in invalid state: ${state}`, async () => {
-          const { investmentFund } = await setupMock();
-          await investmentFund.setVariable('currentState', formatBytes32String(state));
+    [
+      FundState.FundsIn,
+      FundState.CapReached,
+      FundState.FundsDeployed,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
+      it(`Should revert if in invalid state: ${state}`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-          await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
-        });
-      }
-    );
+        await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
+      });
+    });
   });
 
   describe('#stopCollectingFunds()', () => {
@@ -305,16 +320,21 @@ describe('Investment Fund unit tests', () => {
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.CapReached);
     });
 
-    [FundState.Empty, FundState.CapReached, FundState.FundsDeployed, FundState.Active, FundState.Closed].forEach(
-      (state) => {
-        it(`Should revert if in invalid state: ${state}`, async () => {
-          const { investmentFund } = await setupMock();
-          await investmentFund.setVariable('currentState', formatBytes32String(state));
+    [
+      FundState.Empty,
+      FundState.CapReached,
+      FundState.FundsDeployed,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
+      it(`Should revert if in invalid state: ${state}`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-          await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
-        });
-      }
-    );
+        await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
+      });
+    });
   });
 
   describe('#deployFunds()', () => {
@@ -327,16 +347,21 @@ describe('Investment Fund unit tests', () => {
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.FundsDeployed);
     });
 
-    [FundState.Empty, FundState.FundsIn, FundState.FundsDeployed, FundState.Active, FundState.Closed].forEach(
-      (state) => {
-        it(`Should revert if in invalid state: ${state}`, async () => {
-          const { investmentFund } = await setupMock();
-          await investmentFund.setVariable('currentState', formatBytes32String(state));
+    [
+      FundState.Empty,
+      FundState.FundsIn,
+      FundState.FundsDeployed,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
+      it(`Should revert if in invalid state: ${state}`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-          await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
-        });
-      }
-    );
+        await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
+      });
+    });
   });
 
   describe('#activateFund()', () => {
@@ -349,7 +374,14 @@ describe('Investment Fund unit tests', () => {
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.Active);
     });
 
-    [FundState.Empty, FundState.FundsIn, FundState.CapReached, FundState.Active, FundState.Closed].forEach((state) => {
+    [
+      FundState.Empty,
+      FundState.FundsIn,
+      FundState.CapReached,
+      FundState.Active,
+      FundState.Breakeven,
+      FundState.Closed
+    ].forEach((state) => {
       it(`Should revert if in invalid state: ${state}`, async () => {
         const { investmentFund } = await setupMock();
         await investmentFund.setVariable('currentState', formatBytes32String(state));
@@ -359,14 +391,38 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
+  describe('#provideProfits()', () => {
+    [FundState.Active, FundState.Breakeven].forEach((state) => {
+      it(`Should not revert if in ${state} state`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
+
+        await expect(investmentFund.provideProfits()).not.to.be.reverted;
+      });
+    });
+
+    [FundState.Empty, FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed, FundState.Closed].forEach(
+      (state) => {
+        it(`Should revert if in invalid state: ${state}`, async () => {
+          const { investmentFund } = await setupMock();
+          await investmentFund.setVariable('currentState', formatBytes32String(state));
+
+          await expect(investmentFund.provideProfits()).to.be.revertedWith('Not allowed in current state');
+        });
+      }
+    );
+  });
+
   describe('#closeFund()', () => {
-    it(`Should go to Closed state if in Active state`, async () => {
-      const { investmentFund } = await setupMock();
-      await investmentFund.setVariable('currentState', formatBytes32String(FundState.Active));
+    [FundState.Active, FundState.Breakeven].forEach((state) => {
+      it(`Should go to Closed state if in ${state} state`, async () => {
+        const { investmentFund } = await setupMock();
+        await investmentFund.setVariable('currentState', formatBytes32String(state));
 
-      await investmentFund.closeFund();
+        await investmentFund.closeFund();
 
-      expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.Closed);
+        expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.Closed);
+      });
     });
 
     [FundState.Empty, FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed, FundState.Closed].forEach(

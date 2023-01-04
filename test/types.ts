@@ -4,5 +4,6 @@ export enum FundState {
   CapReached = 'CapReached',
   FundsDeployed = 'FundsDeployed',
   Active = 'Active',
+  Breakeven = 'Breakeven',
   Closed = 'Closed'
 }

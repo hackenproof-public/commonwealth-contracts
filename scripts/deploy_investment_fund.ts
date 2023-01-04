@@ -23,7 +23,13 @@ async function main() {
   console.log(`Investment Fund deployed to ${investmentFund.address}`);
 
   if (await confirm('\nDo you want to verify contract? [y/N] ')) {
-    await verifyContract(investmentFund.address);
+    await verifyContract(investmentFund.address, [
+      'Investment Fund',
+      usdcAddress,
+      investmentNftAddress,
+      treasuryWallet,
+      managementFee
+    ]);
   }
 }
 

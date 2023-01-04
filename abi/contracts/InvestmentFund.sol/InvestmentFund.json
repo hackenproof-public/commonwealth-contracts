@@ -218,6 +218,13 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "provideProfits",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",

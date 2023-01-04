@@ -17,6 +17,7 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
     address public treasuryWallet;
     uint16 public managementFee;
     bytes32 public currentState = LibFund.STATE_EMPTY;
+    mapping(bytes32 => mapping(bytes4 => bool)) functionsAllowed;
 
     /**
      * @dev Emitted when currency is changed
@@ -57,14 +58,16 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
         investmentNft = IInvestmentNFT(investmentNft_);
         treasuryWallet = treasuryWallet_;
         managementFee = managementFee_;
+
+        initializeStates();
     }
 
     /**
-     * @dev Limits access for specified state
-     * @param state Allowed state
+     * @dev Limits access for current state
+     * @dev Only functions allowed using allowFunction are permitted
      */
-    modifier onlyState(bytes32 state) {
-        require(currentState == state, "Not allowed in current state");
+    modifier onlyAllowedStates() {
+        require(functionsAllowed[currentState][msg.sig], "Not allowed in current state");
         _;
     }
 
@@ -91,7 +94,7 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(uint240 amount) external override onlyState(LibFund.STATE_FUNDS_IN) nonReentrant {
+    function invest(uint240 amount) external override onlyAllowedStates nonReentrant {
         require(amount > 0, "Invalid amount invested");
 
         uint256 fee = (uint256(amount) * managementFee) / LibFund.FEE_DIVISOR;
@@ -104,32 +107,54 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
         emit Invested(msg.sender, address(currency), investment, tokenId);
     }
 
-    function addProject() external onlyState(LibFund.STATE_EMPTY) {
+    function addProject() external onlyAllowedStates {
         // todo: limit access
     }
 
-    function startCollectingFunds() external onlyState(LibFund.STATE_EMPTY) {
+    function startCollectingFunds() external onlyAllowedStates {
         // todo: limit access
         currentState = LibFund.STATE_FUNDS_IN;
     }
 
-    function stopCollectingFunds() external onlyState(LibFund.STATE_FUNDS_IN) {
+    function stopCollectingFunds() external onlyAllowedStates {
         // todo: limit access
         currentState = LibFund.STATE_CAP_REACHED;
     }
 
-    function deployFunds() external onlyState(LibFund.STATE_CAP_REACHED) {
+    function deployFunds() external onlyAllowedStates {
         // todo: limit access
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
     }
 
-    function activateFund() external onlyState(LibFund.STATE_FUNDS_DEPLOYED) {
+    function activateFund() external onlyAllowedStates {
         // todo: limit access
         currentState = LibFund.STATE_ACTIVE;
     }
 
-    function closeFund() external onlyState(LibFund.STATE_ACTIVE) {
+    function provideProfits() external onlyAllowedStates {
+        // todo: limit access
+        // todo: if breakeven reached go to Breakeven state
+    }
+
+    function closeFund() external onlyAllowedStates {
         // todo: limit access
         currentState = LibFund.STATE_CLOSED;
+    }
+
+    function initializeStates() internal {
+        allowFunction(LibFund.STATE_EMPTY, this.addProject.selector);
+        allowFunction(LibFund.STATE_EMPTY, this.startCollectingFunds.selector);
+        allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
+        allowFunction(LibFund.STATE_FUNDS_IN, this.stopCollectingFunds.selector);
+        allowFunction(LibFund.STATE_CAP_REACHED, this.deployFunds.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.activateFund.selector);
+        allowFunction(LibFund.STATE_ACTIVE, this.provideProfits.selector);
+        allowFunction(LibFund.STATE_ACTIVE, this.closeFund.selector);
+        allowFunction(LibFund.STATE_BREAKEVEN, this.provideProfits.selector);
+        allowFunction(LibFund.STATE_BREAKEVEN, this.closeFund.selector);
+    }
+
+    function allowFunction(bytes32 state, bytes4 selector) internal {
+        functionsAllowed[state][selector] = true;
     }
 }

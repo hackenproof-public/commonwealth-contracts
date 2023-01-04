@@ -9,5 +9,6 @@ library LibFund {
     bytes32 public constant STATE_CAP_REACHED = "CapReached";
     bytes32 public constant STATE_FUNDS_DEPLOYED = "FundsDeployed";
     bytes32 public constant STATE_ACTIVE = "Active";
+    bytes32 public constant STATE_BREAKEVEN = "Breakeven";
     bytes32 public constant STATE_CLOSED = "Closed";
 }
