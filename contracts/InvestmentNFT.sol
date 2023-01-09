@@ -13,12 +13,11 @@ contract InvestmentNFT is ERC721, IInvestmentNFT {
 
     constructor() ERC721("Investment NFT", "CWI") {}
 
-    function mint(address to, uint256 value) external returns (uint256) {
+    function mint(address to, uint256 value) external {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         investmentValue[tokenId] = value;
         _safeMint(to, tokenId);
-        return tokenId;
     }
 
     function burn(uint256 tokenId) external {

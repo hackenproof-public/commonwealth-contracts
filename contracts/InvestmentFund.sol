@@ -6,18 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IInvestmentFund.sol";
 import "./IInvestmentNFT.sol";
 import "./LibFund.sol";
+import "./StateMachine.sol";
 
 /**
  * @title Investment Fund contract
  */
-contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
+contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
     string public name;
     IERC20 public currency;
     IInvestmentNFT public investmentNft;
     address public treasuryWallet;
     uint16 public managementFee;
-    bytes32 public currentState = LibFund.STATE_EMPTY;
-    mapping(bytes32 => mapping(bytes4 => bool)) functionsAllowed;
+    uint256 public cap;
 
     /**
      * @dev Emitted when currency is changed
@@ -46,29 +46,23 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
         address currency_,
         address investmentNft_,
         address treasuryWallet_,
-        uint16 managementFee_
-    ) {
+        uint16 managementFee_,
+        uint256 cap_
+    ) StateMachine(LibFund.STATE_EMPTY) {
         require(currency_ != address(0), "Invalid currency address");
         require(investmentNft_ != address(0), "Invalid NFT address");
         require(treasuryWallet_ != address(0), "Invalid treasury wallet address");
         require(managementFee_ < 10000, "Invalid management fee");
+        require(cap_ > 0, "Invalid investment cap");
 
         name = name_;
         currency = IERC20(currency_);
         investmentNft = IInvestmentNFT(investmentNft_);
         treasuryWallet = treasuryWallet_;
         managementFee = managementFee_;
+        cap = cap_;
 
         initializeStates();
-    }
-
-    /**
-     * @dev Limits access for current state
-     * @dev Only functions allowed using allowFunction are permitted
-     */
-    modifier onlyAllowedStates() {
-        require(functionsAllowed[currentState][msg.sig], "Not allowed in current state");
-        _;
     }
 
     /**
@@ -99,12 +93,15 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
 
         uint256 fee = (uint256(amount) * managementFee) / LibFund.FEE_DIVISOR;
         uint256 investment = amount - fee;
-        // todo: perform transition to cap reached if balance + investment = cap
-        require(currency.transferFrom(msg.sender, treasuryWallet, fee), "Currency fee transfer failed");
-        require(currency.transferFrom(msg.sender, address(this), investment), "Currency transfer failed");
-        uint256 tokenId = investmentNft.mint(msg.sender, investment);
+        uint256 newTotalInvested = currency.balanceOf(address(this)) + investment;
+        require(newTotalInvested <= cap, "Total invested funds exceed cap");
 
-        emit Invested(msg.sender, address(currency), investment, tokenId);
+        if (newTotalInvested >= cap) {
+            currentState = LibFund.STATE_CAP_REACHED;
+            emit CapReached(msg.sender, address(currency), investment, cap);
+        }
+
+        _makeInvestment(msg.sender, investment, fee);
     }
 
     function addProject() external onlyAllowedStates {
@@ -154,7 +151,11 @@ contract InvestmentFund is IInvestmentFund, ReentrancyGuard {
         allowFunction(LibFund.STATE_BREAKEVEN, this.closeFund.selector);
     }
 
-    function allowFunction(bytes32 state, bytes4 selector) internal {
-        functionsAllowed[state][selector] = true;
+    function _makeInvestment(address investor, uint256 value, uint256 fee) internal {
+        emit Invested(msg.sender, address(currency), value, fee);
+
+        require(currency.transferFrom(investor, treasuryWallet, fee), "Currency fee transfer failed");
+        require(currency.transferFrom(investor, address(this), value), "Currency transfer failed");
+        investmentNft.mint(investor, value);
     }
 }

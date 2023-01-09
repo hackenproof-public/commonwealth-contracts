@@ -10,7 +10,9 @@ import { getLogs } from '../utils';
 
 describe('Investment Fund integration tests', () => {
   const managementFee: number = 200;
+  const defaultInvestmentCap: BigNumber = BigNumber.from(10 ** 12);
   const investedEventTopic: string = ethers.utils.id('Invested(address,address,uint256,uint256)');
+  const mintedEventTopic: string = ethers.utils.id('Transfer(address,address,uint256)');
 
   let deployer: SignerWithAddress;
   let treasuryWallet: SignerWithAddress;
@@ -26,7 +28,8 @@ describe('Investment Fund integration tests', () => {
       usdc.address,
       investmentNft.address,
       treasuryWallet.address,
-      managementFee
+      managementFee,
+      defaultInvestmentCap
     ]);
 
     await usdc.mint(wallet.address, 1000 * 10 ** 6);
@@ -57,10 +60,10 @@ describe('Investment Fund integration tests', () => {
         await usdc.connect(wallet).approve(investmentFund.address, data.amount);
         const tx: ContractTransaction = await investmentFund.connect(wallet).invest(data.amount);
 
-        const logsInvested: Log[] = await getLogs(tx, investmentFund.address, investedEventTopic);
-        expect(logsInvested).to.have.length(1);
+        const logsMinted: Log[] = await getLogs(tx, investmentNft.address, mintedEventTopic);
+        expect(logsMinted).to.have.length(1);
 
-        const tokenId: BigNumber = investmentFund.interface.parseLog(logsInvested[0]).args.tokenId;
+        const tokenId: BigNumber = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
 
         expect(await usdc.balanceOf(wallet.address)).to.equal(initialBalance.sub(data.amount));
         expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(data.fee);

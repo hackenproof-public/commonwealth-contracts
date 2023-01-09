@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import 'hardhat-abi-exporter';
 import 'hardhat-contract-sizer';
 import 'hardhat-docgen';
+import 'hardhat-tracer';
 import { HardhatUserConfig } from 'hardhat/config';
 
 dotenv.config();
