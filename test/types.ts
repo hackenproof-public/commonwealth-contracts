@@ -1,6 +1,4 @@
-import { FakeContract, MockContract } from '@defi-wonderland/smock';
-import { BigNumber, Contract } from 'ethers';
-import { InvestmentFund, InvestmentNFT, USDC } from '../typechain-types';
+import { BigNumber } from 'ethers';
 
 export enum FundState {
   Empty = 'Empty',
@@ -12,23 +10,9 @@ export enum FundState {
   Closed = 'Closed'
 }
 
-export type SetupNamedParameters = {
+export type InvestmentFundDeploymentParameters = {
   fundName?: string;
+  treasuryAddress?: string;
   managementFee?: number;
   cap?: BigNumber;
 };
-
-export type GetFixtureNamedParameters = {
-  fundName?: string;
-  treasuryWallet?: string;
-  managementFee?: number;
-  cap?: BigNumber;
-};
-
-export type SetupResult = {
-  investmentFund: InvestmentFund;
-  usdc: FakeContract<USDC>;
-  investmentNft: FakeContract<InvestmentNFT>;
-};
-
-export type Fixture = () => Promise<SetupResult>;

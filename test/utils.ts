@@ -1,10 +1,9 @@
-import { FakeContract, smock } from '@defi-wonderland/smock';
 import { Log, TransactionReceipt } from '@ethersproject/providers';
-import { ContractTransaction } from 'ethers';
+import { ContractTransaction, utils } from 'ethers';
 import { parseBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
-import { InvestmentFund, InvestmentFund__factory, InvestmentNFT, USDC } from '../typechain-types';
-import { Fixture, FundState, GetFixtureNamedParameters, SetupResult } from './types';
+import { InvestmentFund } from '../typechain-types';
+import { FundState } from './types';
 
 export const getLogs = async (
   tx: ContractTransaction,
@@ -23,36 +22,8 @@ export const getLogs = async (
   return logs;
 };
 
-export const createFixtureFactory = () => {
-  const fixtures: Map<string, Fixture> = new Map<string, Fixture>();
-
-  return {
-    getFixture: async (params: GetFixtureNamedParameters) => {
-      const key = [params.fundName, params.treasuryWallet, params.managementFee, params.cap].join(',');
-      let fixture = fixtures.get(key);
-
-      if (fixture === undefined) {
-        fixture = async (): Promise<SetupResult> => {
-          const usdc: FakeContract<USDC> = await smock.fake('USDC');
-          const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
-
-          const investmentFundFactory: InvestmentFund__factory = await ethers.getContractFactory('InvestmentFund');
-          const investmentFund = await investmentFundFactory.deploy(
-            params.fundName!,
-            usdc.address,
-            investmentNft.address,
-            params.treasuryWallet!,
-            params.managementFee!,
-            params.cap!
-          );
-
-          return { investmentFund, usdc, investmentNft };
-        };
-        fixtures.set(key, fixture);
-      }
-      return fixture;
-    }
-  };
+export const toUsdc = (value: string) => {
+  return utils.parseUnits(value, 6);
 };
 
 const getAllowedStatesForTransition = (destinationState: FundState): FundState[] => {
@@ -75,7 +46,7 @@ const getAllowedStatesForTransition = (destinationState: FundState): FundState[]
   }
 };
 
-export const setCurrentState = async (fundContract: InvestmentFund, state: FundState) => {
+export const goToState = async (fundContract: InvestmentFund, state: FundState) => {
   const makeTransition = async () => {
     switch (state) {
       case FundState.FundsIn:
@@ -105,7 +76,7 @@ export const setCurrentState = async (fundContract: InvestmentFund, state: FundS
     const allowed = allowedStates[0];
     const current = <FundState>parseBytes32String(await fundContract.currentState());
     if (current !== allowed) {
-      await setCurrentState(fundContract, allowed);
+      await goToState(fundContract, allowed);
     }
     await makeTransition();
   }
