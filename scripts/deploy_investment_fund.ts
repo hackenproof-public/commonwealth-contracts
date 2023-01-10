@@ -1,4 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import { InvestmentFund } from '../typechain-types';
 import { confirm, deploy, verifyContract } from './utils';
@@ -8,6 +9,7 @@ async function main() {
   const investmentNftAddress: string = '0x67a46E219230752561758f29501Afd638D6E6bd3';
   const treasuryWallet: string = '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63';
   const managementFee: number = 200;
+  const cap: BigNumber = BigNumber.from(1000000 * 10 ** 6);
 
   const [deployer]: SignerWithAddress[] = await ethers.getSigners();
 
@@ -17,7 +19,8 @@ async function main() {
     usdcAddress,
     investmentNftAddress,
     treasuryWallet,
-    managementFee
+    managementFee,
+    cap
   ]);
 
   console.log(`Investment Fund deployed to ${investmentFund.address}`);
@@ -28,7 +31,8 @@ async function main() {
       usdcAddress,
       investmentNftAddress,
       treasuryWallet,
-      managementFee
+      managementFee,
+      cap
     ]);
   }
 }
