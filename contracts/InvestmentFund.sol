@@ -18,6 +18,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
     address public treasuryWallet;
     uint16 public managementFee;
     uint256 public cap;
+    uint256 public totalInvestment;
 
     /**
      * @dev Emitted when currency is changed
@@ -36,10 +37,13 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
     event InvestmentNFTChanged(address indexed caller, address indexed oldNFT, address indexed newNFT);
 
     /**
-     * @dev Initializes the contract by setting a `name`, `currency` and `investment NFT` to investment fund
+     * @dev Initializes the contract
      * @param name_ Investment fund name
      * @param currency_ Address of currency for investments
      * @param investmentNft_ Address of investment NFT contract
+     * @param treasuryWallet_ Address of treasury wallet
+     * @param managementFee_ Management fee value
+     * @param cap_ Cap value
      */
     constructor(
         string memory name_,
@@ -61,28 +65,9 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
         treasuryWallet = treasuryWallet_;
         managementFee = managementFee_;
         cap = cap_;
+        totalInvestment = 0;
 
-        initializeStates();
-    }
-
-    /**
-     * @dev Sets currency address
-     * @param currency_ New currency address
-     */
-    function setCurrency(address currency_) external {
-        address oldCurrency = address(currency);
-        currency = IERC20(currency_);
-        emit CurrencyChanged(msg.sender, oldCurrency, currency_);
-    }
-
-    /**
-     * @dev Sets investment NFT address
-     * @param nft_ New Investment NFT address
-     */
-    function setInvestmentNft(address nft_) external {
-        address oldNFT = address(investmentNft);
-        investmentNft = IInvestmentNFT(nft_);
-        emit InvestmentNFTChanged(msg.sender, oldNFT, nft_);
+        _initializeStates();
     }
 
     /**
@@ -93,15 +78,17 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
 
         uint256 fee = (uint256(amount) * managementFee) / LibFund.FEE_DIVISOR;
         uint256 investment = amount - fee;
-        uint256 newTotalInvested = currency.balanceOf(address(this)) + investment;
-        require(newTotalInvested <= cap, "Total invested funds exceed cap");
+        uint256 newTotalInvestment = totalInvestment + investment;
+        require(newTotalInvestment <= cap, "Total invested funds exceed cap");
 
-        if (newTotalInvested >= cap) {
+        totalInvestment = newTotalInvestment;
+
+        if (newTotalInvestment >= cap) {
             currentState = LibFund.STATE_CAP_REACHED;
             emit CapReached(msg.sender, address(currency), investment, cap);
         }
 
-        _makeInvestment(msg.sender, investment, fee);
+        _invest(msg.sender, investment, fee);
     }
 
     function addProject() external onlyAllowedStates {
@@ -138,7 +125,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
         currentState = LibFund.STATE_CLOSED;
     }
 
-    function initializeStates() internal {
+    function _initializeStates() internal {
         allowFunction(LibFund.STATE_EMPTY, this.addProject.selector);
         allowFunction(LibFund.STATE_EMPTY, this.startCollectingFunds.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
@@ -151,7 +138,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
         allowFunction(LibFund.STATE_BREAKEVEN, this.closeFund.selector);
     }
 
-    function _makeInvestment(address investor, uint256 value, uint256 fee) internal {
+    function _invest(address investor, uint256 value, uint256 fee) internal {
         emit Invested(msg.sender, address(currency), value, fee);
 
         require(currency.transferFrom(investor, treasuryWallet, fee), "Currency fee transfer failed");

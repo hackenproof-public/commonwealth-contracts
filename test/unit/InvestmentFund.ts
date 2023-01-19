@@ -154,32 +154,6 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
-  describe('#setCurrency()', () => {
-    it('Should set currency', async () => {
-      const { investmentFund, usdc, wallet } = await setup();
-
-      expect(await investmentFund.currency()).to.equal(usdc.address);
-
-      await expect(investmentFund.connect(wallet).setCurrency(constants.AddressZero))
-        .to.emit(investmentFund, 'CurrencyChanged')
-        .withArgs(wallet.address, usdc.address, constants.AddressZero);
-      expect(await investmentFund.currency()).to.equal(constants.AddressZero);
-    });
-  });
-
-  describe('#setInvestmentNft()', () => {
-    it('Should set Investment NFT', async () => {
-      const { investmentFund, investmentNft, wallet } = await setup();
-
-      expect(await investmentFund.investmentNft()).to.equal(investmentNft.address);
-
-      await expect(investmentFund.connect(wallet).setInvestmentNft(constants.AddressZero))
-        .to.emit(investmentFund, 'InvestmentNFTChanged')
-        .withArgs(wallet.address, investmentNft.address, constants.AddressZero);
-      expect(await investmentFund.investmentNft()).to.equal(constants.AddressZero);
-    });
-  });
-
   describe('#invest()', () => {
     [BigNumber.from(1), defaultInvestmentCap.sub(1)].forEach((amount: BigNumber) => {
       it(`Should invest if amount lower than cap [amount=${amount}]`, async () => {
