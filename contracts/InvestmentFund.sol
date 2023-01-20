@@ -21,22 +21,6 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
     uint256 public totalInvestment;
 
     /**
-     * @dev Emitted when currency is changed
-     * @param caller Address that changes currency
-     * @param oldCurrency Old currency
-     * @param newCurrency New currency
-     */
-    event CurrencyChanged(address indexed caller, address indexed oldCurrency, address indexed newCurrency);
-
-    /**
-     * @dev Emitted when Investment NFT contract is changed
-     * @param caller Address that changes contract
-     * @param oldNFT Old investment NFT contract
-     * @param newNFT New investment NFT contract
-     */
-    event InvestmentNFTChanged(address indexed caller, address indexed oldNFT, address indexed newNFT);
-
-    /**
      * @dev Initializes the contract
      * @param name_ Investment fund name
      * @param currency_ Address of currency for investments
