@@ -7,7 +7,7 @@ import { confirm, deploy, verifyContract } from './utils';
 
 async function main() {
   const usdcAddress: string = '0x7b34B0D50249142aa3d6F9978790E8c28F52403E';
-  const investmentNftAddress: string = '0x67a46E219230752561758f29501Afd638D6E6bd3';
+  const investmentNftAddress: string = '0x676f31adBaC8e20fab3D1e9008A92141018cABc1';
   const treasuryWallet: string = '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63';
   const managementFee: number = 1000;
   const cap: BigNumber = toUsdc('1000000');
