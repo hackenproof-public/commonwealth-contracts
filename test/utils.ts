@@ -1,5 +1,5 @@
 import { Log, TransactionReceipt } from '@ethersproject/providers';
-import { BigNumber, ContractTransaction, utils } from 'ethers';
+import { ContractTransaction, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
 const BASIS_POINT_DIVISOR: number = 10000;
@@ -24,6 +24,3 @@ export const getLogs = async (
 export const toUsdc = (value: string) => {
   return utils.parseUnits(value, 6);
 };
-
-export const valueWithFee = (value: BigNumber, fee: number) =>
-  value.mul(BASIS_POINT_DIVISOR).div(BASIS_POINT_DIVISOR - fee);

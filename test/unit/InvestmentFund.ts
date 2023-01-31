@@ -8,15 +8,13 @@ import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
 import { FundState, InvestmentFundDeploymentParameters } from '../types';
-import { toUsdc, valueWithFee } from '../utils';
+import { toUsdc } from '../utils';
 
-const MAX_UINT240: BigNumber = BigNumber.from(
-  '1766847064778384329583297500742918515827483896875618958121606201292619775'
-);
+const MAX_UINT240 = BigNumber.from('1766847064778384329583297500742918515827483896875618958121606201292619775');
 
 describe('Investment Fund unit tests', () => {
-  const defaultManagementFee: number = 1000;
-  const defaultInvestmentCap: BigNumber = toUsdc('1000000');
+  const defaultManagementFee = 1000;
+  const defaultInvestmentCap = toUsdc('1000000');
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
@@ -79,7 +77,7 @@ describe('Investment Fund unit tests', () => {
   };
 
   describe('Deployment', () => {
-    it(`Should return initial parameters`, async () => {
+    it('Should return initial parameters', async () => {
       const { investmentFund, usdc, investmentNft, treasuryWallet } = await setup();
 
       expect(await investmentFund.name()).to.equal('Investment Fund');
@@ -91,7 +89,7 @@ describe('Investment Fund unit tests', () => {
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.Empty);
     });
 
-    it(`Should revert deployment if invalid currency`, async () => {
+    it('Should revert deployment if invalid currency', async () => {
       const [deployer, treasuryWallet] = await ethers.getSigners();
 
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -107,7 +105,7 @@ describe('Investment Fund unit tests', () => {
       ).to.be.revertedWith('Invalid currency address');
     });
 
-    it(`Should revert deployment if invalid NFT address`, async () => {
+    it('Should revert deployment if invalid NFT address', async () => {
       const [deployer, treasuryWallet] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -123,7 +121,7 @@ describe('Investment Fund unit tests', () => {
       ).to.be.revertedWith('Invalid NFT address');
     });
 
-    it(`Should revert deployment if invalid treasury wallet address`, async () => {
+    it('Should revert deployment if invalid treasury wallet address', async () => {
       const [deployer] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -140,7 +138,7 @@ describe('Investment Fund unit tests', () => {
       ).to.be.revertedWith('Invalid treasury wallet address');
     });
 
-    it(`Should revert deployment if invalid management fee`, async () => {
+    it('Should revert deployment if invalid management fee', async () => {
       const [deployer, treasuryWallet] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -157,7 +155,7 @@ describe('Investment Fund unit tests', () => {
       ).to.be.revertedWith('Invalid management fee');
     });
 
-    it(`Should revert deployment if invalid investment cap`, async () => {
+    it('Should revert deployment if invalid investment cap', async () => {
       const [deployer, treasuryWallet] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -199,10 +197,12 @@ describe('Investment Fund unit tests', () => {
         const { investmentFund, usdc, wallet } = await setup();
         await investmentFund.startCollectingFunds();
 
-        const fee: BigNumber = amount.mul(defaultManagementFee).div(10000);
+        const fee = amount.mul(defaultManagementFee).div(10000);
         await expect(investmentFund.connect(wallet).invest(amount))
           .to.emit(investmentFund, 'Invested')
-          .withArgs(wallet.address, usdc.address, amount.sub(fee), fee);
+          .withArgs(wallet.address, usdc.address, amount, fee);
+
+        expect(await investmentFund.totalInvestment()).is.equal(amount);
       });
     });
 
@@ -215,40 +215,38 @@ describe('Investment Fund unit tests', () => {
         usdc.transferFrom.returns(true);
         investmentNft.mint.returns(1);
 
-        const amount: BigNumber = cap.mul(10000).div(10000 - defaultManagementFee);
-        const fee: BigNumber = amount.mul(defaultManagementFee).div(10000);
+        const amount = cap;
+        const fee = amount.mul(defaultManagementFee).div(10000);
 
         await expect(investmentFund.connect(wallet).invest(amount))
           .to.emit(investmentFund, 'Invested')
-          .withArgs(wallet.address, usdc.address, amount.sub(fee), fee)
+          .withArgs(wallet.address, usdc.address, amount, fee)
           .to.emit(investmentFund, 'CapReached')
           .withArgs(cap);
 
+        expect(await investmentFund.totalInvestment()).is.equal(amount);
         expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.CapReached);
       });
     });
 
-    it(`Should revert investing if amount greater than cap`, async () => {
+    it('Should revert investing if amount greater than cap', async () => {
       const { investmentFund, wallet } = await setup();
       await investmentFund.startCollectingFunds();
 
-      const amount: BigNumber = defaultInvestmentCap
-        .add(1)
-        .mul(10000)
-        .div(10000 - defaultManagementFee);
-      const fee: BigNumber = amount.mul(defaultManagementFee).div(10000);
+      const amount = defaultInvestmentCap.add(1);
+      const fee = amount.mul(defaultManagementFee).div(10000);
 
       await expect(investmentFund.connect(wallet).invest(amount)).to.be.revertedWith('Total invested funds exceed cap');
     });
 
-    it(`Should revert investing if amount is 0`, async () => {
+    it('Should revert investing if amount is 0', async () => {
       const { investmentFund, wallet } = await setup();
       await investmentFund.startCollectingFunds();
 
       await expect(investmentFund.connect(wallet).invest(0)).to.be.revertedWith('Invalid amount invested');
     });
 
-    it(`Should revert investing if currency fee transfer fails`, async () => {
+    it('Should revert investing if currency fee transfer fails', async () => {
       const { investmentFund, usdc, wallet } = await setup();
       await investmentFund.startCollectingFunds();
 
@@ -258,7 +256,7 @@ describe('Investment Fund unit tests', () => {
       await expect(investmentFund.connect(wallet).invest(1)).to.be.revertedWith('Currency transfer failed');
     });
 
-    it(`Should revert investing if currency transfer fails`, async () => {
+    it('Should revert investing if currency transfer fails', async () => {
       const { investmentFund, usdc, wallet } = await setup();
       await investmentFund.startCollectingFunds();
 
@@ -269,7 +267,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     [0, 1].forEach((call) => {
-      it(`Should revert investing if currency transfer reverts`, async () => {
+      it('Should revert investing if currency transfer reverts', async () => {
         const { investmentFund, usdc, wallet } = await setup();
         await investmentFund.startCollectingFunds();
 
@@ -279,7 +277,7 @@ describe('Investment Fund unit tests', () => {
       });
     });
 
-    it(`Should revert investing if investment NFT mint reverts`, async () => {
+    it('Should revert investing if investment NFT mint reverts', async () => {
       const { investmentFund, investmentNft, wallet } = await setup();
       await investmentFund.startCollectingFunds();
 
@@ -290,14 +288,13 @@ describe('Investment Fund unit tests', () => {
   });
 
   describe('#withdraw()', () => {
-    const investmentValue: BigNumber = toUsdc('100');
-    const investmentValueWithFee: BigNumber = valueWithFee(investmentValue, defaultManagementFee);
-    const defaultProfit: BigNumber = BigNumber.from(10);
+    const investmentValue = toUsdc('100');
+    const defaultProfit = BigNumber.from(10);
 
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
       await investmentFund.startCollectingFunds();
-      await investmentFund.invest(investmentValueWithFee);
+      await investmentFund.invest(investmentValue);
       expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
 
       await investmentFund.stopCollectingFunds();
@@ -368,13 +365,12 @@ describe('Investment Fund unit tests', () => {
 
   describe('#getWithdrawalDetails()', () => {
     const investmentValue = toUsdc('10');
-    const investmentValueWithFee = valueWithFee(investmentValue, defaultManagementFee);
     const defaultProfit = toUsdc('20');
 
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
       await investmentFund.startCollectingFunds();
-      await investmentFund.invest(investmentValueWithFee);
+      await investmentFund.invest(investmentValue);
       expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
 
       await investmentFund.stopCollectingFunds();
@@ -444,14 +440,13 @@ describe('Investment Fund unit tests', () => {
   });
 
   describe('#provideProfit()', () => {
-    const investmentValue: BigNumber = toUsdc('100');
-    const investmentValueWithFee: BigNumber = valueWithFee(investmentValue, defaultManagementFee);
+    const investmentValue = toUsdc('100');
 
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet, treasuryWallet } = await setup());
 
       await investmentFund.startCollectingFunds();
-      await investmentFund.connect(deployer).invest(investmentValueWithFee);
+      await investmentFund.connect(deployer).invest(investmentValue);
       expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
 
       await investmentFund.stopCollectingFunds();
@@ -540,7 +535,7 @@ describe('Investment Fund unit tests', () => {
   });
 
   describe('State machine', () => {
-    describe(`Empty`, () => {
+    describe('Empty', () => {
       before(async () => {
         ({ investmentFund, investmentNft } = await setup());
         restorer = await takeSnapshot();
@@ -550,44 +545,44 @@ describe('Investment Fund unit tests', () => {
         await restorer.restore();
       });
 
-      it(`Should not revert adding project`, async () => {
+      it('Should not revert adding project', async () => {
         await expect(investmentFund.addProject()).not.to.be.reverted;
       });
 
-      it(`Should not revert starting funds collection`, async () => {
+      it('Should not revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).not.to.be.reverted;
       });
 
-      it(`Should revert investing`, async () => {
+      it('Should revert investing', async () => {
         await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert withdrawing`, async () => {
+      it('Should revert withdrawing', async () => {
         await expect(investmentFund.withdraw(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert stopping funds collection`, async () => {
+      it('Should revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert funds deployment`, async () => {
+      it('Should revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert activating fund`, async () => {
+      it('Should revert activating fund', async () => {
         await expect(investmentFund.activateFund()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert providing profits`, async () => {
+      it('Should revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert closing fund`, async () => {
+      it('Should revert closing fund', async () => {
         await expect(investmentFund.closeFund()).to.be.revertedWith('Not allowed in current state');
       });
     });
 
-    describe(`FundsIn`, () => {
+    describe('FundsIn', () => {
       before(async () => {
         ({ investmentFund } = await setup());
         await investmentFund.startCollectingFunds();
@@ -598,44 +593,44 @@ describe('Investment Fund unit tests', () => {
         await restorer.restore();
       });
 
-      it(`Should revert adding project`, async () => {
+      it('Should revert adding project', async () => {
         await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert starting funds collection`, async () => {
+      it('Should revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert investing`, async () => {
+      it('Should not revert investing', async () => {
         await expect(investmentFund.invest(1)).not.to.be.reverted;
       });
 
-      it(`Should revert withdrawing`, async () => {
+      it('Should revert withdrawing', async () => {
         await expect(investmentFund.withdraw(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert stopping funds collection`, async () => {
+      it('Should not revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).not.to.be.reverted;
       });
 
-      it(`Should revert funds deployment`, async () => {
+      it('Should revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert activating fund`, async () => {
+      it('Should revert activating fund', async () => {
         await expect(investmentFund.activateFund()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert providing profits`, async () => {
+      it('Should revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert closing fund`, async () => {
+      it('Should revert closing fund', async () => {
         await expect(investmentFund.closeFund()).to.be.revertedWith('Not allowed in current state');
       });
     });
 
-    describe(`CapReached`, () => {
+    describe('CapReached', () => {
       before(async () => {
         ({ investmentFund } = await setup());
         await investmentFund.startCollectingFunds();
@@ -647,44 +642,44 @@ describe('Investment Fund unit tests', () => {
         await restorer.restore();
       });
 
-      it(`Should revert adding project`, async () => {
+      it('Should revert adding project', async () => {
         await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert starting funds collection`, async () => {
+      it('Should revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert investing`, async () => {
+      it('Should revert investing', async () => {
         await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert withdrawing`, async () => {
+      it('Should revert withdrawing', async () => {
         await expect(investmentFund.withdraw(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert stopping funds collection`, async () => {
+      it('Should revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert funds deployment`, async () => {
+      it('Should not revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).not.to.be.reverted;
       });
 
-      it(`Should revert activating fund`, async () => {
+      it('Should revert activating fund', async () => {
         await expect(investmentFund.activateFund()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert providing profits`, async () => {
+      it('Should revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert closing fund`, async () => {
+      it('Should revert closing fund', async () => {
         await expect(investmentFund.closeFund()).to.be.revertedWith('Not allowed in current state');
       });
     });
 
-    describe(`FundsDeployed`, () => {
+    describe('FundsDeployed', () => {
       before(async () => {
         ({ investmentFund } = await setup());
         await investmentFund.startCollectingFunds();
@@ -697,46 +692,46 @@ describe('Investment Fund unit tests', () => {
         await restorer.restore();
       });
 
-      it(`Should revert adding project`, async () => {
+      it('Should revert adding project', async () => {
         await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert starting funds collection`, async () => {
+      it('Should revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert investing`, async () => {
+      it('Should revert investing', async () => {
         await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert withdrawing`, async () => {
+      it('Should revert withdrawing', async () => {
         await expect(investmentFund.withdraw(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert stopping funds collection`, async () => {
+      it('Should revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert funds deployment`, async () => {
+      it('Should revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert activating fund`, async () => {
+      it('Should not revert activating fund', async () => {
         await expect(investmentFund.activateFund()).not.to.be.reverted;
       });
 
-      it(`Should revert providing profits`, async () => {
+      it('Should revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert closing fund`, async () => {
+      it('Should revert closing fund', async () => {
         await expect(investmentFund.closeFund()).to.be.revertedWith('Not allowed in current state');
       });
     });
 
-    describe(`Active`, () => {
-      const investmentValue: BigNumber = toUsdc('100');
-      const profit: BigNumber = toUsdc('1');
+    describe('Active', () => {
+      const investmentValue = toUsdc('100');
+      const profit = toUsdc('1');
 
       before(async () => {
         ({ investmentFund, usdc, investmentNft } = await setup());
@@ -767,44 +762,44 @@ describe('Investment Fund unit tests', () => {
         investmentNft.getPastTotalInvestmentValue.returns(investmentValue);
       });
 
-      it(`Should revert adding project`, async () => {
+      it('Should revert adding project', async () => {
         await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert starting funds collection`, async () => {
+      it('Should revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert investing`, async () => {
+      it('Should revert investing', async () => {
         await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert withdrawing`, async () => {
+      it('Should not revert withdrawing', async () => {
         await expect(investmentFund.withdraw(profit)).not.to.be.reverted;
       });
 
-      it(`Should revert stopping funds collection`, async () => {
+      it('Should revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert funds deployment`, async () => {
+      it('Should revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert activating fund`, async () => {
+      it('Should revert activating fund', async () => {
         await expect(investmentFund.activateFund()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should not revert providing profits`, async () => {
+      it('Should not revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).not.to.be.reverted;
       });
 
-      it(`Should not revert closing fund`, async () => {
+      it('Should not revert closing fund', async () => {
         await expect(investmentFund.closeFund()).not.to.be.reverted;
       });
     });
 
-    describe(`Closed`, () => {
+    describe('Closed', () => {
       before(async () => {
         ({ investmentFund } = await setup());
         await investmentFund.startCollectingFunds();
@@ -819,39 +814,39 @@ describe('Investment Fund unit tests', () => {
         await restorer.restore();
       });
 
-      it(`Should revert adding project`, async () => {
+      it('Should revert adding project', async () => {
         await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert starting funds collection`, async () => {
+      it('Should revert starting funds collection', async () => {
         await expect(investmentFund.startCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert investing`, async () => {
+      it('Should revert investing', async () => {
         await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert withdrawing`, async () => {
+      it('Should revert withdrawing', async () => {
         await expect(investmentFund.withdraw(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert stopping funds collection`, async () => {
+      it('Should revert stopping funds collection', async () => {
         await expect(investmentFund.stopCollectingFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert funds deployment`, async () => {
+      it('Should revert funds deployment', async () => {
         await expect(investmentFund.deployFunds()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert activating fund`, async () => {
+      it('Should revert activating fund', async () => {
         await expect(investmentFund.activateFund()).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert providing profits`, async () => {
+      it('Should revert providing profits', async () => {
         await expect(investmentFund.provideProfit(1)).to.be.revertedWith('Not allowed in current state');
       });
 
-      it(`Should revert closing fund`, async () => {
+      it('Should revert closing fund', async () => {
         await expect(investmentFund.closeFund()).to.be.revertedWith('Not allowed in current state');
       });
     });

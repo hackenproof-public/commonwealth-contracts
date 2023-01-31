@@ -6,13 +6,13 @@ import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
-import { getLogs, toUsdc, valueWithFee } from '../utils';
+import { getLogs, toUsdc } from '../utils';
 
 describe('Investment Fund integration tests', () => {
-  const managementFee: number = 1000;
-  const defaultInvestmentCap: BigNumber = toUsdc('1000000');
-  const investedEventTopic: string = ethers.utils.id('Invested(address,address,uint256,uint256)');
-  const mintedEventTopic: string = ethers.utils.id('Transfer(address,address,uint256)');
+  const managementFee = 1000;
+  const defaultInvestmentCap = toUsdc('1000000');
+  const investedEventTopic = ethers.utils.id('Invested(address,address,uint256,uint256)');
+  const mintedEventTopic = ethers.utils.id('Transfer(address,address,uint256)');
 
   let investmentFund: InvestmentFund;
   let usdc: USDC;
@@ -62,7 +62,7 @@ describe('Investment Fund integration tests', () => {
         const { investmentFund, usdc, investmentNft } = await loadFixture(deployFixture);
         await investmentFund.startCollectingFunds();
 
-        const initialBalance: BigNumber = await usdc.balanceOf(wallet.address);
+        const initialBalance = await usdc.balanceOf(wallet.address);
 
         await usdc.connect(wallet).approve(investmentFund.address, data.amount);
         const tx: ContractTransaction = await investmentFund.connect(wallet).invest(data.amount);
@@ -75,7 +75,8 @@ describe('Investment Fund integration tests', () => {
         expect(await usdc.balanceOf(wallet.address)).to.equal(initialBalance.sub(data.amount));
         expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(data.fee);
         expect(await usdc.balanceOf(investmentFund.address)).to.equal(data.invested);
-        expect(await investmentNft.tokenValue(tokenId)).to.equal(data.invested);
+        expect(await investmentNft.tokenValue(tokenId)).to.equal(data.amount);
+        expect(await investmentFund.totalInvestment()).to.equal(data.amount);
       });
     });
 
@@ -92,17 +93,15 @@ describe('Investment Fund integration tests', () => {
 
   describe('Provide profit', () => {
     it('Should provide profit for multiple investors', async () => {
-      const { investmentFund, usdc, deployer, wallet, treasuryWallet, profitProvider } = await loadFixture(
-        deployFixture
-      );
+      const { investmentFund, usdc, deployer, wallet, profitProvider } = await loadFixture(deployFixture);
 
       await usdc.mint(profitProvider.address, toUsdc('1000'));
 
       await investmentFund.startCollectingFunds();
-      await usdc.connect(deployer).approve(investmentFund.address, valueWithFee(toUsdc('10'), managementFee));
-      await investmentFund.connect(deployer).invest(valueWithFee(toUsdc('10'), managementFee));
-      await usdc.connect(wallet).approve(investmentFund.address, valueWithFee(toUsdc('20'), managementFee));
-      await investmentFund.connect(wallet).invest(valueWithFee(toUsdc('20'), managementFee));
+      await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
+      await investmentFund.connect(deployer).invest(toUsdc('10'));
+      await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
+      await investmentFund.connect(wallet).invest(toUsdc('20'));
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
       await investmentFund.activateFund();
@@ -119,17 +118,15 @@ describe('Investment Fund integration tests', () => {
     });
 
     it('Should provide profit for multiple investors after breakeven', async () => {
-      const { investmentFund, usdc, deployer, wallet, treasuryWallet, profitProvider } = await loadFixture(
-        deployFixture
-      );
+      const { investmentFund, usdc, deployer, wallet, profitProvider } = await loadFixture(deployFixture);
 
       await usdc.mint(profitProvider.address, toUsdc('1000'));
 
       await investmentFund.startCollectingFunds();
-      await usdc.connect(deployer).approve(investmentFund.address, valueWithFee(toUsdc('10'), managementFee));
-      await investmentFund.connect(deployer).invest(valueWithFee(toUsdc('10'), managementFee));
-      await usdc.connect(wallet).approve(investmentFund.address, valueWithFee(toUsdc('20'), managementFee));
-      await investmentFund.connect(wallet).invest(valueWithFee(toUsdc('20'), managementFee));
+      await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
+      await investmentFund.connect(deployer).invest(toUsdc('10'));
+      await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
+      await investmentFund.connect(wallet).invest(toUsdc('20'));
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
       await investmentFund.activateFund();
@@ -158,10 +155,8 @@ describe('Investment Fund integration tests', () => {
   });
 
   describe('Withdraw', () => {
-    const deployerInvestment: BigNumber = toUsdc('10');
-    const walletInvestment: BigNumber = toUsdc('20');
-    const deployerInvestmentWithFee: BigNumber = valueWithFee(deployerInvestment, managementFee);
-    const walletInvestmentWithFee: BigNumber = valueWithFee(walletInvestment, managementFee);
+    const deployerInvestment = toUsdc('10');
+    const walletInvestment = toUsdc('20');
     let deployerTokenId: BigNumber;
     let walletTokenId: BigNumber;
 
@@ -174,14 +169,14 @@ describe('Investment Fund integration tests', () => {
 
       await investmentFund.startCollectingFunds();
 
-      await usdc.connect(deployer).approve(investmentFund.address, deployerInvestmentWithFee);
-      let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestmentWithFee);
+      await usdc.connect(deployer).approve(investmentFund.address, deployerInvestment);
+      let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment);
 
       let logsMinted: Log[] = await getLogs(tx, investmentNft.address, mintedEventTopic);
       deployerTokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
 
-      await usdc.connect(wallet).approve(investmentFund.address, walletInvestmentWithFee);
-      tx = await investmentFund.connect(wallet).invest(walletInvestmentWithFee);
+      await usdc.connect(wallet).approve(investmentFund.address, walletInvestment);
+      tx = await investmentFund.connect(wallet).invest(walletInvestment);
 
       logsMinted = await getLogs(tx, investmentNft.address, mintedEventTopic);
       walletTokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
@@ -201,9 +196,9 @@ describe('Investment Fund integration tests', () => {
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('3'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('3'));
 
-      const investmentFundBalance: BigNumber = await usdc.balanceOf(investmentFund.address);
-      const walletBalance: BigNumber = await usdc.balanceOf(wallet.address);
-      const treasuryBalance: BigNumber = await usdc.balanceOf(treasuryWallet.address);
+      const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
+      const walletBalance = await usdc.balanceOf(wallet.address);
+      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
 
       await investmentFund.connect(wallet).withdraw(toUsdc('1'));
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.sub(toUsdc('1')));
@@ -220,9 +215,9 @@ describe('Investment Fund integration tests', () => {
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
-      const investmentFundBalance: BigNumber = await usdc.balanceOf(investmentFund.address);
-      const walletBalance: BigNumber = await usdc.balanceOf(wallet.address);
-      const treasuryBalance: BigNumber = await usdc.balanceOf(treasuryWallet.address);
+      const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
+      const walletBalance = await usdc.balanceOf(wallet.address);
+      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
 
       await investmentFund.connect(wallet).withdraw(toUsdc('30'));
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.sub(toUsdc('30')));
@@ -239,9 +234,9 @@ describe('Investment Fund integration tests', () => {
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('9'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('6'));
 
-      let investmentFundBalance: BigNumber = await usdc.balanceOf(investmentFund.address);
-      const walletBalance: BigNumber = await usdc.balanceOf(wallet.address);
-      const deployerBalance: BigNumber = await usdc.balanceOf(deployer.address);
+      let investmentFundBalance = await usdc.balanceOf(investmentFund.address);
+      const walletBalance = await usdc.balanceOf(wallet.address);
+      const deployerBalance = await usdc.balanceOf(deployer.address);
 
       // wallet can withdraw part of his profit (1 out of 4 USDC)
       await investmentFund.connect(wallet).withdraw(toUsdc('1'));
@@ -282,14 +277,14 @@ describe('Investment Fund integration tests', () => {
 
       expect(await investmentFund.getPayoutsCount()).to.equal(numberOfPayouts);
 
-      const expectedDeployerProfit: BigNumber = toUsdc('0.000001').mul(numberOfPayouts);
-      const expectedWalletProfit: BigNumber = toUsdc('0.000002').mul(numberOfPayouts);
+      const expectedDeployerProfit = toUsdc('0.000001').mul(numberOfPayouts);
+      const expectedWalletProfit = toUsdc('0.000002').mul(numberOfPayouts);
       expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(expectedDeployerProfit);
       expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(expectedWalletProfit);
 
-      const investmentFundBalance: BigNumber = await usdc.balanceOf(investmentFund.address);
-      const walletBalance: BigNumber = await usdc.balanceOf(wallet.address);
-      const treasuryBalance: BigNumber = await usdc.balanceOf(treasuryWallet.address);
+      const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
+      const walletBalance = await usdc.balanceOf(wallet.address);
+      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
 
       await investmentFund.connect(wallet).withdraw(expectedWalletProfit);
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.sub(expectedWalletProfit));
@@ -298,7 +293,7 @@ describe('Investment Fund integration tests', () => {
     });
 
     it('Should retrieve available profit for account', async () => {
-      const profit: BigNumber = toUsdc('6');
+      const profit = toUsdc('6');
       await usdc.connect(profitProvider).approve(investmentFund.address, profit);
       await investmentFund.connect(profitProvider).provideProfit(profit);
 

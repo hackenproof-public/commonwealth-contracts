@@ -81,19 +81,17 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
     function invest(uint240 amount) external override onlyAllowedStates nonReentrant {
         require(amount > 0, "Invalid amount invested");
 
-        uint256 fee = (uint256(amount) * managementFee) / LibFund.BASIS_POINT_DIVISOR;
-        uint256 investment = amount - fee;
-        uint256 newTotalInvestment = totalInvestment + investment;
+        uint256 newTotalInvestment = totalInvestment + amount;
         require(newTotalInvestment <= cap, "Total invested funds exceed cap");
-
-        totalInvestment = newTotalInvestment;
 
         if (newTotalInvestment >= cap) {
             currentState = LibFund.STATE_CAP_REACHED;
             emit CapReached(cap);
         }
 
-        _invest(msg.sender, investment, fee);
+        totalInvestment = newTotalInvestment;
+
+        _invest(msg.sender, amount);
     }
 
     /**
@@ -227,12 +225,14 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
         allowFunction(LibFund.STATE_ACTIVE, this.closeFund.selector);
     }
 
-    function _invest(address investor, uint256 value, uint256 fee) internal {
-        emit Invested(msg.sender, address(currency), value, fee);
+    function _invest(address investor, uint256 amount) internal {
+        uint256 fee = (uint256(amount) * managementFee) / LibFund.BASIS_POINT_DIVISOR;
+
+        emit Invested(investor, address(currency), amount, fee);
 
         _transferFrom(currency, investor, treasuryWallet, fee);
-        _transferFrom(currency, investor, address(this), value);
-        investmentNft.mint(investor, value);
+        _transferFrom(currency, investor, address(this), amount - fee);
+        investmentNft.mint(investor, amount);
     }
 
     /**
