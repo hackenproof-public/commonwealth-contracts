@@ -3,22 +3,16 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "./IInvestmentFund.sol";
-import "./IInvestmentNFT.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "./interfaces/IInvestmentFund.sol";
+import "./interfaces/IInvestmentNFT.sol";
 import "./LibFund.sol";
 import "./StateMachine.sol";
 
 /**
  * @title Investment Fund contract
  */
-contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
-    struct Payout {
-        uint256 value;
-        uint248 blockNumber;
-        bool inProfit;
-    }
-
+contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC165 {
     struct PayoutPtr {
         uint256 index;
         uint256 withdrawn;
@@ -211,6 +205,29 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard {
      */
     function isInProfit() public view returns (bool) {
         return totalIncome >= totalInvestment;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function getDetails() external view returns (Details memory) {
+        return
+            Details(
+                name,
+                address(currency),
+                address(investmentNft),
+                treasuryWallet,
+                managementFee,
+                cap,
+                totalInvestment,
+                totalIncome,
+                payouts,
+                currentState
+            );
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IInvestmentFund).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _initializeStates() internal {

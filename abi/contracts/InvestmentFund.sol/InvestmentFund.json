@@ -230,6 +230,88 @@
   },
   {
     "inputs": [],
+    "name": "getDetails",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "currency",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "investmentNft",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "treasuryWallet",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16",
+            "name": "managementFee",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint256",
+            "name": "cap",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalInvestment",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalIncome",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint248",
+                "name": "blockNumber",
+                "type": "uint248"
+              },
+              {
+                "internalType": "bool",
+                "name": "inProfit",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IInvestmentFund.Payout[]",
+            "name": "payouts",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "state",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct IInvestmentFund.Details",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getPayoutsCount",
     "outputs": [
       {
@@ -384,6 +466,25 @@
     "name": "stopCollectingFunds",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

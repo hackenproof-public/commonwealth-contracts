@@ -5,6 +5,25 @@ pragma solidity 0.8.17;
  * @title Investment Fund interface
  */
 interface IInvestmentFund {
+    struct Details {
+        string name;
+        address currency;
+        address investmentNft;
+        address treasuryWallet;
+        uint16 managementFee;
+        uint256 cap;
+        uint256 totalInvestment;
+        uint256 totalIncome;
+        Payout[] payouts;
+        bytes32 state;
+    }
+
+    struct Payout {
+        uint256 value;
+        uint248 blockNumber;
+        bool inProfit;
+    }
+
     /**
      * @dev Emitted when breakeven for investment fund is reached
      * @param breakeven Breakeven value
@@ -100,4 +119,9 @@ interface IInvestmentFund {
      * @dev Returns if fund is already in profit (breakeven is reached).
      */
     function isInProfit() external view returns (bool);
+
+    /**
+     * @dev Returns public details of investment fund
+     */
+    function getDetails() external view returns (Details memory);
 }

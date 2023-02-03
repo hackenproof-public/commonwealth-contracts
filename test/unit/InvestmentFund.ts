@@ -3,7 +3,7 @@ import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/ha
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, constants } from 'ethers';
-import { parseBytes32String } from 'ethers/lib/utils';
+import { formatBytes32String, parseBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
@@ -15,6 +15,7 @@ const MAX_UINT240 = BigNumber.from('17668470647783843295832975007429185158274838
 describe('Investment Fund unit tests', () => {
   const defaultManagementFee = 1000;
   const defaultInvestmentCap = toUsdc('1000000');
+  const IInvestmentFundId = ethers.utils.arrayify(0xf9b2c626);
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
@@ -80,6 +81,7 @@ describe('Investment Fund unit tests', () => {
     it('Should return initial parameters', async () => {
       const { investmentFund, usdc, investmentNft, treasuryWallet } = await setup();
 
+      expect(await investmentFund.supportsInterface(IInvestmentFundId)).to.equal(true);
       expect(await investmentFund.name()).to.equal('Investment Fund');
       expect(await investmentFund.investmentNft()).to.equal(investmentNft.address);
       expect(await investmentFund.currency()).to.equal(usdc.address);
@@ -87,6 +89,19 @@ describe('Investment Fund unit tests', () => {
       expect(await investmentFund.managementFee()).to.equal(defaultManagementFee);
       expect(await investmentFund.cap()).to.equal(defaultInvestmentCap);
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.Empty);
+
+      expect(await investmentFund.getDetails()).to.deep.equal([
+        'Investment Fund',
+        usdc.address,
+        investmentNft.address,
+        treasuryWallet.address,
+        defaultManagementFee,
+        defaultInvestmentCap,
+        BigNumber.from(0),
+        BigNumber.from(0),
+        [],
+        formatBytes32String(FundState.Empty)
+      ]);
     });
 
     it('Should revert deployment if invalid currency', async () => {
@@ -478,10 +493,7 @@ describe('Investment Fund unit tests', () => {
         expect(await investmentFund.getPayoutsCount()).to.equal(1);
         expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(value);
 
-        const payout = await investmentFund.payouts(0);
-        expect(payout.value).to.equal(value);
-        expect(payout.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-        expect(payout.inProfit).to.equal(false);
+        expect(await investmentFund.payouts(0)).to.deep.equal([value, await ethers.provider.getBlockNumber(), false]);
       });
     });
 
@@ -495,10 +507,8 @@ describe('Investment Fund unit tests', () => {
       expect(await investmentFund.totalIncome()).to.equal(investmentValue);
       expect(await investmentFund.getPayoutsCount()).to.equal(1);
 
-      const payout = await investmentFund.payouts(0);
-      expect(payout.value).to.equal(investmentValue);
-      expect(payout.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-      expect(payout.inProfit).to.equal(false);
+      const blockNumber = await ethers.provider.getBlockNumber();
+      expect(await investmentFund.payouts(0)).to.deep.equal([investmentValue, blockNumber, false]);
     });
 
     [investmentValue.add(1), constants.MaxUint256].forEach((value) => {
@@ -512,15 +522,9 @@ describe('Investment Fund unit tests', () => {
         expect(await investmentFund.totalIncome()).to.equal(value);
         expect(await investmentFund.getPayoutsCount()).to.equal(2);
 
-        const payout0 = await investmentFund.payouts(0);
-        expect(payout0.value).to.equal(investmentValue);
-        expect(payout0.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-        expect(payout0.inProfit).to.equal(false);
-
-        const payout1 = await investmentFund.payouts(1);
-        expect(payout1.value).to.equal(value.sub(investmentValue));
-        expect(payout1.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-        expect(payout1.inProfit).to.equal(true);
+        const blockNumber = await ethers.provider.getBlockNumber();
+        expect(await investmentFund.payouts(0)).to.deep.equal([investmentValue, blockNumber, false]);
+        expect(await investmentFund.payouts(1)).to.deep.equal([value.sub(investmentValue), blockNumber, true]);
       });
     });
 

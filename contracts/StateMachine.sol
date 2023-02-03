@@ -3,8 +3,8 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IInvestmentFund.sol";
-import "./IInvestmentNFT.sol";
+import "./interfaces/IInvestmentFund.sol";
+import "./interfaces/IInvestmentNFT.sol";
 import "./LibFund.sol";
 
 contract StateMachine {
