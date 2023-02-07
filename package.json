@@ -2,7 +2,7 @@
   "name": "commonwealth-contracts",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
