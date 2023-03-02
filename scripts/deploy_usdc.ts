@@ -1,12 +1,11 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 import { USDC } from '../typechain-types';
 import { confirm, deploy, verifyContract } from './utils';
 
 async function main() {
-  const [deployer]: SignerWithAddress[] = await ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
 
-  console.log(`Deploying USDC contract...`);
+  console.log('Deploying USDC contract...');
   const usdc: USDC = await deploy('USDC', deployer, []);
 
   console.log(`USD Coin deployed to ${usdc.address}`);

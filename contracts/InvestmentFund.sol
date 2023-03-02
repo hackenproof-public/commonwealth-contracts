@@ -4,15 +4,19 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./interfaces/IInvestmentFund.sol";
 import "./interfaces/IInvestmentNFT.sol";
-import "./LibFund.sol";
+import "./interfaces/IProject.sol";
+import "./libraries/LibFund.sol";
 import "./StateMachine.sol";
 
 /**
  * @title Investment Fund contract
  */
 contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC165 {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     struct PayoutPtr {
         uint256 index;
         uint256 withdrawn;
@@ -31,6 +35,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     mapping(address => uint256) public userTotalWithdrawal; // maps account into total withdrawal amount
 
     mapping(address => PayoutPtr) private _currentPayout; // maps account into payout recently used for withdrawal
+    EnumerableSet.AddressSet private _projects;
 
     /**
      * @dev Initializes the contract
@@ -139,8 +144,40 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         return carryFee;
     }
 
-    function addProject() external onlyAllowedStates {
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function addProject(address project) external onlyAllowedStates {
         // TODO: limit role access
+        require(project != address(0), "Project is zero address");
+
+        require(_projects.add(project), "Project already exists");
+
+        emit ProjectAdded(msg.sender, project);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function listProjects() external view returns (address[] memory) {
+        return _projects.values();
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function getProjectsCount() external view returns (uint256) {
+        return _projects.length();
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function removeProject(address project) external onlyAllowedStates {
+        // TODO: limit role access
+        require(_projects.remove(project), "Project does not exist");
+
+        emit ProjectRemoved(msg.sender, project);
     }
 
     function startCollectingFunds() external onlyAllowedStates {
@@ -232,6 +269,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
 
     function _initializeStates() internal {
         allowFunction(LibFund.STATE_EMPTY, this.addProject.selector);
+        allowFunction(LibFund.STATE_EMPTY, this.removeProject.selector);
         allowFunction(LibFund.STATE_EMPTY, this.startCollectingFunds.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.stopCollectingFunds.selector);

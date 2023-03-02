@@ -1,17 +1,20 @@
 import { ethers } from 'hardhat';
-import { InvestmentFundRegistry } from '../typechain-types';
+import { Project } from '../typechain-types';
 import { confirm, deploy, verifyContract } from './utils';
 
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  console.log('Deploying Investment Fund Registry contract...');
-  const investmentFundRegistry: InvestmentFundRegistry = await deploy('InvestmentFundRegistry', deployer, []);
+  const config = ['Project 1', deployer.address];
+  // const config = ['Project 2', deployer.address];
 
-  console.log(`Investment Fund Registry deployed to ${investmentFundRegistry.address}`);
+  console.log('Deploying Project contract...');
+  const project: Project = await deploy('Project', deployer, config);
+
+  console.log(`Project deployed to ${project.address}`);
 
   if (await confirm('\nDo you want to verify contract? [y/N] ')) {
-    await verifyContract(investmentFundRegistry.address);
+    await verifyContract(project.address, config);
   }
 }
 

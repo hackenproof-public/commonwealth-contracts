@@ -62,6 +62,20 @@ interface IInvestmentFund {
     event ProfitWithdrawn(address indexed recipient, address indexed currency, uint256 amount);
 
     /**
+     * @dev Emitted when project is added to a fund
+     * @param caller Address that added project
+     * @param project Project address
+     */
+    event ProjectAdded(address indexed caller, address indexed project);
+
+    /**
+     * @dev Emitted when project is removed from a fund
+     * @param caller Address that removed project
+     * @param project Project address
+     */
+    event ProjectRemoved(address indexed caller, address indexed project);
+
+    /**
      * @dev Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:
@@ -105,6 +119,41 @@ interface IInvestmentFund {
      * @param amount Amount of funds requested to withdraw
      */
     function getWithdrawalCarryFee(address account, uint256 amount) external view returns (uint256);
+
+    /**
+     * @dev Adds project to investment fund. Throws if project already exists in fund.
+     *
+     * Requirements:
+     * - Project must support IProject interface
+     * - Project must not exist in fund
+     *
+     * Emits ProjectAdded event
+     *
+     * @param project Address of project to be added
+     */
+    function addProject(address project) external;
+
+    /**
+     * @dev Returns list of projects within a fund
+     */
+    function listProjects() external view returns (address[] memory);
+
+    /**
+     * @dev Returns number of projects within fund
+     */
+    function getProjectsCount() external view returns (uint256);
+
+    /**
+     * @dev Rmoves a projects from fund
+     *
+     * Requirements:
+     * - Project must exist in fund
+     *
+     * Emits ProjectRemoved event
+     *
+     * @param project Address of project to be added
+     */
+    function removeProject(address project) external;
 
     /**
      * @dev Provides 'amount' number of USD Coin tokens to be distributed between investors.

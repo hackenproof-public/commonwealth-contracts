@@ -6,16 +6,16 @@ import { BigNumber, constants } from 'ethers';
 import { formatBytes32String, parseBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
+import { IInvestmentFund__factory, InvestmentFund, InvestmentNFT, Project, USDC } from '../../typechain-types';
 import { FundState, InvestmentFundDeploymentParameters } from '../types';
-import { toUsdc } from '../utils';
+import { getInterfaceId, toUsdc } from '../utils';
 
 const MAX_UINT240 = BigNumber.from('1766847064778384329583297500742918515827483896875618958121606201292619775');
 
 describe('Investment Fund unit tests', () => {
   const defaultManagementFee = 1000;
   const defaultInvestmentCap = toUsdc('1000000');
-  const IInvestmentFundId = ethers.utils.arrayify(0xf9b2c626);
+  const IInvestmentFundId = ethers.utils.arrayify(getInterfaceId(IInvestmentFund__factory.createInterface()));
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
@@ -454,6 +454,67 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
+  describe('#addProject()', () => {
+    it('Should add project to fund', async () => {
+      ({ investmentFund } = await setup());
+
+      expect(await investmentFund.getProjectsCount()).to.equal(0);
+      expect(await investmentFund.listProjects()).to.deep.equal([]);
+
+      const project: FakeContract<Project> = await smock.fake('Project');
+      await expect(investmentFund.addProject(project.address))
+        .to.emit(investmentFund, 'ProjectAdded')
+        .withArgs(deployer.address, project.address);
+
+      expect(await investmentFund.getProjectsCount()).to.equal(1);
+      expect(await investmentFund.listProjects()).to.deep.equal([project.address]);
+    });
+
+    it('Should revert adding project to fund if project is zero address', async () => {
+      ({ investmentFund } = await setup());
+
+      await expect(investmentFund.addProject(ethers.constants.AddressZero)).to.be.revertedWith(
+        'Project is zero address'
+      );
+    });
+
+    it('Should revert adding project to fund if already exists', async () => {
+      ({ investmentFund } = await setup());
+
+      const project: FakeContract<Project> = await smock.fake('Project');
+      await investmentFund.addProject(project.address);
+
+      await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Project already exists');
+    });
+  });
+
+  describe('#removeProject()', () => {
+    it('Should remove project from fund', async () => {
+      ({ investmentFund } = await setup());
+
+      const project: FakeContract<Project> = await smock.fake('Project');
+      await investmentFund.addProject(project.address);
+      expect(await investmentFund.getProjectsCount()).to.equal(1);
+
+      await expect(investmentFund.removeProject(project.address))
+        .to.emit(investmentFund, 'ProjectRemoved')
+        .withArgs(deployer.address, project.address);
+
+      expect(await investmentFund.getProjectsCount()).to.equal(0);
+    });
+
+    it('Should revert removing project from fund if it does not exist', async () => {
+      ({ investmentFund } = await setup());
+
+      await expect(investmentFund.removeProject(ethers.constants.AddressZero)).to.be.revertedWith(
+        'Project does not exist'
+      );
+
+      const project: FakeContract<Project> = await smock.fake('Project');
+      await expect(investmentFund.removeProject(project.address)).to.be.revertedWith('Project does not exist');
+    });
+  });
+
   describe('#provideProfit()', () => {
     const investmentValue = toUsdc('100');
 
@@ -538,7 +599,7 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
-  describe('State machine', () => {
+  describe('State machine', async () => {
     describe('Empty', () => {
       before(async () => {
         ({ investmentFund, investmentNft } = await setup());
@@ -550,7 +611,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should not revert adding project', async () => {
-        await expect(investmentFund.addProject()).not.to.be.reverted;
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).not.to.be.reverted;
       });
 
       it('Should not revert starting funds collection', async () => {
@@ -598,7 +661,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert starting funds collection', async () => {
@@ -647,7 +712,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert starting funds collection', async () => {
@@ -697,7 +764,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert starting funds collection', async () => {
@@ -767,7 +836,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert starting funds collection', async () => {
@@ -819,7 +890,9 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.addProject()).to.be.revertedWith('Not allowed in current state');
+        const project: FakeContract<Project> = await smock.fake('Project');
+        project.supportsInterface.returns(true);
+        await expect(investmentFund.addProject(project.address)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert starting funds collection', async () => {

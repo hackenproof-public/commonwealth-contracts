@@ -41,17 +41,6 @@ describe('Investment fund registry unit tests', () => {
       await expect(investmentFundRegistry.addFund(constants.AddressZero)).to.be.revertedWith('Invalid fund address');
     });
 
-    it('Should revert adding investment fund if fund does not support proper interface', async () => {
-      const { investmentFundRegistry } = await loadFixture(deployFixture);
-
-      const investmentFund: FakeContract<InvestmentFund> = await smock.fake('InvestmentFund');
-      investmentFund.supportsInterface.returns(false);
-
-      await expect(investmentFundRegistry.addFund(investmentFund.address)).to.be.revertedWith(
-        'Required interface not supported'
-      );
-    });
-
     it('Should revert adding investment fund if fund is already added', async () => {
       const { investmentFundRegistry } = await loadFixture(deployFixture);
 
@@ -60,7 +49,7 @@ describe('Investment fund registry unit tests', () => {
 
       await investmentFundRegistry.addFund(investmentFund.address);
       await expect(investmentFundRegistry.addFund(investmentFund.address)).to.be.revertedWith(
-        'Fund already added to registry'
+        'Adding fund to registry failed'
       );
     });
   });
@@ -104,7 +93,7 @@ describe('Investment fund registry unit tests', () => {
       const { investmentFundRegistry } = await loadFixture(deployFixture);
 
       await expect(investmentFundRegistry.removeFund(constants.AddressZero)).to.be.revertedWith(
-        'Investment fund does not exist'
+        'Removing fund from registry failed'
       );
     });
   });

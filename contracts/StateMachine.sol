@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IInvestmentFund.sol";
 import "./interfaces/IInvestmentNFT.sol";
-import "./LibFund.sol";
+import "./libraries/LibFund.sol";
 
 contract StateMachine {
     bytes32 public currentState;

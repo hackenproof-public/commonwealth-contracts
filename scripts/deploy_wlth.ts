@@ -1,12 +1,11 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 import { Wlth } from '../typechain-types';
 import { confirm, deploy, verifyContract } from './utils';
 
 async function main() {
-  const [deployer]: SignerWithAddress[] = await ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
 
-  console.log(`Deploying Wlth contract...`);
+  console.log('Deploying Wlth contract...');
   const wlth: Wlth = await deploy('Wlth', deployer, []);
 
   console.log(`Common Wealth Token deployed to ${wlth.address}`);

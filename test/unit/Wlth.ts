@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
@@ -9,8 +8,8 @@ describe('Common Wealth Token unit tests', () => {
   const initialTokenAmount = BigNumber.from('1000000000000000000000000000');
 
   describe('Deployment', () => {
-    it(`Should return initial parameters`, async () => {
-      const [deployer]: SignerWithAddress[] = await ethers.getSigners();
+    it('Should return initial parameters', async () => {
+      const [deployer] = await ethers.getSigners();
 
       const wlth: Wlth = await deploy('Wlth', deployer, []);
 
