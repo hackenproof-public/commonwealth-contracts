@@ -124,7 +124,6 @@ interface IInvestmentFund {
      * @dev Adds project to investment fund. Throws if project already exists in fund.
      *
      * Requirements:
-     * - Project must support IProject interface
      * - Project must not exist in fund
      *
      * Emits ProjectAdded event

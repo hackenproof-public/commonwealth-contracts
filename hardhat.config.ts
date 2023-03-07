@@ -10,6 +10,13 @@ import { HardhatUserConfig } from 'hardhat/config';
 dotenv.config();
 
 const config: HardhatUserConfig = {
+  abiExporter: {
+    path: './abi',
+    clear: true,
+    except: ['@openzeppelin'],
+    spacing: 2,
+    format: 'json'
+  },
   docgen: {
     path: './docs',
     clear: true,

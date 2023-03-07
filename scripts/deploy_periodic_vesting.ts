@@ -19,7 +19,7 @@ async function main() {
     vestedTokenAddress,
     deployer.address,
     startBlock,
-    [tokenAllocation, durationInBlocks, cadence, cliff]
+    [[tokenAllocation, durationInBlocks, cadence, cliff]]
   ];
 
   console.log('Deploying Periodic Vesting contract...');

@@ -47,6 +47,7 @@
     "hardhat-tracer": "^1.2.1",
     "mocha-explorer-launcher-scripts": "^0.4.0",
     "prettier": "^2.8.2",
+    "prettier-plugin-organize-imports": "^3.2.2",
     "prettier-plugin-solidity": "^1.1.1",
     "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5",

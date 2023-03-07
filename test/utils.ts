@@ -25,15 +25,15 @@ export const toUsdc = (value: string) => {
   return utils.parseUnits(value, 6);
 };
 
-export function getInterfaceId(contractInterface: utils.Interface): BigNumber {
+export const getInterfaceId = (contractInterface: utils.Interface): BigNumber => {
   let interfaceId = ethers.constants.Zero;
   Object.keys(contractInterface.functions).forEach(
     (functionName) => (interfaceId = interfaceId.xor(contractInterface.getSighash(functionName)))
   );
   return interfaceId;
-}
+};
 
-export function getInterfaceIdWithBase(contractInterfaces: utils.Interface[]): BigNumber {
+export const getInterfaceIdWithBase = (contractInterfaces: utils.Interface[]): BigNumber => {
   let interfaceId = ethers.constants.Zero;
 
   contractInterfaces.forEach((contractInterface: utils.Interface) => {
@@ -41,4 +41,12 @@ export function getInterfaceIdWithBase(contractInterfaces: utils.Interface[]): B
   });
 
   return interfaceId;
-}
+};
+
+export const missing_role = (account: string, role: string): string => {
+  return 'AccessControl: account ' + account.toLowerCase() + ' is missing role ' + role.toLowerCase();
+};
+
+export const keccak256 = (arg: string) => {
+  return utils.keccak256(utils.toUtf8Bytes(arg));
+};
