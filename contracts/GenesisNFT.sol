@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
@@ -17,7 +17,7 @@ contract GenesisNFT is
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
     PausableUpgradeable,
-    AccessControlUpgradeable,
+    AccessControlEnumerableUpgradeable,
     ERC2981Upgradeable,
     ERC721HolderUpgradeable,
     IERC721Mintable
@@ -25,11 +25,15 @@ contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    address private _owner;
+
     /**
-     * @notice Contract owner
-     * @dev Gets following roles on contract creation: DefaultAdmin, Minter, Pauser
+     * @notice Emitted when token URI is changed
+     * @param caller Address which changed token URI
+     * @param tokenId ID of token for which URI was changed
+     * @param uri New token URI
      */
-    address public owner;
+    event TokenURIChanged(address indexed caller, uint256 indexed tokenId, string uri);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -43,12 +47,13 @@ contract GenesisNFT is
      * @param royaltyValue Royalty value in basis points
      */
     function initialize(address owner_, address royaltyAccount, uint96 royaltyValue) public initializer {
-        __ERC721_init("Common Wealth Genesis NFT", "CWGNFT");
+        __ERC721_init("Common Wealth Genesis NFT", "CWOGNFT");
         __ERC721Enumerable_init();
         __ERC721URIStorage_init();
         __Pausable_init();
-        __AccessControl_init();
+        __AccessControlEnumerable_init();
         __ERC2981_init();
+        __ERC721Holder_init();
 
         require(owner_ != address(0), "Owner account is zero address");
 
@@ -56,26 +61,30 @@ contract GenesisNFT is
         _grantRole(MINTER_ROLE, owner_);
         _grantRole(PAUSER_ROLE, owner_);
 
-        owner = owner_;
+        _owner = owner_;
 
         _setDefaultRoyalty(royaltyAccount, royaltyValue);
     }
 
     /**
-     * @notice Transfer ownership with its default roles to new address
+     * @notice Sets contract owner account
+     * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
      * @param newOwner Address of new contract owner
      */
-    function transferOwnership(address newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setOwner(address newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(newOwner != address(0), "New owner is zero address");
 
-        grantRole(PAUSER_ROLE, newOwner);
-        grantRole(MINTER_ROLE, newOwner);
-        grantRole(DEFAULT_ADMIN_ROLE, newOwner);
-        revokeRole(PAUSER_ROLE, owner);
-        revokeRole(MINTER_ROLE, owner);
-        revokeRole(DEFAULT_ADMIN_ROLE, owner);
+        _owner = newOwner;
+    }
 
-        owner = newOwner;
+    /**
+     * @notice Returns contract owner
+     * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
+     * @dev It is not equivalent of contract admin and has no special rights by itself. Roles are managed by AccessControl contract
+     * @return Contract owner
+     */
+    function owner() external view returns (address) {
+        return _owner;
     }
 
     /**
@@ -93,10 +102,7 @@ contract GenesisNFT is
     }
 
     /**
-     * @notice Mints token to address with specified URI
-     * @param recipient Address of token recipient
-     * @param amount Amount of unique tokens to be minted
-     * @param uri URI of token metadata
+     * @inheritdoc IERC721Mintable
      */
     function mint(address recipient, uint256 amount, string memory uri) external onlyRole(MINTER_ROLE) {
         require(recipient != address(0), "Recipient is zero address");
@@ -108,10 +114,7 @@ contract GenesisNFT is
     }
 
     /**
-     * @notice Mints `amount` number of unique tokens to addresses with specified URI in batch
-     * @param recipients List of addresses of token recipients
-     * @param amounts List of amounts of tokens to be minted
-     * @param uri URI of token metadata
+     * @inheritdoc IERC721Mintable
      */
     function mintBatch(
         address[] memory recipients,
@@ -130,6 +133,14 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Burns token with id `tokenId`. Limited only to admin role
+     * @param tokenId Token ID
+     */
+    function burn(uint256 tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _burn(tokenId);
+    }
+
+    /**
      * @notice Returns list of owners balances
      * @param accounts List of addresses for which to return balance
      * @return List of owners balances
@@ -140,6 +151,16 @@ contract GenesisNFT is
             balances[i] = balanceOf(accounts[i]);
         }
         return balances;
+    }
+
+    /**
+     * @notice Sets token metadata URI
+     * @param tokenId ID of token to be changed
+     * @param uri New metadata URI
+     */
+    function setTokenURI(uint256 tokenId, string calldata uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setTokenURI(tokenId, uri);
+        emit TokenURIChanged(msg.sender, tokenId, uri);
     }
 
     /**
@@ -159,7 +180,7 @@ contract GenesisNFT is
     )
         public
         view
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable, AccessControlUpgradeable, ERC2981Upgradeable)
+        override(ERC721Upgradeable, ERC721EnumerableUpgradeable, AccessControlEnumerableUpgradeable, ERC2981Upgradeable)
         returns (bool)
     {
         return interfaceId == type(IERC721Mintable).interfaceId || super.supportsInterface(interfaceId);

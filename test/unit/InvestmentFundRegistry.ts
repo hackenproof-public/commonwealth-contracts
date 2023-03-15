@@ -66,7 +66,7 @@ describe('Investment fund registry unit tests', () => {
           await investmentFundRegistry.addFund(investmentFund.address);
         }
 
-        expect((await investmentFundRegistry.listFunds()).length).is.equal(amount);
+        expect((await investmentFundRegistry.listFunds()).length).to.equal(amount);
       });
     });
   });

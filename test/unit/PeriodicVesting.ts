@@ -46,7 +46,7 @@ describe('Periodic vesting unit tests', () => {
       const { vesting, startBlock } = await loadFixture(deployPeriodicVesting);
       await mineUpTo(startBlock - 1);
 
-      expect(await vesting.getReleasableAmount()).is.equal(0);
+      expect(await vesting.getReleasableAmount()).to.equal(0);
     });
 
     [
@@ -69,7 +69,7 @@ describe('Periodic vesting unit tests', () => {
 
         for (let i = 0; i < data.distribution.length; i++) {
           await mineUpTo(startBlock + i);
-          expect(await vesting.getReleasableAmount()).is.equal(data.distribution[i]);
+          expect(await vesting.getReleasableAmount()).to.equal(data.distribution[i]);
         }
       });
     });
@@ -90,7 +90,7 @@ describe('Periodic vesting unit tests', () => {
       ]);
 
       await mineUpTo(startBlock);
-      expect(await vesting.getReleasableAmount()).is.equal(totalAllocation);
+      expect(await vesting.getReleasableAmount()).to.equal(totalAllocation);
     });
 
     [
@@ -130,7 +130,7 @@ describe('Periodic vesting unit tests', () => {
 
         for (let i = 0; i < data.distribution.length; i++) {
           await mineUpTo(startBlock + i);
-          expect(await vesting.getReleasableAmount()).is.equal(data.distribution[i]);
+          expect(await vesting.getReleasableAmount()).to.equal(data.distribution[i]);
         }
       });
     });

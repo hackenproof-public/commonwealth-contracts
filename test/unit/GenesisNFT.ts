@@ -11,38 +11,50 @@ describe('Common Wealth Genesis NFT unit tests', () => {
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
   const royalty = 650;
-  const defaultTokenURI = 'ipfs://token-uri.json';
+  const defaultTokenURI = 'ipfs://token-uri';
   const IERC721MintableId = utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()));
 
   const deployGenesisNft = async () => {
-    const [deployer, owner, royaltyWallet] = await ethers.getSigners();
+    const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
     const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
       owner.address,
       royaltyWallet.address,
       royalty
     ]);
+    await genesisNft.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, admin.address);
+    await genesisNft.connect(owner).grantRole(MINTER_ROLE, minter.address);
+    await genesisNft.connect(owner).grantRole(PAUSER_ROLE, pauser.address);
 
-    return { genesisNft, deployer, owner };
+    return { genesisNft, deployer, owner, admin, minter, pauser };
   };
 
   describe('Deployment', () => {
     it('Should return initial parameters', async () => {
-      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+      const { genesisNft, deployer, owner, admin, minter, pauser } = await loadFixture(deployGenesisNft);
+
+      const validateRoles = (account: string, withRoles: string[], withoutRoles: string[]) => {
+        withRoles.forEach(async (role) => {
+          expect(await genesisNft.hasRole(role, account)).to.equal(true);
+        });
+
+        withoutRoles.forEach(async (role) => {
+          expect(await genesisNft.hasRole(role, account)).to.equal(false);
+        });
+      };
 
       expect(await genesisNft.name()).to.equal('Common Wealth Genesis NFT');
-      expect(await genesisNft.symbol()).to.equal('CWGNFT');
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(true);
-      expect(await genesisNft.hasRole(MINTER_ROLE, owner.address)).to.equal(true);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, owner.address)).to.equal(true);
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)).to.equal(false);
-      expect(await genesisNft.hasRole(MINTER_ROLE, deployer.address)).to.equal(false);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, deployer.address)).to.equal(false);
+      expect(await genesisNft.symbol()).to.equal('CWOGNFT');
       expect(await genesisNft.supportsInterface(IERC721MintableId)).to.equal(true);
+      validateRoles(owner.address, [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE], []);
+      validateRoles(deployer.address, [], [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE]);
+      validateRoles(admin.address, [DEFAULT_ADMIN_ROLE], [MINTER_ROLE, PAUSER_ROLE]);
+      validateRoles(minter.address, [MINTER_ROLE], [DEFAULT_ADMIN_ROLE, PAUSER_ROLE]);
+      validateRoles(pauser.address, [PAUSER_ROLE], [DEFAULT_ADMIN_ROLE, MINTER_ROLE]);
     });
 
     it('Should revert deployment if owner is zero address', async () => {
-      const [deployer, owner, royaltyAccount] = await ethers.getSigners();
+      const [deployer, royaltyAccount] = await ethers.getSigners();
 
       await expect(
         deployProxy('GenesisNFT', deployer, [constants.AddressZero, royaltyAccount.address, royalty])
@@ -62,47 +74,95 @@ describe('Common Wealth Genesis NFT unit tests', () => {
     });
   });
 
-  describe('#transferOwnership()', () => {
-    it('Should transfer ownership', async () => {
-      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+  describe('#setOwner()', () => {
+    it('Should set owner', async () => {
+      const { genesisNft, deployer, owner, admin } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(owner).transferOwnership(deployer.address);
+      expect(await genesisNft.owner()).to.equal(owner.address);
+      await genesisNft.connect(admin).setOwner(deployer.address);
 
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(MINTER_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)).to.equal(true);
-      expect(await genesisNft.hasRole(MINTER_ROLE, deployer.address)).to.equal(true);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, deployer.address)).to.equal(true);
+      expect(await genesisNft.owner()).to.equal(deployer.address);
+
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.equal(true);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(true);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)).to.equal(false);
     });
 
-    it('Should transfer ownership if paused', async () => {
-      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+    it('Should set owner if paused', async () => {
+      const { genesisNft, deployer, admin, pauser } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(owner).pause();
-      await genesisNft.connect(owner).transferOwnership(deployer.address);
+      await genesisNft.connect(pauser).pause();
+      await genesisNft.connect(admin).setOwner(deployer.address);
 
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(MINTER_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, owner.address)).to.equal(false);
-      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)).to.equal(true);
-      expect(await genesisNft.hasRole(MINTER_ROLE, deployer.address)).to.equal(true);
-      expect(await genesisNft.hasRole(PAUSER_ROLE, deployer.address)).to.equal(true);
+      expect(await genesisNft.owner()).to.equal(deployer.address);
     });
 
-    it('Should revert transferring ownership if not owner', async () => {
-      const { genesisNft, deployer } = await loadFixture(deployGenesisNft);
+    it('Should revert setting owner if not admin', async () => {
+      const { genesisNft, minter } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(deployer).transferOwnership(deployer.address)).to.be.revertedWith(
-        missing_role(deployer.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setOwner(minter.address)).to.be.revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it('Should revert transferring ownership new owner is zero address', async () => {
-      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+    it('Should revert setting owner if new owner is zero address', async () => {
+      const { genesisNft, admin } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(owner).transferOwnership(constants.AddressZero)).to.be.revertedWith(
+      await expect(genesisNft.connect(admin).setOwner(constants.AddressZero)).to.be.revertedWith(
         'New owner is zero address'
+      );
+    });
+  });
+
+  describe('#revokeRole()', () => {
+    it('Should revoke minter and pauser roles if admin', async () => {
+      const { genesisNft, admin, minter, pauser } = await loadFixture(deployGenesisNft);
+
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.equal(true);
+      expect(await genesisNft.hasRole(MINTER_ROLE, minter.address)).to.equal(true);
+      expect(await genesisNft.hasRole(PAUSER_ROLE, pauser.address)).to.equal(true);
+
+      await genesisNft.connect(admin).revokeRole(MINTER_ROLE, minter.address);
+      expect(await genesisNft.hasRole(MINTER_ROLE, minter.address)).to.equal(false);
+
+      await genesisNft.connect(admin).revokeRole(PAUSER_ROLE, pauser.address);
+      expect(await genesisNft.hasRole(PAUSER_ROLE, pauser.address)).to.equal(false);
+
+      await genesisNft.connect(admin).revokeRole(DEFAULT_ADMIN_ROLE, admin.address);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.equal(false);
+    });
+
+    it('Should revoke permanently all admin roles if admin', async () => {
+      const { genesisNft, owner, admin } = await loadFixture(deployGenesisNft);
+
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(true);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.equal(true);
+      expect(await genesisNft.getRoleMemberCount(DEFAULT_ADMIN_ROLE)).to.equal(2);
+
+      await genesisNft.connect(admin).revokeRole(DEFAULT_ADMIN_ROLE, owner.address);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(false);
+      expect(await genesisNft.getRoleMemberCount(DEFAULT_ADMIN_ROLE)).to.equal(1);
+
+      await genesisNft.connect(admin).revokeRole(DEFAULT_ADMIN_ROLE, admin.address);
+      expect(await genesisNft.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.equal(false);
+      expect(await genesisNft.getRoleMemberCount(DEFAULT_ADMIN_ROLE)).to.equal(0);
+
+      await expect(genesisNft.connect(admin).grantRole(DEFAULT_ADMIN_ROLE, owner.address)).to.be.reverted;
+    });
+
+    it('Should revert revoking role if not role admin', async () => {
+      const { genesisNft, admin, minter, pauser } = await loadFixture(deployGenesisNft);
+
+      await expect(genesisNft.connect(minter).revokeRole(MINTER_ROLE, minter.address)).to.be.revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      );
+
+      await expect(genesisNft.connect(pauser).revokeRole(PAUSER_ROLE, pauser.address)).to.be.revertedWith(
+        missing_role(pauser.address, DEFAULT_ADMIN_ROLE)
+      );
+
+      await expect(genesisNft.connect(minter).revokeRole(DEFAULT_ADMIN_ROLE, admin.address)).to.be.revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
   });
@@ -275,6 +335,33 @@ describe('Common Wealth Genesis NFT unit tests', () => {
     });
   });
 
+  describe('#burn()', () => {
+    it('Should burn token', async () => {
+      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(owner).mint(deployer.address, 1, defaultTokenURI);
+      expect(await genesisNft.totalSupply()).to.equal(1);
+
+      await genesisNft.connect(owner).burn(0);
+      expect(await genesisNft.totalSupply()).to.equal(0);
+    });
+
+    it('Should revert burning token if not contract owner', async () => {
+      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(owner).mint(deployer.address, 1, defaultTokenURI);
+      await expect(genesisNft.connect(deployer).burn(0)).to.be.revertedWith(
+        missing_role(deployer.address, DEFAULT_ADMIN_ROLE)
+      );
+    });
+
+    it('Should revert burning token if it does not exist', async () => {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+      await expect(genesisNft.connect(owner).burn(0)).to.be.revertedWith('ERC721: invalid token ID');
+    });
+  });
+
   describe('#balanceOfBatch()', () => {
     it('Should return balance of multiple accounts', async () => {
       const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
@@ -283,6 +370,40 @@ describe('Common Wealth Genesis NFT unit tests', () => {
 
       await genesisNft.connect(owner).mintBatch([deployer.address, owner.address], [1, 3], defaultTokenURI);
       expect(await genesisNft.balanceOfBatch([deployer.address, owner.address])).to.deep.equal([1, 3]);
+    });
+  });
+
+  describe('#setTokenURI()', () => {
+    it('Should set token URI', async () => {
+      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+
+      const newTokenURI = 'ipfs://new-token-uri';
+
+      await genesisNft.connect(owner).mint(deployer.address, 1, defaultTokenURI);
+      expect(await genesisNft.tokenURI(0)).to.equal(defaultTokenURI);
+
+      await expect(genesisNft.connect(owner).setTokenURI(0, newTokenURI))
+        .to.emit(genesisNft, 'TokenURIChanged')
+        .withArgs(owner.address, 0, newTokenURI);
+      expect(await genesisNft.tokenURI(0)).to.equal(newTokenURI);
+    });
+
+    it('Should revert setting token URI if not contract owner', async () => {
+      const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(owner).mint(deployer.address, 1, defaultTokenURI);
+
+      await expect(genesisNft.connect(deployer).setTokenURI(0, 'ipfs://new-token-uri')).to.be.revertedWith(
+        missing_role(deployer.address, DEFAULT_ADMIN_ROLE)
+      );
+    });
+
+    it('Should revert setting token URI if token does not exist', async () => {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+      await expect(genesisNft.connect(owner).setTokenURI(1, 'ipfs://new-token-uri')).to.be.revertedWith(
+        'ERC721URIStorage: URI set of nonexistent token'
+      );
     });
   });
 });

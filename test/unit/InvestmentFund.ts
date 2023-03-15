@@ -217,7 +217,7 @@ describe('Investment Fund unit tests', () => {
           .to.emit(investmentFund, 'Invested')
           .withArgs(wallet.address, usdc.address, amount, fee);
 
-        expect(await investmentFund.totalInvestment()).is.equal(amount);
+        expect(await investmentFund.totalInvestment()).to.equal(amount);
       });
     });
 
@@ -239,7 +239,7 @@ describe('Investment Fund unit tests', () => {
           .to.emit(investmentFund, 'CapReached')
           .withArgs(cap);
 
-        expect(await investmentFund.totalInvestment()).is.equal(amount);
+        expect(await investmentFund.totalInvestment()).to.equal(amount);
         expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.CapReached);
       });
     });

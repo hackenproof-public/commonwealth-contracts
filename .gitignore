@@ -1,5 +1,6 @@
 .env
 .idea/
+.openzeppelin/unknown-31337.json
 coverage/
 coverage.json
 node_modules/
