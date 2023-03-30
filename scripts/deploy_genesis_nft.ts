@@ -1,5 +1,5 @@
 import { getImplementationAddress } from '@openzeppelin/upgrades-core';
-import { ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { env } from 'process';
 import { GenesisNFT } from '../typechain-types';
 import { confirm, deployProxy, verifyContract } from './utils';
@@ -11,20 +11,26 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  console.log('Deploying Genesis NFT contract...');
-  console.log('Parameters');
+  console.log(
+    `Running Genesis NFT deployment script on network ${hre.network.name} (chainId: ${hre.network.config.chainId})`
+  );
+  console.log('\nParameters');
   console.log(` owner: ${owner}`);
   console.log(` royaltyAccount: ${royaltyAccount}`);
   console.log(` royalty: ${royalty}`);
 
-  const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [owner, royaltyAccount, royalty]);
+  if (await confirm('\nDo you want to continue? [y/N] ')) {
+    console.log('Deploying Genesis NFT contract...');
 
-  console.log(`Genesis NFT deployed to ${genesisNft.address}`);
+    const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [owner, royaltyAccount, royalty]);
 
-  if (await confirm('\nDo you want to verify contract? [y/N] ')) {
-    const implementationAddress = await getImplementationAddress(ethers.provider, genesisNft.address);
-    console.log('Implementation address: ', implementationAddress);
-    await verifyContract(implementationAddress);
+    console.log(`Genesis NFT deployed to ${genesisNft.address}`);
+
+    if (await confirm('\nDo you want to verify contract? [y/N] ')) {
+      const implementationAddress = await getImplementationAddress(ethers.provider, genesisNft.address);
+      console.log('Implementation address: ', implementationAddress);
+      await verifyContract(implementationAddress);
+    }
   }
 }
 
