@@ -1,5 +1,6 @@
 import { UpgradeProxyOptions } from '@openzeppelin/hardhat-upgrades/src/utils';
 import { Contract, ContractFactory, Signer } from 'ethers';
+import fs from 'fs';
 import hre, { ethers, upgrades } from 'hardhat';
 import readline from 'readline';
 
@@ -62,6 +63,41 @@ export function ask(question: string): Promise<string> {
 }
 
 export async function confirm(question: string): Promise<boolean> {
-  const answer: string = await ask(question);
-  return ['y', 'yes'].includes(answer.toLowerCase());
+  const answer = await ask(question);
+  return ['y', 'yes'].includes(answer.trim().toLowerCase());
+}
+
+export async function confirmYes(question: string): Promise<boolean> {
+  const answer = await ask(question);
+  return ['y', 'yes', ''].includes(answer.trim().toLowerCase());
+}
+
+export async function confirmYesOrNo(
+  question: string,
+  yes: string[] = ['y', 'yes'],
+  no: string[] = ['n', 'no']
+): Promise<boolean> {
+  while (true) {
+    const answer = await ask(question);
+    if (yes.includes(answer.trim().toLowerCase())) {
+      return true;
+    } else if (no.includes(answer.trim().toLowerCase())) {
+      return false;
+    }
+    console.log(`Wrong answer. Possible options: ${[yes.join(', '), no.join(', ')].join(', ')}`);
+  }
+}
+
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function createDirIfNotExist(filename: string) {
+  if (!fs.existsSync(filename)) {
+    fs.mkdirSync(filename);
+  }
+}
+
+export function moveFile(oldPath: string, newPath: string) {
+  fs.renameSync(oldPath, newPath);
 }

@@ -16,7 +16,8 @@
     "prettier:check": "prettier --check \"**/*.ts\" \"contracts/**/*.sol\"",
     "test": "hardhat test",
     "verify-mainnet": "hardhat verify --network ethereum",
-    "verify-testnet": "hardhat verify --network goerli",
+    "verify-goerli": "hardhat verify --network goerli",
+    "verify-sepolia": "hardhat verify --network sepolia",
     "check-style": "yarn prettier:check && yarn dev:lint",
     "static-analyze": "yarn check-style && yarn dev:size-contracts && yarn dev:slither",
     "validate-all": "yarn clean && yarn compile && yarn static-analyze && yarn dev:coverage && REPORT_GAS=true yarn test && yarn dev:docgen && yarn export-abi"
