@@ -1,8 +1,8 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { deploy } from '../scripts/utils';
-import { USDC } from '../typechain-types';
+import { deploy } from '../../scripts/utils';
+import { USDC } from '../../typechain-types';
 
 describe('USDC', function () {
   async function deployFixture() {
@@ -10,7 +10,7 @@ describe('USDC', function () {
 
     const usdc: USDC = await deploy('USDC', deployer, []);
 
-    return { usdc };
+    return { usdc, deployer };
   }
 
   describe('Deployment', function () {
@@ -18,6 +18,17 @@ describe('USDC', function () {
       const { usdc } = await loadFixture(deployFixture);
 
       expect(await usdc.decimals()).to.equal(6);
+    });
+  });
+
+  describe('#mint()', function () {
+    it('Should mint token', async () => {
+      const { usdc, deployer } = await loadFixture(deployFixture);
+
+      const amount = 10;
+
+      await usdc.mint(deployer.address, amount);
+      expect(await usdc.balanceOf(deployer.address)).to.equal(amount);
     });
   });
 });

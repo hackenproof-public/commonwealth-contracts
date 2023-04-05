@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
 library LibProject {
     bytes32 public constant STATUS_ADDED = "Added"; // 0x4164646564000000000000000000000000000000000000000000000000000000

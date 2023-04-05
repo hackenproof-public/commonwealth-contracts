@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
-import "./IVesting.sol";
+import {IVesting} from "./IVesting.sol";
 
 /**
  * @title IPeriodicVesting interface

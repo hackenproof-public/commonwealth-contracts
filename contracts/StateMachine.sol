@@ -1,11 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
-
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IInvestmentFund.sol";
-import "./interfaces/IInvestmentNFT.sol";
-import "./libraries/LibFund.sol";
+pragma solidity ^0.8.18;
 
 contract StateMachine {
     bytes32 public currentState;

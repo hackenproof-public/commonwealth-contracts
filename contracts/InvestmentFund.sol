@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./interfaces/IInvestmentFund.sol";
-import "./interfaces/IInvestmentNFT.sol";
-import "./interfaces/IProject.sol";
-import "./libraries/LibFund.sol";
-import "./StateMachine.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
+import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
+import {IProject} from "./interfaces/IProject.sol";
+import {LibFund} from "./libraries/LibFund.sol";
+import {StateMachine} from "./StateMachine.sol";
 
 /**
  * @title Investment Fund contract

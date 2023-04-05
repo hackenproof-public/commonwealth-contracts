@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
 library LibFund {
     uint256 public constant BASIS_POINT_DIVISOR = 10000; // 100% in basis points

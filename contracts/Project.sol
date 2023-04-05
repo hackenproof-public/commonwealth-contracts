@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./interfaces/IProject.sol";
-import "./libraries/LibProject.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IProject} from "./interfaces/IProject.sol";
+import {LibProject} from "./libraries/LibProject.sol";
 
 /**
  * @title Project contract

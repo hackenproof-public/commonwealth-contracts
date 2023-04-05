@@ -33,28 +33,18 @@ const config: HardhatUserConfig = {
   },
   networks: {
     ethereum: {
-      url: process.env.ETHEREUM_RPC_URL,
+      url: process.env.ETHEREUM_RPC_URL || '',
       chainId: 1,
       accounts: !!process.env.ETHEREUM_WALLET_PRIVATE_KEY ? [process.env.ETHEREUM_WALLET_PRIVATE_KEY] : []
     },
     goerli: {
-      url: process.env.GOERLI_RPC_URL,
+      url: process.env.GOERLI_RPC_URL || '',
       chainId: 5,
       accounts: !!process.env.GOERLI_WALLET_PRIVATE_KEY ? [process.env.GOERLI_WALLET_PRIVATE_KEY] : [],
       gas: 415426000
     },
-    hardhat: {
-      forking: {
-        url: 'https://eth-mainnet.alchemyapi.io/v2/Yv0OazBPreqH_Df9rZkytdBLN2y1CwdE',
-        blockNumber: 16739836
-      },
-      chainId: 31337
-    },
-    localhost: {
-      chainId: 31337
-    },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL,
+      url: process.env.SEPOLIA_RPC_URL || '',
       chainId: 11155111,
       accounts: !!process.env.SEPOLIA_WALLET_PRIVATE_KEY ? [process.env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     }
@@ -66,7 +56,7 @@ const config: HardhatUserConfig = {
     artifacts: './artifacts'
   },
   solidity: {
-    version: '0.8.17',
+    version: '0.8.18',
     settings: {
       optimizer: {
         enabled: true

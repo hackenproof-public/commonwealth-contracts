@@ -1,0 +1,60 @@
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    types: [opened, reopened]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NODE_VERSION: 16.14.2
+
+jobs:
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install packages
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - run: yarn --ignore-scripts
+
+      - name: Run Linter
+        run: yarn check-style
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
+        id: slither
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          solc-version: 0.8.18
+          fail-on: high
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install packages
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - run: yarn --ignore-scripts
+
+      - name: Run Unit Tests
+        run: yarn coverage --testfiles test/unit/
+
+      - name: Run Integration Tests
+        run: yarn test test/integration/*

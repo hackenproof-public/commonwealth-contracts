@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "./interfaces/IInvestmentFundRegistry.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IInvestmentFundRegistry} from "./interfaces/IInvestmentFundRegistry.sol";
 
 /**
  * @title Investment fund registry contract

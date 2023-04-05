@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/utils/Checkpoints.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "./interfaces/IInvestmentNFT.sol";
+import {ERC721, ERC721Enumerable, IERC165, IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/Checkpoints.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 
 contract InvestmentNFT is ERC721Enumerable, IInvestmentNFT {
     using Checkpoints for Checkpoints.History;
