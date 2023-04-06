@@ -13,3 +13,10 @@ export type InvestmentFundDeploymentParameters = {
   managementFee?: number;
   cap?: BigNumber;
 };
+
+export type Tranche = {
+  supply: string;
+  price: BigNumber;
+  accounts?: string[];
+  maxContributions?: number[];
+};
