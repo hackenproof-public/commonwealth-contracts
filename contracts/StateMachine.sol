@@ -2,7 +2,11 @@
 pragma solidity ^0.8.18;
 
 contract StateMachine {
+    /**
+     * @notice Current state
+     */
     bytes32 public currentState;
+
     mapping(bytes32 => mapping(bytes4 => bool)) internal functionsAllowed;
 
     /**

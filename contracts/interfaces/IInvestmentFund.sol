@@ -20,6 +20,7 @@ interface IInvestmentFund {
 
     struct Payout {
         uint256 value;
+        uint256 fee;
         uint248 blockNumber;
         bool inProfit;
     }
@@ -48,10 +49,11 @@ interface IInvestmentFund {
     /**
      * @dev Emitted when new profit is provided to investment fund
      * @param investmentFund Address of investment fund to which profit is provided
-     * @param value Amount of tokens withdrawn
+     * @param income Provided income, including fee
+     * @param fee Carry Fee
      * @param blockNumber Number of block in which profit is provided
      */
-    event ProfitProvided(address indexed investmentFund, uint256 value, uint256 indexed blockNumber);
+    event ProfitProvided(address indexed investmentFund, uint256 income, uint256 fee, uint256 indexed blockNumber);
 
     /**
      * @dev Emitted when user withdraws profit from fund

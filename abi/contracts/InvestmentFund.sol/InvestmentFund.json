@@ -104,7 +104,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "value",
+        "name": "income",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
         "type": "uint256"
       },
       {
@@ -179,13 +185,6 @@
     ],
     "name": "ProjectRemoved",
     "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "activateFund",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
   },
   {
     "inputs": [
@@ -323,6 +322,11 @@
               {
                 "internalType": "uint256",
                 "name": "value",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "fee",
                 "type": "uint256"
               },
               {
@@ -498,6 +502,11 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
         "internalType": "uint248",
         "name": "blockNumber",
         "type": "uint248"
@@ -533,13 +542,6 @@
       }
     ],
     "name": "removeProject",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "startCollectingFunds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

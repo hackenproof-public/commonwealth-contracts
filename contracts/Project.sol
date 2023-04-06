@@ -8,7 +8,7 @@ import {LibProject} from "./libraries/LibProject.sol";
 
 /**
  * @title Project contract
- * @dev Holds tokens deployed by system for project and contract defininf project tokens vesting schedule
+ * @dev Holds tokens deployed by system for project and contract defining project tokens vesting schedule
  */
 contract Project is IProject, ERC165, Ownable {
     /**

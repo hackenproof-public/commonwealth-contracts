@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
@@ -22,19 +23,64 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         uint256 withdrawn;
     }
 
+    /**
+     * @notice Fund name
+     */
     string public name;
+
+    /**
+     * @notice Address of token collected from investors
+     */
     IERC20 public currency;
+
+    /**
+     * @notice Address of Investment NFT contract
+     */
     IInvestmentNFT public investmentNft;
+
+    /**
+     * @notice Wallet collecting fees
+     */
     address public treasuryWallet;
+
+    /**
+     * @notice Management fee value
+     */
     uint16 public managementFee;
+
+    /**
+     * @notice Fund capacity above which collecting funds is stopped
+     */
     uint256 public cap;
+
+    /**
+     * @notice Total invested funds
+     */
     uint256 public totalInvestment;
+
+    /**
+     * @notice Total income from sold project tokens
+     */
     uint256 public totalIncome;
 
+    /**
+     * @notice List of payouts (incomes from tokens sale)
+     */
     Payout[] public payouts;
-    mapping(address => uint256) public userTotalWithdrawal; // maps account into total withdrawal amount
 
-    mapping(address => PayoutPtr) private _currentPayout; // maps account into payout recently used for withdrawal
+    /**
+     * @notice Total withdrawn amount per user
+     */
+    mapping(address => uint256) public userTotalWithdrawal;
+
+    /**
+     * @dev Payout recently used for withdrawal per user
+     */
+    mapping(address => PayoutPtr) private _currentPayout;
+
+    /**
+     * @dev List of projects
+     */
     EnumerableSet.AddressSet private _projects;
 
     /**
@@ -53,7 +99,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         address treasuryWallet_,
         uint16 managementFee_,
         uint256 cap_
-    ) StateMachine(LibFund.STATE_EMPTY) {
+    ) StateMachine(LibFund.STATE_FUNDS_IN) {
         require(currency_ != address(0), "Invalid currency address");
         require(investmentNft_ != address(0), "Invalid NFT address");
         require(treasuryWallet_ != address(0), "Invalid treasury wallet address");
@@ -111,9 +157,6 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
 
         emit ProfitWithdrawn(msg.sender, address(currency), amount);
 
-        if (carryFee > 0) {
-            _transfer(currency, treasuryWallet, carryFee);
-        }
         _transfer(currency, msg.sender, amount - carryFee);
     }
 
@@ -128,7 +171,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
      * @inheritdoc IInvestmentFund
      */
     function getAvailableFunds(address account) external view returns (uint256) {
-        uint256 availableFunds = _getRemainingFundsFromRecentPayout(account);
+        uint256 availableFunds = _getRemainingUserIncomeFromCurrentPayout(account);
         for (uint256 i = _currentPayout[account].index + 1; i < payouts.length; i++) {
             availableFunds += _getUserIncomeFromPayout(account, i);
         }
@@ -180,11 +223,6 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         emit ProjectRemoved(msg.sender, project);
     }
 
-    function startCollectingFunds() external onlyAllowedStates {
-        // TODO: limit role access
-        currentState = LibFund.STATE_FUNDS_IN;
-    }
-
     function stopCollectingFunds() external onlyAllowedStates {
         // TODO: limit role access
         currentState = LibFund.STATE_CAP_REACHED;
@@ -195,11 +233,6 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
     }
 
-    function activateFund() external onlyAllowedStates {
-        // TODO: limit role access
-        currentState = LibFund.STATE_ACTIVE;
-    }
-
     /**
      * @inheritdoc IInvestmentFund
      */
@@ -207,29 +240,37 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         // TODO: limit role access
         require(amount > 0, "Zero profit provided");
 
+        uint256 blockNumber = block.number;
+        uint256 carryFee = 0;
         uint256 newTotalIncome = totalIncome + amount;
 
         if (isInProfit()) {
-            payouts.push(Payout(amount, uint248(block.number), true));
+            carryFee = _calculateTotalCarryFeeInBlock(amount, blockNumber);
+            payouts.push(Payout(amount, carryFee, uint248(blockNumber), true));
         } else {
             if (newTotalIncome > totalInvestment) {
-                emit BreakevenReached(totalInvestment);
                 uint256 profitAboveBreakeven = newTotalIncome - totalInvestment;
-                payouts.push(Payout(amount - profitAboveBreakeven, uint248(block.number), false));
-                payouts.push(Payout(profitAboveBreakeven, uint248(block.number), true));
+                carryFee = _calculateTotalCarryFeeInBlock(profitAboveBreakeven, blockNumber);
+
+                payouts.push(Payout(amount - profitAboveBreakeven, 0, uint248(blockNumber), false));
+                payouts.push(Payout(profitAboveBreakeven, carryFee, uint248(blockNumber), true));
+
+                emit BreakevenReached(totalInvestment);
             } else {
-                payouts.push(Payout(amount, uint248(block.number), false));
+                payouts.push(Payout(amount, 0, uint248(blockNumber), false));
                 if (newTotalIncome == totalInvestment) {
                     emit BreakevenReached(totalInvestment);
                 }
             }
         }
-
         totalIncome = newTotalIncome;
 
-        emit ProfitProvided(address(this), amount, block.number);
+        emit ProfitProvided(address(this), amount, carryFee, block.number);
 
-        _transferFrom(currency, msg.sender, address(this), amount);
+        if (carryFee > 0) {
+            _transferFrom(currency, msg.sender, treasuryWallet, carryFee);
+        }
+        _transferFrom(currency, msg.sender, address(this), amount - carryFee);
     }
 
     function closeFund() external onlyAllowedStates {
@@ -263,21 +304,22 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
             );
     }
 
+    /**
+     * @inheritdoc IERC165
+     */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IInvestmentFund).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _initializeStates() internal {
-        allowFunction(LibFund.STATE_EMPTY, this.addProject.selector);
-        allowFunction(LibFund.STATE_EMPTY, this.removeProject.selector);
-        allowFunction(LibFund.STATE_EMPTY, this.startCollectingFunds.selector);
+        allowFunction(LibFund.STATE_FUNDS_IN, this.addProject.selector);
+        allowFunction(LibFund.STATE_FUNDS_IN, this.removeProject.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.stopCollectingFunds.selector);
         allowFunction(LibFund.STATE_CAP_REACHED, this.deployFunds.selector);
-        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.activateFund.selector);
-        allowFunction(LibFund.STATE_ACTIVE, this.provideProfit.selector);
-        allowFunction(LibFund.STATE_ACTIVE, this.withdraw.selector);
-        allowFunction(LibFund.STATE_ACTIVE, this.closeFund.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.provideProfit.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.withdraw.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
     }
 
     function _invest(address investor, uint256 amount) internal {
@@ -307,7 +349,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     ) private view returns (uint256 actualAmount, uint256 carryFee, PayoutPtr memory newCurrentPayout) {
         uint256 payoutIndex = _currentPayout[account].index;
 
-        uint256 fundsFromPayout = _getRemainingFundsFromRecentPayout(account);
+        uint256 fundsFromPayout = _getRemainingUserIncomeFromCurrentPayout(account);
         if (requestedAmount <= fundsFromPayout) {
             return (
                 requestedAmount,
@@ -339,32 +381,36 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         require(payoutIndex < payouts.length, "Payout does not exist");
 
         Payout memory payout = payouts[payoutIndex];
-        require(payout.blockNumber <= block.number, "Invalid payout block number");
-
         return _calculateUserIncomeInBlock(payout.value, account, payout.blockNumber);
     }
 
     function _calculateUserIncomeInBlock(
-        uint256 value,
+        uint256 income,
         address account,
         uint256 blockNumber
     ) private view returns (uint256) {
-        uint256 totalInvestmentInBlock = (blockNumber < block.number)
-            ? investmentNft.getPastTotalInvestmentValue(blockNumber)
-            : investmentNft.getTotalInvestmentValue();
-
-        if (totalInvestmentInBlock != 0) {
-            uint256 walletInvestmentInBlock = (blockNumber < block.number)
-                ? investmentNft.getPastInvestmentValue(account, blockNumber)
-                : investmentNft.getInvestmentValue(account);
-
-            return (value * walletInvestmentInBlock) / totalInvestmentInBlock;
+        (uint256 userValue, uint256 totalValue) = _getUserParticipationInFund(account, blockNumber);
+        if (totalValue > 0) {
+            return (income * userValue) / totalValue;
         } else {
             return 0;
         }
     }
 
-    function _getRemainingFundsFromRecentPayout(address account) private view returns (uint256) {
+    function _getUserParticipationInFund(
+        address account,
+        uint256 blockNumber
+    ) private view returns (uint256 userValue, uint256 totalValue) {
+        require(blockNumber <= block.number, "Invalid block number");
+
+        if (blockNumber < block.number) {
+            return investmentNft.getUserParticipationInBlock(account, blockNumber);
+        } else {
+            return investmentNft.getUserParticipation(account);
+        }
+    }
+
+    function _getRemainingUserIncomeFromCurrentPayout(address account) private view returns (uint256) {
         PayoutPtr memory currentPayout = _currentPayout[account];
         return _getUserIncomeFromPayout(account, currentPayout.index) - currentPayout.withdrawn;
     }
@@ -374,9 +420,17 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         return 0;
     }
 
-    function _calculateCarryFee(address account, uint256 blockNumber, uint256 amount) private pure returns (uint256) {
-        uint256 carryFee = LibFund.DEFAULT_CARRY_FEE - _getCarryFeeDiscount(account, blockNumber);
-        return (carryFee * amount) / LibFund.BASIS_POINT_DIVISOR;
+    function _getCarryFee(address account, uint256 blockNumber) private pure returns (uint256) {
+        return LibFund.DEFAULT_CARRY_FEE - _getCarryFeeDiscount(account, blockNumber);
+    }
+
+    function _calculateCarryFeeInBlock(
+        address account,
+        uint256 blockNumber,
+        uint256 amount
+    ) private pure returns (uint256) {
+        uint256 carryFee = _getCarryFee(account, blockNumber);
+        return Math.mulDiv(amount, carryFee, LibFund.BASIS_POINT_DIVISOR);
     }
 
     function _calculateCarryFeeFromPayout(
@@ -386,8 +440,18 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     ) private view returns (uint256) {
         return
             (payouts[payoutIndex].inProfit && amount > 0)
-                ? _calculateCarryFee(account, payouts[payoutIndex].blockNumber, amount)
+                ? _calculateCarryFeeInBlock(account, payouts[payoutIndex].blockNumber, amount)
                 : 0;
+    }
+
+    function _calculateTotalCarryFeeInBlock(uint256 income, uint256 blockNumber) private view returns (uint256) {
+        uint256 carryFee = 0;
+        address[] memory wallets = investmentNft.getWallets();
+        for (uint256 i = 0; i < wallets.length; i++) {
+            uint256 userIncome = _calculateUserIncomeInBlock(income, wallets[i], blockNumber);
+            carryFee += _calculateCarryFeeInBlock(wallets[i], blockNumber, userIncome);
+        }
+        return carryFee;
     }
 
     function _transferFrom(IERC20 erc20Token, address from, address to, uint256 amount) private {
