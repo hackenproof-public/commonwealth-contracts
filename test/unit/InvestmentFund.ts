@@ -16,6 +16,7 @@ describe('Investment Fund unit tests', () => {
   const defaultManagementFee = 1000;
   const defaultInvestmentCap = toUsdc('1000000');
   const IInvestmentFundId = ethers.utils.arrayify(getInterfaceId(IInvestmentFund__factory.createInterface()));
+  const tokenUri = 'ipfs://token-uri';
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
@@ -54,11 +55,12 @@ describe('Investment Fund unit tests', () => {
     return deployInvestmentFund();
   };
 
-  const resetFakes = (usdc: FakeContract<USDC>, invNft: FakeContract<InvestmentNFT>) => {
-    invNft.getUserParticipation.reset();
-    invNft.getUserParticipationInBlock.reset();
-    invNft.mint.reset();
-    invNft.supportsInterface.reset();
+  const resetFakes = (usdc: FakeContract<USDC>, investmentNft: FakeContract<InvestmentNFT>) => {
+    investmentNft.getParticipation.reset();
+    investmentNft.getPastParticipation.reset();
+    investmentNft.getTotalInvestmentValue.reset();
+    investmentNft.mint.reset();
+    investmentNft.supportsInterface.reset();
     usdc.transfer.reset();
     usdc.transferFrom.reset();
   };
@@ -210,11 +212,9 @@ describe('Investment Fund unit tests', () => {
         const { investmentFund, usdc, wallet } = await setup();
 
         const fee = amount.mul(defaultManagementFee).div(10000);
-        await expect(investmentFund.connect(wallet).invest(amount))
+        await expect(investmentFund.connect(wallet).invest(amount, tokenUri))
           .to.emit(investmentFund, 'Invested')
           .withArgs(wallet.address, usdc.address, amount, fee);
-
-        expect(await investmentFund.totalInvestment()).to.equal(amount);
       });
     });
 
@@ -229,13 +229,12 @@ describe('Investment Fund unit tests', () => {
         const amount = cap;
         const fee = amount.mul(defaultManagementFee).div(10000);
 
-        await expect(investmentFund.connect(wallet).invest(amount))
+        await expect(investmentFund.connect(wallet).invest(amount, tokenUri))
           .to.emit(investmentFund, 'Invested')
           .withArgs(wallet.address, usdc.address, amount, fee)
           .to.emit(investmentFund, 'CapReached')
           .withArgs(cap);
 
-        expect(await investmentFund.totalInvestment()).to.equal(amount);
         expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.CapReached);
       });
     });
@@ -246,13 +245,15 @@ describe('Investment Fund unit tests', () => {
       const amount = defaultInvestmentCap.add(1);
       const fee = amount.mul(defaultManagementFee).div(10000);
 
-      await expect(investmentFund.connect(wallet).invest(amount)).to.be.revertedWith('Total invested funds exceed cap');
+      await expect(investmentFund.connect(wallet).invest(amount, tokenUri)).to.be.revertedWith(
+        'Total invested funds exceed cap'
+      );
     });
 
     it('Should revert investing if amount is 0', async () => {
       const { investmentFund, wallet } = await setup();
 
-      await expect(investmentFund.connect(wallet).invest(0)).to.be.revertedWith('Invalid amount invested');
+      await expect(investmentFund.connect(wallet).invest(0, tokenUri)).to.be.revertedWith('Invalid amount invested');
     });
 
     it('Should revert investing if currency fee transfer fails', async () => {
@@ -261,7 +262,7 @@ describe('Investment Fund unit tests', () => {
       usdc.transferFrom.returnsAtCall(0, false);
       usdc.transferFrom.returnsAtCall(1, true);
 
-      await expect(investmentFund.connect(wallet).invest(1)).to.be.revertedWith('Currency transfer failed');
+      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWith('Currency transfer failed');
     });
 
     it('Should revert investing if currency transfer fails', async () => {
@@ -270,7 +271,7 @@ describe('Investment Fund unit tests', () => {
       usdc.transferFrom.returnsAtCall(0, true);
       usdc.transferFrom.returnsAtCall(1, false);
 
-      await expect(investmentFund.connect(wallet).invest(1)).to.be.revertedWith('Currency transfer failed');
+      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWith('Currency transfer failed');
     });
 
     [0, 1].forEach((call) => {
@@ -279,7 +280,7 @@ describe('Investment Fund unit tests', () => {
 
         usdc.transferFrom.revertsAtCall(call);
 
-        await expect(investmentFund.connect(wallet).invest(1)).to.be.reverted;
+        await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.reverted;
       });
     });
 
@@ -288,7 +289,7 @@ describe('Investment Fund unit tests', () => {
 
       investmentNft.mint.reverts();
 
-      await expect(investmentFund.connect(wallet).invest(1)).to.be.reverted;
+      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.reverted;
     });
   });
 
@@ -298,9 +299,7 @@ describe('Investment Fund unit tests', () => {
 
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
-      await investmentFund.invest(investmentValue);
-      expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
-
+      await investmentFund.invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
@@ -312,8 +311,8 @@ describe('Investment Fund unit tests', () => {
 
       resetFakes(usdc, investmentNft);
 
-      investmentNft.getUserParticipation.returns([investmentValue, investmentValue]);
-      investmentNft.getUserParticipationInBlock.returns([investmentValue, investmentValue]);
+      investmentNft.getParticipation.returns([investmentValue, investmentValue]);
+      investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
     });
@@ -370,9 +369,7 @@ describe('Investment Fund unit tests', () => {
 
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
-      await investmentFund.invest(investmentValue);
-      expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
-
+      await investmentFund.invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
@@ -384,8 +381,9 @@ describe('Investment Fund unit tests', () => {
 
       resetFakes(usdc, investmentNft);
 
-      investmentNft.getUserParticipation.returns([investmentValue, investmentValue]);
-      investmentNft.getUserParticipationInBlock.returns([investmentValue, investmentValue]);
+      investmentNft.getParticipation.returns([investmentValue, investmentValue]);
+      investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
+      investmentNft.getTotalInvestmentValue.returns(investmentValue);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
     });
@@ -424,8 +422,8 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert retrieving carry fee if no investment is done', async () => {
-        investmentNft.getUserParticipation.returns([0, 0]);
-        investmentNft.getUserParticipationInBlock.returns([0, 0]);
+        investmentNft.getParticipation.returns([0, 0]);
+        investmentNft.getPastParticipation.returns([0, 0]);
 
         await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith(
           'Withdrawal amount exceeds available funds'
@@ -501,9 +499,7 @@ describe('Investment Fund unit tests', () => {
     before(async () => {
       ({ investmentFund, usdc, investmentNft, deployer, wallet, treasuryWallet } = await setup());
 
-      await investmentFund.connect(deployer).invest(investmentValue);
-      expect(await investmentFund.totalInvestment()).to.equal(investmentValue);
-
+      await investmentFund.connect(deployer).invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
@@ -515,9 +511,10 @@ describe('Investment Fund unit tests', () => {
 
       resetFakes(usdc, investmentNft);
       usdc.transferFrom.returns(true);
-      investmentNft.getUserParticipation.returns([investmentValue, investmentValue]);
-      investmentNft.getUserParticipationInBlock.returns([investmentValue, investmentValue]);
-      investmentNft.getWallets.returns([deployer.address]);
+      investmentNft.getParticipation.returns([investmentValue, investmentValue]);
+      investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
+      investmentNft.getInvestors.returns([deployer.address]);
+      investmentNft.getTotalInvestmentValue.returns(investmentValue);
     });
 
     [1, investmentValue.sub(1)].forEach((value) => {
@@ -629,7 +626,7 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should not revert investing', async () => {
-        await expect(investmentFund.invest(1)).not.to.be.reverted;
+        await expect(investmentFund.invest(1, tokenUri)).not.to.be.reverted;
       });
 
       it('Should revert withdrawing', async () => {
@@ -681,7 +678,7 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert withdrawing', async () => {
@@ -716,7 +713,7 @@ describe('Investment Fund unit tests', () => {
         project.supportsInterface.returns(true);
 
         await investmentFund.addProject(project.address);
-        await investmentFund.invest(investmentValue);
+        await investmentFund.invest(investmentValue, tokenUri);
         await investmentFund.stopCollectingFunds();
         await investmentFund.deployFunds();
 
@@ -735,8 +732,8 @@ describe('Investment Fund unit tests', () => {
 
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        investmentNft.getUserParticipation.returns([investmentValue, investmentValue]);
-        investmentNft.getUserParticipationInBlock.returns([investmentValue, investmentValue]);
+        investmentNft.getParticipation.returns([investmentValue, investmentValue]);
+        investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       });
 
       it('Should revert adding project', async () => {
@@ -750,7 +747,7 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should not revert withdrawing', async () => {
@@ -804,7 +801,7 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
       });
 
       it('Should revert withdrawing', async () => {

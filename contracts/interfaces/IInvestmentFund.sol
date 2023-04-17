@@ -87,8 +87,9 @@ interface IInvestmentFund {
      * Emits a {Invested} event.
      *
      * @param amount Amount of tokens to be invested
+     * @param tokenUri URI of metadata for Investment NFT minted within investment
      */
-    function invest(uint240 amount) external;
+    function invest(uint240 amount, string calldata tokenUri) external;
 
     /**
      * @dev Withdraws 'amount' number of USD Coin tokens using investment NFT.

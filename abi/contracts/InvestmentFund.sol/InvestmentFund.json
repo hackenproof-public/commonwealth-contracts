@@ -414,6 +414,11 @@
         "internalType": "uint240",
         "name": "amount",
         "type": "uint240"
+      },
+      {
+        "internalType": "string",
+        "name": "tokenUri",
+        "type": "string"
       }
     ],
     "name": "invest",
@@ -575,19 +580,6 @@
   {
     "inputs": [],
     "name": "totalIncome",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "totalInvestment",
     "outputs": [
       {
         "internalType": "uint256",

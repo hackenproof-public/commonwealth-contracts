@@ -6,7 +6,7 @@ import { confirm, deploy, verifyContract } from './utils';
 async function main() {
   const name = 'Brand New Investment Fund';
   const usdcAddress = '0x7b34B0D50249142aa3d6F9978790E8c28F52403E';
-  const investmentNftAddress = '0xAB0178B160F2f4b29c1719196Bda153AC71c8404';
+  const investmentNftAddress = '0x16213f8178167a5005eA43872EAf46C1E5CcaD4D';
   const treasuryWallet = '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63';
   const managementFee = 1000;
   const cap = toUsdc('1000000');

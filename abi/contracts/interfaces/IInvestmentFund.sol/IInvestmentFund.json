@@ -325,6 +325,11 @@
         "internalType": "uint240",
         "name": "amount",
         "type": "uint240"
+      },
+      {
+        "internalType": "string",
+        "name": "tokenUri",
+        "type": "string"
       }
     ],
     "name": "invest",

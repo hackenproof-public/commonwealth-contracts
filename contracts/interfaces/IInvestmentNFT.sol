@@ -5,17 +5,50 @@ import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions
 
 interface IInvestmentNFT is IERC721Enumerable {
     /**
-     * @notice Mints NFT
-     * @param to Token recipient
-     * @param value Investment value assigned to token
+     * @notice Emitted when token URI is changed
+     * @param caller Address which changed token URI
+     * @param tokenId ID of token for which URI was changed
+     * @param uri New token URI
      */
-    function mint(address to, uint256 value) external;
+    event TokenURIChanged(address indexed caller, uint256 indexed tokenId, string uri);
 
     /**
-     * @notice Burns NFT
-     * @param tokenId Token ID to burn
+     * @notice Emitted when new minter account is added to contract
+     * @param caller Address which added minter
+     * @param account Address of new minter
      */
-    function burn(uint256 tokenId) external;
+    event MinterAdded(address indexed caller, address indexed account);
+
+    /**
+     * @notice Emitted when minter account is removed from contract
+     * @param caller Address which removed minter
+     * @param account Address of removed minter
+     */
+    event MinterRemoved(address indexed caller, address indexed account);
+
+    /**
+     * @notice Emitted when NFT is splitted
+     * @param caller Address which removed minter
+     * @param tokenId ID of splitted token
+     */
+    event TokenSplitted(address indexed caller, uint256 indexed tokenId);
+
+    /**
+     * @notice Mints NFT with specified investment value and metadata URI
+     * @param to Token recipient
+     * @param value Investment value assigned to token
+     * @param tokenUri URI of token metadata
+     */
+    function mint(address to, uint256 value, string calldata tokenUri) external;
+
+    /**
+     * @notice Splits one NFT into multiple unique tokens
+     * @dev Burns NFT indended for split and mints multiple ones in the place of the former one. Sum of values must equal to the value of splitted NFT
+     * @param tokenId Token ID to split
+     * @param values List of new tokens values
+     * @param values List of new tokens metadata URIs
+     */
+    function split(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) external;
 
     /**
      * @notice Returns summarized investment value from tokens holded by `account`
@@ -46,27 +79,27 @@ interface IInvestmentNFT is IERC721Enumerable {
     function getPastTotalInvestmentValue(uint256 blockNumber) external view returns (uint256);
 
     /**
-     * @notice Returns user participation in fund in the form of user investment value and total value invested in fund
-     * @param account User account
-     * @return User investment value
+     * @notice Returns account share of the fund in the form of account investment value and total value invested in fund
+     * @param account Account address
+     * @return Account investment value
      * @return Total fund investment value
      */
-    function getUserParticipation(address account) external view returns (uint256, uint256);
+    function getParticipation(address account) external view returns (uint256, uint256);
 
     /**
-     * @notice Returns user participation in fund in specified block number in the form of user investment value and total value invested in fund
-     * @param account User account
-     * @param blockNumber Block number for which to retrieve participation
-     * @return User investment value
+     * @notice Returns account share of the fund in specified block number in the form of account investment value and total value invested in fund
+     * @param account Account address
+     * @param blockNumber Block number for which to retrieve share
+     * @return Account investment value
      * @return Total fund investment value
      */
-    function getUserParticipationInBlock(address account, uint256 blockNumber) external view returns (uint256, uint256);
+    function getPastParticipation(address account, uint256 blockNumber) external view returns (uint256, uint256);
 
     /**
-     * @notice Returns wallets holding at least one NFT
-     * @return List of wallets
+     * @notice Returns accounts holding at least one NFT
+     * @return List of accounts
      */
-    function getWallets() external view returns (address[] memory);
+    function getInvestors() external view returns (address[] memory);
 
     /**
      * @notice Returns investment value assigned to NFT

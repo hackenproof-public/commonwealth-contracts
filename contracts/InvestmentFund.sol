@@ -54,11 +54,6 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     uint256 public cap;
 
     /**
-     * @notice Total invested funds
-     */
-    uint256 public totalInvestment;
-
-    /**
      * @notice Total income from sold project tokens
      */
     uint256 public totalIncome;
@@ -123,10 +118,10 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(uint240 amount) external override onlyAllowedStates nonReentrant {
+    function invest(uint240 amount, string calldata tokenUri) external override onlyAllowedStates nonReentrant {
         require(amount > 0, "Invalid amount invested");
 
-        uint256 newTotalInvestment = totalInvestment + amount;
+        uint256 newTotalInvestment = investmentNft.getTotalInvestmentValue() + amount;
         require(newTotalInvestment <= cap, "Total invested funds exceed cap");
 
         if (newTotalInvestment >= cap) {
@@ -134,9 +129,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
             emit CapReached(cap);
         }
 
-        totalInvestment = newTotalInvestment;
-
-        _invest(msg.sender, amount);
+        _invest(msg.sender, amount, tokenUri);
     }
 
     /**
@@ -243,8 +236,9 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         uint256 blockNumber = block.number;
         uint256 carryFee = 0;
         uint256 newTotalIncome = totalIncome + amount;
+        uint256 totalInvestment = investmentNft.getTotalInvestmentValue();
 
-        if (isInProfit()) {
+        if (totalIncome >= totalInvestment) {
             carryFee = _calculateTotalCarryFeeInBlock(amount, blockNumber);
             payouts.push(Payout(amount, carryFee, uint248(blockNumber), true));
         } else {
@@ -282,7 +276,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
      * @inheritdoc IInvestmentFund
      */
     function isInProfit() public view returns (bool) {
-        return totalIncome >= totalInvestment;
+        return totalIncome > investmentNft.getTotalInvestmentValue();
     }
 
     /**
@@ -297,7 +291,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
                 treasuryWallet,
                 managementFee,
                 cap,
-                totalInvestment,
+                investmentNft.getTotalInvestmentValue(),
                 totalIncome,
                 payouts,
                 currentState
@@ -322,14 +316,14 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
     }
 
-    function _invest(address investor, uint256 amount) internal {
+    function _invest(address investor, uint256 amount, string calldata tokenUri) internal {
         uint256 fee = (uint256(amount) * managementFee) / LibFund.BASIS_POINT_DIVISOR;
 
         emit Invested(investor, address(currency), amount, fee);
 
         _transferFrom(currency, investor, treasuryWallet, fee);
         _transferFrom(currency, investor, address(this), amount - fee);
-        investmentNft.mint(investor, amount);
+        investmentNft.mint(investor, amount, tokenUri);
     }
 
     /**
@@ -404,9 +398,9 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         require(blockNumber <= block.number, "Invalid block number");
 
         if (blockNumber < block.number) {
-            return investmentNft.getUserParticipationInBlock(account, blockNumber);
+            return investmentNft.getPastParticipation(account, blockNumber);
         } else {
-            return investmentNft.getUserParticipation(account);
+            return investmentNft.getParticipation(account);
         }
     }
 
@@ -446,7 +440,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
 
     function _calculateTotalCarryFeeInBlock(uint256 income, uint256 blockNumber) private view returns (uint256) {
         uint256 carryFee = 0;
-        address[] memory wallets = investmentNft.getWallets();
+        address[] memory wallets = investmentNft.getInvestors();
         for (uint256 i = 0; i < wallets.length; i++) {
             uint256 userIncome = _calculateUserIncomeInBlock(income, wallets[i], blockNumber);
             carryFee += _calculateCarryFeeInBlock(wallets[i], blockNumber, userIncome);

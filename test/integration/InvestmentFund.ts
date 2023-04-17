@@ -11,23 +11,24 @@ import { getLogs, toUsdc } from '../utils';
 describe('Investment Fund integration tests', () => {
   const managementFee = 1000;
   const defaultInvestmentCap = toUsdc('1000000');
-  const investedEventTopic = ethers.utils.id('Invested(address,address,uint256,uint256)');
+  const tokenUri = 'ipfs://token-uri';
   const mintedEventTopic = ethers.utils.id('Transfer(address,address,uint256)');
 
   let investmentFund: InvestmentFund;
   let usdc: USDC;
   let investmentNft: InvestmentNFT;
   let deployer: SignerWithAddress;
+  let owner: SignerWithAddress;
   let wallet: SignerWithAddress;
   let treasuryWallet: SignerWithAddress;
   let profitProvider: SignerWithAddress;
   let restorer: SnapshotRestorer;
 
   async function deployFixture() {
-    [deployer, treasuryWallet, wallet, profitProvider] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider, treasuryWallet] = await ethers.getSigners();
 
     const usdc: USDC = await deploy('USDC', deployer, []);
-    const investmentNft: InvestmentNFT = await deploy('InvestmentNFT', deployer, []);
+    const investmentNft: InvestmentNFT = await deploy('InvestmentNFT', deployer, ['INFT', 'CWI', owner.address]);
     const investmentFund: InvestmentFund = await deploy('InvestmentFund', deployer, [
       'Investment Fund',
       usdc.address,
@@ -36,11 +37,12 @@ describe('Investment Fund integration tests', () => {
       managementFee,
       defaultInvestmentCap
     ]);
+    await investmentNft.connect(owner).addMinter(investmentFund.address);
 
     await usdc.mint(deployer.address, toUsdc('1000000'));
     await usdc.mint(wallet.address, toUsdc('1000000'));
 
-    return { investmentFund, usdc, investmentNft, deployer, wallet, treasuryWallet, profitProvider };
+    return { investmentFund, usdc, investmentNft, deployer, owner, wallet, treasuryWallet, profitProvider };
   }
 
   describe('Deployment', () => {
@@ -64,7 +66,7 @@ describe('Investment Fund integration tests', () => {
         const initialBalance = await usdc.balanceOf(wallet.address);
 
         await usdc.connect(wallet).approve(investmentFund.address, data.amount);
-        const tx: ContractTransaction = await investmentFund.connect(wallet).invest(data.amount);
+        const tx: ContractTransaction = await investmentFund.connect(wallet).invest(data.amount, tokenUri);
 
         const logsMinted: Log[] = await getLogs(tx, investmentNft.address, mintedEventTopic);
         expect(logsMinted).to.have.length(1);
@@ -75,7 +77,7 @@ describe('Investment Fund integration tests', () => {
         expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(data.fee);
         expect(await usdc.balanceOf(investmentFund.address)).to.equal(data.invested);
         expect(await investmentNft.tokenValue(tokenId)).to.equal(data.amount);
-        expect(await investmentFund.totalInvestment()).to.equal(data.amount);
+        expect(await investmentNft.getTotalInvestmentValue()).to.equal(data.amount);
       });
     });
 
@@ -83,7 +85,7 @@ describe('Investment Fund integration tests', () => {
       const { investmentFund, usdc } = await loadFixture(deployFixture);
 
       await usdc.connect(wallet).approve(investmentFund.address, 15 * 10 ** 6 - 1);
-      await expect(investmentFund.connect(wallet).invest(15 * 10 ** 6)).to.be.revertedWith(
+      await expect(investmentFund.connect(wallet).invest(15 * 10 ** 6, tokenUri)).to.be.revertedWith(
         'ERC20: insufficient allowance'
       );
     });
@@ -96,9 +98,9 @@ describe('Investment Fund integration tests', () => {
       await usdc.mint(profitProvider.address, toUsdc('1000'));
 
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
-      await investmentFund.connect(deployer).invest(toUsdc('10'));
+      await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
       await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
-      await investmentFund.connect(wallet).invest(toUsdc('20'));
+      await investmentFund.connect(wallet).invest(toUsdc('20'), tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
@@ -120,9 +122,9 @@ describe('Investment Fund integration tests', () => {
       await usdc.mint(profitProvider.address, toUsdc('1000'));
 
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
-      await investmentFund.connect(deployer).invest(toUsdc('10'));
+      await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
       await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
-      await investmentFund.connect(wallet).invest(toUsdc('20'));
+      await investmentFund.connect(wallet).invest(toUsdc('20'), tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
@@ -165,13 +167,13 @@ describe('Investment Fund integration tests', () => {
       await usdc.mint(profitProvider.address, toUsdc('1000'));
 
       await usdc.connect(deployer).approve(investmentFund.address, deployerInvestment);
-      let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment);
+      let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment, tokenUri);
 
       let logsMinted: Log[] = await getLogs(tx, investmentNft.address, mintedEventTopic);
       deployerTokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
 
       await usdc.connect(wallet).approve(investmentFund.address, walletInvestment);
-      tx = await investmentFund.connect(wallet).invest(walletInvestment);
+      tx = await investmentFund.connect(wallet).invest(walletInvestment, tokenUri);
 
       logsMinted = await getLogs(tx, investmentNft.address, mintedEventTopic);
       walletTokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
