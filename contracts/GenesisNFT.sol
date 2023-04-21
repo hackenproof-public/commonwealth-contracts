@@ -5,7 +5,6 @@ import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgrad
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
 
@@ -14,7 +13,6 @@ import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
  */
 contract GenesisNFT is
     ERC721EnumerableUpgradeable,
-    ERC721URIStorageUpgradeable,
     PausableUpgradeable,
     AccessControlEnumerableUpgradeable,
     ERC2981Upgradeable,
@@ -25,14 +23,14 @@ contract GenesisNFT is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     address private _owner;
+    string private _tokenURI;
 
     /**
      * @notice Emitted when token URI is changed
      * @param caller Address which changed token URI
-     * @param tokenId ID of token for which URI was changed
      * @param uri New token URI
      */
-    event TokenURIChanged(address indexed caller, uint256 indexed tokenId, string uri);
+    event TokenURIChanged(address indexed caller, string uri);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -45,10 +43,14 @@ contract GenesisNFT is
      * @param royaltyAccount Address where to send royalty
      * @param royaltyValue Royalty value in basis points
      */
-    function initialize(address owner_, address royaltyAccount, uint96 royaltyValue) public initializer {
+    function initialize(
+        address owner_,
+        address royaltyAccount,
+        uint96 royaltyValue,
+        string memory tokenUri
+    ) public initializer {
         __ERC721_init("Common Wealth Genesis NFT", "CWOGNFT");
         __ERC721Enumerable_init();
-        __ERC721URIStorage_init();
         __Pausable_init();
         __AccessControlEnumerable_init();
         __ERC2981_init();
@@ -61,6 +63,7 @@ contract GenesisNFT is
         _grantRole(PAUSER_ROLE, owner_);
 
         _owner = owner_;
+        _tokenURI = tokenUri;
 
         _setDefaultRoyalty(royaltyAccount, royaltyValue);
     }
@@ -103,29 +106,25 @@ contract GenesisNFT is
     /**
      * @inheritdoc IERC721Mintable
      */
-    function mint(address recipient, uint256 amount, string memory uri) external onlyRole(MINTER_ROLE) {
+    function mint(address recipient, uint256 amount) external onlyRole(MINTER_ROLE) {
         require(recipient != address(0), "Recipient is zero address");
 
         uint256 startId = totalSupply();
         for (uint256 i = 0; i < amount; i++) {
-            _mintWithURI(startId + i, recipient, uri);
+            _safeMint(recipient, startId + i);
         }
     }
 
     /**
      * @inheritdoc IERC721Mintable
      */
-    function mintBatch(
-        address[] memory recipients,
-        uint256[] memory amounts,
-        string memory uri
-    ) external onlyRole(MINTER_ROLE) {
+    function mintBatch(address[] memory recipients, uint256[] memory amounts) external onlyRole(MINTER_ROLE) {
         _validateMintBatch(recipients, amounts);
 
         uint256 startId = totalSupply();
         for (uint256 i = 0; i < recipients.length; i++) {
             for (uint256 j = 0; j < amounts[i]; j++) {
-                _mintWithURI(startId + j, recipients[i], uri);
+                _safeMint(recipients[i], startId + j);
             }
             startId += amounts[i];
         }
@@ -153,22 +152,20 @@ contract GenesisNFT is
     }
 
     /**
-     * @notice Sets token metadata URI
-     * @param tokenId ID of token to be changed
+     * @notice Sets metadata URI for all tokens
      * @param uri New metadata URI
      */
-    function setTokenURI(uint256 tokenId, string calldata uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setTokenURI(tokenId, uri);
-        emit TokenURIChanged(msg.sender, tokenId, uri);
+    function setTokenURI(string calldata uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _tokenURI = uri;
+        emit TokenURIChanged(msg.sender, uri);
     }
 
     /**
      * @inheritdoc IERC721MetadataUpgradeable
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
-        return super.tokenURI(tokenId);
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        _requireMinted(tokenId);
+        return _tokenURI;
     }
 
     /**
@@ -179,7 +176,7 @@ contract GenesisNFT is
     )
         public
         view
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable, AccessControlEnumerableUpgradeable, ERC2981Upgradeable)
+        override(ERC721EnumerableUpgradeable, AccessControlEnumerableUpgradeable, ERC2981Upgradeable)
         returns (bool)
     {
         return interfaceId == type(IERC721Mintable).interfaceId || super.supportsInterface(interfaceId);
@@ -190,18 +187,13 @@ contract GenesisNFT is
         address to,
         uint256 tokenId,
         uint256 batchSize
-    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable) whenNotPaused {
+    ) internal override whenNotPaused {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
+    function _burn(uint256 tokenId) internal override {
         super._burn(tokenId);
         _resetTokenRoyalty(tokenId);
-    }
-
-    function _mintWithURI(uint256 tokenId, address to, string memory uri) private {
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
     }
 
     function _validateMintBatch(address[] memory recipients, uint256[] memory amounts) private pure {
@@ -212,5 +204,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[49] private __gap;
+    uint256[48] private __gap;
 }

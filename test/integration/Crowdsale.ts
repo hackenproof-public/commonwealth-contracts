@@ -21,7 +21,8 @@ describe('Crowdsale integration tests', () => {
     const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
       owner.address,
       royaltyWallet.address,
-      royalty
+      royalty,
+      tokenUri
     ]);
     const crowdsale: Crowdsale = await deployProxy('Crowdsale', deployer, [
       owner.address,
@@ -29,8 +30,7 @@ describe('Crowdsale integration tests', () => {
       usdc.address,
       genesisNft.address,
       0,
-      0,
-      tokenUri
+      0
     ]);
 
     await usdc.mint(user.address, userInitialBalance);
@@ -49,7 +49,6 @@ describe('Crowdsale integration tests', () => {
       expect(await crowdsale.currency()).to.equal(usdc.address);
       expect(await crowdsale.wallet()).to.equal(treasury.address);
       expect(await crowdsale.fundsRaised()).to.equal(0);
-      expect(await crowdsale.tokenUri()).to.equal(tokenUri);
       expect(await crowdsale.paused()).to.equal(true);
 
       expect(await crowdsale.getTranchesCount()).to.equal(2);

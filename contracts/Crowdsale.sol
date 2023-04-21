@@ -48,11 +48,6 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
     address public wallet;
 
     /**
-     * @notice URI of token metadata
-     */
-    string public tokenUri;
-
-    /**
      * @notice List of tranches
      */
     mapping(uint256 => Tranche) public tranches;
@@ -92,7 +87,6 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
      * @param token_ Address of the token being sold
      * @param initialSupply_ Number of tokens intended for open sale
      * @param price_ Price per token in `currency`
-     * @param tokenUri_ URI of token metadata
      */
     function initialize(
         address owner_,
@@ -100,8 +94,7 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
         IERC20Upgradeable currency_,
         address token_,
         uint64 initialSupply_,
-        uint256 price_,
-        string memory tokenUri_
+        uint256 price_
     ) public initializer {
         __Context_init();
         __Ownable_init();
@@ -116,7 +109,6 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
         wallet = wallet_;
         currency = currency_;
         token = token_;
-        tokenUri = tokenUri_;
 
         if (initialSupply_ > 0) {
             require(price_ > 0, "Invalid price");
@@ -153,14 +145,6 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
     function setToken(address newToken) external onlyOwner {
         require(newToken != address(0), "Token is the zero address");
         token = newToken;
-    }
-
-    /**
-     * @notice Changes token URI
-     * @param newTokenUri New token URI
-     */
-    function setTokenUri(string calldata newTokenUri) external onlyOwner {
-        tokenUri = newTokenUri;
     }
 
     /**
@@ -404,8 +388,8 @@ contract Crowdsale is OwnableUpgradeable, PausableUpgradeable {
     }
 
     function _deliverTokens(address beneficiary, uint256 tokenAmount) internal virtual {
-        IERC721Mintable(token).mint(beneficiary, tokenAmount, tokenUri);
+        IERC721Mintable(token).mint(beneficiary, tokenAmount);
     }
 
-    uint256[43] private __gap;
+    uint256[44] private __gap;
 }

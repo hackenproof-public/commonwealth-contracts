@@ -12,7 +12,6 @@ describe('Crowdsale unit tests', () => {
   const supply = 1000;
   const nftPrice = toUsdc('1000');
   const txTokenLimit = 100;
-  const tokenUri = 'ipfs://token-uri';
 
   let restorer: SnapshotRestorer;
 
@@ -27,8 +26,7 @@ describe('Crowdsale unit tests', () => {
       usdc.address,
       genesisNft.address,
       0,
-      0,
-      tokenUri
+      0
     ]);
 
     return { crowdsale, genesisNft, usdc, deployer, owner, user, treasury, royaltyWallet };
@@ -43,7 +41,6 @@ describe('Crowdsale unit tests', () => {
       expect(await crowdsale.currency()).to.equal(usdc.address);
       expect(await crowdsale.wallet()).to.equal(treasury.address);
       expect(await crowdsale.fundsRaised()).to.equal(0);
-      expect(await crowdsale.tokenUri()).to.equal(tokenUri);
       expect(await crowdsale.paused()).to.equal(true);
 
       expect(await crowdsale.getTranchesCount()).to.equal(1);
@@ -63,8 +60,7 @@ describe('Crowdsale unit tests', () => {
         usdc.address,
         genesisNft.address,
         supply,
-        nftPrice,
-        tokenUri
+        nftPrice
       ]);
 
       expect(await crowdsale.owner()).to.equal(owner.address);
@@ -72,7 +68,6 @@ describe('Crowdsale unit tests', () => {
       expect(await crowdsale.currency()).to.equal(usdc.address);
       expect(await crowdsale.wallet()).to.equal(treasury.address);
       expect(await crowdsale.fundsRaised()).to.equal(0);
-      expect(await crowdsale.tokenUri()).to.equal(tokenUri);
       expect(await crowdsale.paused()).to.equal(true);
 
       expect(await crowdsale.getTranchesCount()).to.equal(1);
@@ -475,27 +470,6 @@ describe('Crowdsale unit tests', () => {
       const { crowdsale, user } = await loadFixture(setup);
 
       await expect(crowdsale.connect(user).setToken(user.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
-    });
-  });
-
-  describe('#setTokenUri()', async () => {
-    const newTokenUri = 'ipfs;//new-token-uri.json';
-
-    it('Should change token URI', async () => {
-      const { crowdsale, owner } = await loadFixture(setup);
-
-      expect(await crowdsale.tokenUri()).to.equal(tokenUri);
-
-      await crowdsale.connect(owner).setTokenUri(newTokenUri);
-      expect(await crowdsale.tokenUri()).to.equal(newTokenUri);
-    });
-
-    it('Should revert changing token address if not owner', async () => {
-      const { crowdsale, user } = await loadFixture(setup);
-
-      await expect(crowdsale.connect(user).setTokenUri(newTokenUri)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
     });

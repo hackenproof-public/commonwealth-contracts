@@ -47,6 +47,9 @@ const config: HardhatUserConfig = {
       url: process.env.SEPOLIA_RPC_URL || '',
       chainId: 11155111,
       accounts: !!process.env.SEPOLIA_WALLET_PRIVATE_KEY ? [process.env.SEPOLIA_WALLET_PRIVATE_KEY] : []
+    },
+    localhost: {
+      chainId: 31337
     }
   },
   paths: {

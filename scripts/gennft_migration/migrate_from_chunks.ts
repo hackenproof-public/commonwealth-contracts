@@ -1,6 +1,7 @@
 import { BaseProvider } from '@ethersproject/providers';
 import { load } from 'csv-load-sync';
-import { BigNumber, utils, Wallet } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
+import { formatEther } from 'ethers/lib/utils';
 import fs from 'fs';
 import hre, { ethers, upgrades } from 'hardhat';
 import { env } from 'process';
@@ -15,19 +16,20 @@ type LabeledAccountBalance = {
 };
 
 const MIGRATED_DIR = './files/migrated';
-const TOKEN_URI = env.GENESIS_NFT_TOKEN_URI!;
 
 const deployGenesisNftContract = async (
   deployer: Wallet,
   migrator: Wallet,
   royaltyWallet: string
 ): Promise<GenesisNFT> => {
+  const tokenURI = env.GENESIS_NFT_TOKEN_URI!;
   process.stdout.write('Deploying Genesis NFT contract... ');
   const genesisNftFactory = await ethers.getContractFactory('GenesisNFT');
   const genesisNft = (await upgrades.deployProxy(genesisNftFactory, [
     deployer.address,
     royaltyWallet,
-    650
+    650,
+    tokenURI
   ])) as GenesisNFT;
   await genesisNft.deployed();
 
@@ -141,27 +143,38 @@ const simulateMigration = async (
   provider: BaseProvider
 ) => {
   let totalGasUsed = BigNumber.from(0);
-  let totalGasCost = BigNumber.from(0);
+  let totalCostLower = BigNumber.from(0);
+  let totalCostUpper = BigNumber.from(0);
 
   for (const chunk of chunks) {
     console.log(`\nSimulate ${chunk.label}`);
 
-    const gasPrice = await provider.getGasPrice();
-    console.log(`Gas price: ${utils.formatEther(gasPrice)} ETH`);
+    const gasUsed = await genesisNft.connect(migrator).estimateGas.mintBatch(chunk.accounts, chunk.balances);
+    console.log(` gasUsed: ${gasUsed}`);
 
-    const gasUsed = await genesisNft.connect(migrator).estimateGas.mintBatch(chunk.accounts, chunk.balances, TOKEN_URI);
-    console.log(`Gas used: ${gasUsed}`);
+    const feeData = await provider.getFeeData();
+    const lastBaseFeePerGas = (feeData.lastBaseFeePerGas || 0) as BigNumber;
+    const maxPriorityFeePerGas = (feeData.maxPriorityFeePerGas || 0) as BigNumber;
 
-    const estimatedTxCost = gasUsed.mul(gasPrice);
-    console.log(`Estimated tx cost: ${utils.formatEther(estimatedTxCost)} ETH`);
+    const fee = lastBaseFeePerGas.add(maxPriorityFeePerGas);
+    const gasFeeLower = fee.sub(lastBaseFeePerGas.div(8));
+    const gasFeeUpper = fee.add(lastBaseFeePerGas.div(8));
+    const estimatedTxCostLower = gasFeeLower.mul(gasUsed);
+    const estimatedTxCostUpper = gasFeeUpper.mul(gasUsed);
+
+    console.log(` gasPrice: ${formatEther(gasFeeLower)} ETH - ${formatEther(gasFeeUpper)} ETH`);
+    console.log(` txCost: ${formatEther(estimatedTxCostLower)} ETH - ${formatEther(estimatedTxCostUpper)} ETH`);
 
     totalGasUsed = totalGasUsed.add(gasUsed);
-    totalGasCost = totalGasCost.add(estimatedTxCost);
+    totalCostLower = totalCostLower.add(estimatedTxCostLower);
+    totalCostUpper = totalCostUpper.add(estimatedTxCostUpper);
+
+    sleep(500);
   }
 
   console.log('\nSimulation finished');
-  console.log(`Total gas used: ${utils.formatEther(totalGasUsed)}`);
-  console.log(`Estimated total gas cost: ${utils.formatEther(totalGasCost)} ETH`);
+  console.log(`Total gas used: ${totalGasUsed}`);
+  console.log(`Estimated migration cost: ${formatEther(totalCostLower)} ETH - ${formatEther(totalCostUpper)} ETH`);
 };
 
 async function main() {
@@ -173,7 +186,7 @@ async function main() {
   console.log(`Genesis NFT address: ${genesisNft.address}`);
 
   let migratorBalanceBefore = await provider.getBalance(migrator.address);
-  console.log(`Initial migrator balance: ${utils.formatEther(migratorBalanceBefore)} ETH`);
+  console.log(`Initial migrator balance: ${formatEther(migratorBalanceBefore)} ETH`);
 
   const preprocessedChunks = getPreprocessedChunks();
 
@@ -187,32 +200,31 @@ async function main() {
     createDirIfNotExist(MIGRATED_DIR);
 
     let totalGasUsed = 0;
-    let migratorBalance = await provider.getBalance(migrator.address);
-
+    let totalMigrationCost = BigNumber.from(0);
     for (const chunk of preprocessedChunks) {
       console.log(`\nMigrating ${chunk.label}`);
+      console.log(`Migrator balance: ${formatEther(await provider.getBalance(migrator.address))} ETH`);
 
       if (await confirmYesOrNo('Do you want to continue? [y/n] ')) {
-        const gasPrice = await provider.getGasPrice();
-        console.log(`Gas price: ${utils.formatEther(gasPrice)}`);
-
         try {
-          const tx = await genesisNft.connect(migrator).mintBatch(chunk.accounts, chunk.balances, TOKEN_URI);
+          const tx = await genesisNft.connect(migrator).mintBatch(chunk.accounts, chunk.balances);
           console.log(`Transaction hash: ${tx.hash}`);
 
           process.stdout.write('Waiting for transaction to be mined... ');
           while (true) {
             const txReceipt = await ethers.provider.getTransactionReceipt(tx.hash);
             if (txReceipt) {
+              const txCost = txReceipt.gasUsed.mul(txReceipt.effectiveGasPrice);
+
               console.log('Done');
-              const newBalance = await provider.getBalance(migrator.address);
-              console.log(
-                `Receipt\n status: ${txReceipt.status}\n gas used: ${txReceipt.gasUsed}\n tx cost: ${utils.formatEther(
-                  migratorBalance.sub(newBalance)
-                )} ETH`
-              );
+              console.log('Receipt');
+              console.log(` status: ${txReceipt.status}`);
+              console.log(` gasUsed: ${txReceipt.gasUsed}`);
+              console.log(` effectiveGasPrice: ${formatEther(txReceipt.effectiveGasPrice)} ETH`);
+              console.log(` txCost: ${formatEther(txCost)} ETH`);
+
               totalGasUsed += txReceipt.gasUsed.toNumber();
-              migratorBalance = newBalance;
+              totalMigrationCost = totalMigrationCost.add(txCost);
               break;
             }
             sleep(1000);
@@ -233,10 +245,10 @@ async function main() {
     console.log('\nMigration completed');
     console.log(`Following files were migrated successfully: ${filesMigrated.join(', ')}\n`);
     console.log(`Total gas used: ${totalGasUsed}`);
+    console.log(`Total migration cost: ${formatEther(totalMigrationCost)} ETH`);
 
     const migratorBalanceAfter = await provider.getBalance(migrator.address);
-    console.log(`Migrator balance after migration: ${utils.formatEther(migratorBalanceAfter)} ETH`);
-    console.log(`Migration cost: ${utils.formatEther(migratorBalanceBefore.sub(migratorBalanceAfter))} ETH`);
+    console.log(`Migrator balance after migration: ${formatEther(migratorBalanceAfter)} ETH`);
   }
 
   if (await confirmYesOrNo('\nDo you want to validate migration? [y/n] ')) {

@@ -8,6 +8,7 @@ async function main() {
   const owner = env.OWNER_ACCOUNT;
   const royaltyAccount = env.GENESIS_NFT_ROYALTY_ACCOUNT;
   const royalty = env.GENESIS_NFT_ROYALTY;
+  const tokenURI = env.GENESIS_NFT_TOKEN_URI;
 
   const [deployer] = await ethers.getSigners();
 
@@ -18,11 +19,17 @@ async function main() {
   console.log(` owner: ${owner}`);
   console.log(` royaltyAccount: ${royaltyAccount}`);
   console.log(` royalty: ${royalty}`);
+  console.log(` tokenURI: ${tokenURI}`);
 
   if (await confirm('\nDo you want to continue? [y/N] ')) {
     console.log('Deploying Genesis NFT contract...');
 
-    const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [owner, royaltyAccount, royalty]);
+    const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
+      owner,
+      royaltyAccount,
+      royalty,
+      tokenURI
+    ]);
 
     console.log(`Genesis NFT deployed to ${genesisNft.address}`);
 

@@ -331,11 +331,6 @@
         "internalType": "uint256",
         "name": "price_",
         "type": "uint256"
-      },
-      {
-        "internalType": "string",
-        "name": "tokenUri_",
-        "type": "string"
       }
     ],
     "name": "initialize",
@@ -444,19 +439,6 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "newTokenUri",
-        "type": "string"
-      }
-    ],
-    "name": "setTokenUri",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "newWallet",
         "type": "address"
@@ -501,19 +483,6 @@
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "tokenUri",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
       }
     ],
     "stateMutability": "view",
