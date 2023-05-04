@@ -3,21 +3,28 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory } from '../../typechain-types';
+import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
 import { getInterfaceId, keccak256, missing_role } from '../utils';
 
 describe('Common Wealth Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
+  const name = 'Common Wealth Genesis NFT';
+  const symbol = 'CWOGNFT';
+  const factor = 7;
   const royalty = 650;
   const defaultTokenURI = 'ipfs://token-uri';
   const IERC721MintableId = utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()));
+  const IGenesisNFTId = utils.arrayify(getInterfaceId(IGenesisNFT__factory.createInterface()));
 
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
     const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
+      name,
+      symbol,
+      factor,
       owner.address,
       royaltyWallet.address,
       royalty,
@@ -44,8 +51,10 @@ describe('Common Wealth Genesis NFT unit tests', () => {
         });
       };
 
-      expect(await genesisNft.name()).to.equal('Common Wealth Genesis NFT');
-      expect(await genesisNft.symbol()).to.equal('CWOGNFT');
+      expect(await genesisNft.name()).to.equal(name);
+      expect(await genesisNft.symbol()).to.equal(symbol);
+      expect(await genesisNft.getFactor()).to.equal(factor);
+      expect(await genesisNft.supportsInterface(IGenesisNFTId)).to.equal(true);
       expect(await genesisNft.supportsInterface(IERC721MintableId)).to.equal(true);
       validateRoles(owner.address, [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE], []);
       validateRoles(deployer.address, [], [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE]);
@@ -59,7 +68,15 @@ describe('Common Wealth Genesis NFT unit tests', () => {
       const [deployer, royaltyAccount] = await ethers.getSigners();
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI])
+        deployProxy('GenesisNFT', deployer, [
+          name,
+          symbol,
+          factor,
+          constants.AddressZero,
+          royaltyAccount.address,
+          royalty,
+          defaultTokenURI
+        ])
       ).to.be.revertedWith('Owner account is zero address');
     });
 
@@ -67,11 +84,27 @@ describe('Common Wealth Genesis NFT unit tests', () => {
       const [deployer, owner, royaltyAccount] = await ethers.getSigners();
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [owner.address, constants.AddressZero, royalty, defaultTokenURI])
+        deployProxy('GenesisNFT', deployer, [
+          name,
+          symbol,
+          factor,
+          owner.address,
+          constants.AddressZero,
+          royalty,
+          defaultTokenURI
+        ])
       ).to.be.revertedWith('ERC2981: invalid receiver');
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [owner.address, royaltyAccount.address, 10001, defaultTokenURI])
+        deployProxy('GenesisNFT', deployer, [
+          name,
+          symbol,
+          factor,
+          owner.address,
+          royaltyAccount.address,
+          10001,
+          defaultTokenURI
+        ])
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
     });
   });

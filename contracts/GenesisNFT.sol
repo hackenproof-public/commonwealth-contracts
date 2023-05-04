@@ -7,6 +7,7 @@ import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/comm
 import {ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
+import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
 
 /**
  * @title Genesis NFT contract
@@ -17,12 +18,14 @@ contract GenesisNFT is
     AccessControlEnumerableUpgradeable,
     ERC2981Upgradeable,
     ERC721HolderUpgradeable,
-    IERC721Mintable
+    IERC721Mintable,
+    IGenesisNFT
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     address private _owner;
+    uint256 private _factor;
     string private _tokenURI;
 
     /**
@@ -39,17 +42,23 @@ contract GenesisNFT is
 
     /**
      * @notice Initializes the contract
+     * @param name_ NFT collection name
+     * @param symbol_ NFT collection symbol
+     * @param factor_ Genesis NFT factor
      * @param owner_ Address of contract owner
      * @param royaltyAccount Address where to send royalty
      * @param royaltyValue Royalty value in basis points
      */
     function initialize(
+        string memory name_,
+        string memory symbol_,
+        uint256 factor_,
         address owner_,
         address royaltyAccount,
         uint96 royaltyValue,
         string memory tokenUri
     ) public initializer {
-        __ERC721_init("Common Wealth Genesis NFT", "CWOGNFT");
+        __ERC721_init(name_, symbol_);
         __ERC721Enumerable_init();
         __Pausable_init();
         __AccessControlEnumerable_init();
@@ -63,9 +72,17 @@ contract GenesisNFT is
         _grantRole(PAUSER_ROLE, owner_);
 
         _owner = owner_;
+        _factor = factor_;
         _tokenURI = tokenUri;
 
         _setDefaultRoyalty(royaltyAccount, royaltyValue);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */
+    function getFactor() external view returns (uint256) {
+        return _factor;
     }
 
     /**
@@ -179,7 +196,10 @@ contract GenesisNFT is
         override(ERC721EnumerableUpgradeable, AccessControlEnumerableUpgradeable, ERC2981Upgradeable)
         returns (bool)
     {
-        return interfaceId == type(IERC721Mintable).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IERC721Mintable).interfaceId ||
+            interfaceId == type(IGenesisNFT).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     function _beforeTokenTransfer(
@@ -204,5 +224,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }

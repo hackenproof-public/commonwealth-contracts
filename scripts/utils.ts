@@ -1,8 +1,15 @@
 import { UpgradeProxyOptions } from '@openzeppelin/hardhat-upgrades/src/utils';
+import { getImplementationAddress } from '@openzeppelin/upgrades-core';
 import { Contract, ContractFactory, Signer } from 'ethers';
 import fs from 'fs';
 import hre, { ethers, upgrades } from 'hardhat';
+import { env } from 'process';
 import readline from 'readline';
+
+export type DeploymentParam = {
+  name: string;
+  value: unknown;
+};
 
 export async function deploy<Type extends Contract>(
   contractName: string,
@@ -26,6 +33,35 @@ export async function deployProxy<Type extends Contract>(
   await contract.deployed();
 
   return <Type>contract;
+}
+
+export async function deployProxyAndVerify(contractName: string, params: DeploymentParam[]) {
+  const [deployer] = await ethers.getSigners();
+
+  console.log(
+    `Running ${contractName} deployment script on network ${hre.network.name} (chainId: ${hre.network.config.chainId})`
+  );
+  if (params.length > 0) {
+    console.log('\nParameters');
+    params.forEach((entry) => {
+      console.log(` ${entry.name}: ${entry.value}`);
+    });
+  }
+
+  const paramsList = params.map((entry) => entry.value);
+  if (await confirm('\nDo you want to continue? [y/N] ')) {
+    console.log(`Deploying ${contractName} contract...`);
+
+    const contract = await deployProxy(contractName, deployer, paramsList);
+
+    console.log(`${contractName} deployed to ${contract.address}`);
+
+    if (await confirmYesOrNo('\nDo you want to verify contract? [y/N] ')) {
+      const implementationAddress = await getImplementationAddress(ethers.provider, contract.address);
+      console.log('Implementation address: ', implementationAddress);
+      await verifyContract(implementationAddress);
+    }
+  }
 }
 
 export async function upgradeContract<Type extends Contract>(
@@ -100,4 +136,9 @@ export function createDirIfNotExist(filename: string) {
 
 export function moveFile(oldPath: string, newPath: string) {
   fs.renameSync(oldPath, newPath);
+}
+
+export function getEnvByNetwork(contractVariable: string, networkName: string): string | undefined {
+  const name = networkName.toUpperCase() + '_' + contractVariable;
+  return env[name];
 }

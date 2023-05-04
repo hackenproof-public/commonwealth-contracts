@@ -10,6 +10,7 @@ describe('Crowdsale integration tests', () => {
 
   const royalty = 650;
   const tokenUri = 'ipfs://token-uri';
+  const genesisNftFactor = 7;
   const txTokenLimit = 100;
   const tranche1 = { supply: 1000, price: toUsdc('1000') };
   const userInitialBalance = tranche1.price.mul(tranche1.supply);
@@ -19,6 +20,9 @@ describe('Crowdsale integration tests', () => {
 
     const usdc: USDC = await deploy('USDC', deployer, []);
     const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
+      'Common Wealth Genesis NFT',
+      'CWOGNFT',
+      genesisNftFactor,
       owner.address,
       royaltyWallet.address,
       royalty,
