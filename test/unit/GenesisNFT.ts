@@ -10,9 +10,9 @@ describe('Common Wealth Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
-  const name = 'Common Wealth Genesis NFT';
-  const symbol = 'CWOGNFT';
-  const factor = 7;
+  const name = 'Common Wealth Genesis NFT Series 1';
+  const symbol = 'CWOGS1';
+  const series = 1;
   const royalty = 650;
   const defaultTokenURI = 'ipfs://token-uri';
   const IERC721MintableId = utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()));
@@ -24,7 +24,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
     const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
       name,
       symbol,
-      factor,
+      series,
       owner.address,
       royaltyWallet.address,
       royalty,
@@ -53,7 +53,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
 
       expect(await genesisNft.name()).to.equal(name);
       expect(await genesisNft.symbol()).to.equal(symbol);
-      expect(await genesisNft.getFactor()).to.equal(factor);
+      expect(await genesisNft.getSeries()).to.equal(series);
       expect(await genesisNft.supportsInterface(IGenesisNFTId)).to.equal(true);
       expect(await genesisNft.supportsInterface(IERC721MintableId)).to.equal(true);
       validateRoles(owner.address, [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE], []);
@@ -71,7 +71,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
         deployProxy('GenesisNFT', deployer, [
           name,
           symbol,
-          factor,
+          series,
           constants.AddressZero,
           royaltyAccount.address,
           royalty,
@@ -87,7 +87,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
         deployProxy('GenesisNFT', deployer, [
           name,
           symbol,
-          factor,
+          series,
           owner.address,
           constants.AddressZero,
           royalty,
@@ -99,7 +99,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
         deployProxy('GenesisNFT', deployer, [
           name,
           symbol,
-          factor,
+          series,
           owner.address,
           royaltyAccount.address,
           10001,

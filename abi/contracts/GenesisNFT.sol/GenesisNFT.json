@@ -340,19 +340,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getFactor",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -404,6 +391,19 @@
       }
     ],
     "name": "getRoleMemberCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getSeries",
     "outputs": [
       {
         "internalType": "uint256",
@@ -470,7 +470,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "factor_",
+        "name": "series_",
         "type": "uint256"
       },
       {

@@ -1,7 +1,7 @@
 [
   {
     "inputs": [],
-    "name": "getFactor",
+    "name": "getSeries",
     "outputs": [
       {
         "internalType": "uint256",

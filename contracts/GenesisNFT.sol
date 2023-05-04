@@ -25,8 +25,8 @@ contract GenesisNFT is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     address private _owner;
-    uint256 private _factor;
     string private _tokenURI;
+    uint256 private _series;
 
     /**
      * @notice Emitted when token URI is changed
@@ -44,7 +44,7 @@ contract GenesisNFT is
      * @notice Initializes the contract
      * @param name_ NFT collection name
      * @param symbol_ NFT collection symbol
-     * @param factor_ Genesis NFT factor
+     * @param series_ Genesis NFT series number
      * @param owner_ Address of contract owner
      * @param royaltyAccount Address where to send royalty
      * @param royaltyValue Royalty value in basis points
@@ -52,7 +52,7 @@ contract GenesisNFT is
     function initialize(
         string memory name_,
         string memory symbol_,
-        uint256 factor_,
+        uint256 series_,
         address owner_,
         address royaltyAccount,
         uint96 royaltyValue,
@@ -72,8 +72,8 @@ contract GenesisNFT is
         _grantRole(PAUSER_ROLE, owner_);
 
         _owner = owner_;
-        _factor = factor_;
         _tokenURI = tokenUri;
+        _series = series_;
 
         _setDefaultRoyalty(royaltyAccount, royaltyValue);
     }
@@ -81,8 +81,8 @@ contract GenesisNFT is
     /**
      * @inheritdoc IGenesisNFT
      */
-    function getFactor() external view returns (uint256) {
-        return _factor;
+    function getSeries() external view returns (uint256) {
+        return _series;
     }
 
     /**
