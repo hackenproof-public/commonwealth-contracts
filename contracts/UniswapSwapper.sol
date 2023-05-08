@@ -17,7 +17,7 @@ contract UniswapSwapper is ISwapper, ReentrancyGuard {
         feeTier = _feeTier;
     }
 
-    function swap(uint256 amountIn, address sourceToken, address targetToken) external nonReentrant returns (uint256)  {
+    function swap(uint256 amountIn, address sourceToken, address targetToken) external nonReentrant returns (uint256) {
         TransferHelper.safeTransferFrom(sourceToken, msg.sender, address(this), amountIn);
 
         TransferHelper.safeApprove(sourceToken, address(swapRouter), amountIn);

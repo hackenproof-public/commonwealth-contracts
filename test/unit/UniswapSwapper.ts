@@ -18,7 +18,10 @@ describe('Uniswap swapper unit tests', () => {
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
     router.exactInputSingle.returns(SOME_OTHER_AMOUNT);
 
-    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [router.address, ZERO_POINT_THREE_FEE_TIER]);
+    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [
+      router.address,
+      ZERO_POINT_THREE_FEE_TIER
+    ]);
 
     return { uniswapSwapper, deployer };
   };
@@ -27,7 +30,10 @@ describe('Uniswap swapper unit tests', () => {
     const [deployer] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [router.address, ZERO_POINT_THREE_FEE_TIER]);
+    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [
+      router.address,
+      ZERO_POINT_THREE_FEE_TIER
+    ]);
 
     expect(await uniswapSwapper.swapRouter()).to.equal(router.address);
   });

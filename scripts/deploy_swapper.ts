@@ -9,7 +9,10 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log('Deploying Swapper contract...');
-  const swapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [SWAP_ROUTER_ADDRESS, ZERO_POINT_THREE_FEE_TIER]);
+  const swapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [
+    SWAP_ROUTER_ADDRESS,
+    ZERO_POINT_THREE_FEE_TIER
+  ]);
 
   console.log(`Swapper deployed to ${swapper.address}`);
 
