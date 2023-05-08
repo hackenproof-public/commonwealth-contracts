@@ -14,7 +14,8 @@
     "export-abi": "hardhat export-abi",
     "prettier:fix": "prettier --write \"**/*.ts\" \"contracts/**/*.sol\"",
     "prettier:check": "prettier --check \"**/*.ts\" \"contracts/**/*.sol\"",
-    "test": "hardhat test",
+    "test": "hardhat test --grep \"^(?!.*integration)\"",
+    "test:integration": "hardhat test --network goerli --grep integration",
     "verify-mainnet": "hardhat verify --network ethereum",
     "verify-goerli": "hardhat verify --network goerli",
     "verify-sepolia": "hardhat verify --network sepolia",
@@ -60,6 +61,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.3",
-    "@openzeppelin/contracts-upgradeable": "^4.8.3"
+    "@openzeppelin/contracts-upgradeable": "^4.8.3",
+    "@uniswap/v3-periphery": "^1.4.3"
   }
 }

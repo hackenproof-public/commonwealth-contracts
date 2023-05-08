@@ -14,7 +14,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
     /**
      * @notice Vested token address
      */
-    address public token;
+    address private token;
 
     /**
      * @notice Address that can release vested tokens
@@ -132,6 +132,13 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
      */
     function getDetails() external view returns (IPeriodicVesting.VestingDetails memory) {
         return IPeriodicVesting.VestingDetails(token, beneficiary, startBlock, periods);
+    }
+
+    /**
+     * @inheritdoc IVesting
+     */
+    function getVestedToken() external view returns (address) {
+        return token;
     }
 
     /**

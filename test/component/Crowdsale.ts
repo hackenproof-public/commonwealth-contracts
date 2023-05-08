@@ -5,7 +5,7 @@ import { deploy, deployProxy } from '../../scripts/utils';
 import { Crowdsale, GenesisNFT, USDC } from '../../typechain-types';
 import { keccak256, toUsdc } from '../utils';
 
-describe('Crowdsale integration tests', () => {
+describe('Crowdsale component tests', () => {
   const MINTER_ROLE = keccak256('MINTER_ROLE');
 
   const royalty = 650;

@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { IProject__factory, PeriodicVesting, Project } from '../../typechain-types';
+import { IProject__factory, PeriodicVesting, Project, UniswapSwapper } from '../../typechain-types';
 import { getInterfaceId } from '../utils';
 
 describe('Periodic vesting project unit tests', () => {
@@ -14,7 +14,8 @@ describe('Periodic vesting project unit tests', () => {
   const deployProject = async () => {
     const [deployer, wallet] = await ethers.getSigners();
 
-    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address]);
+    const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address, swapper.address]);
 
     const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
     await project.setVesting(vesting.address);
@@ -26,7 +27,12 @@ describe('Periodic vesting project unit tests', () => {
     it('Should return initial parameters', async () => {
       const [deployer] = await ethers.getSigners();
 
-      const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address]);
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      const project: Project = await deploy('Project', deployer, [
+        defaultProjectName,
+        deployer.address,
+        swapper.address
+      ]);
 
       expect(await project.name()).to.equal(defaultProjectName);
       expect(await project.status()).to.equal(formatBytes32String('Added'));
@@ -37,9 +43,9 @@ describe('Periodic vesting project unit tests', () => {
     it('Should revert deployment if owner is zero address', async () => {
       const [deployer] = await ethers.getSigners();
 
-      await expect(deploy('Project', deployer, [defaultProjectName, ethers.constants.AddressZero])).to.be.revertedWith(
-        'Owner is zero address'
-      );
+      await expect(
+        deploy('Project', deployer, [defaultProjectName, ethers.constants.AddressZero, ethers.constants.AddressZero])
+      ).to.be.revertedWith('Owner is zero address');
     });
   });
 
@@ -47,7 +53,12 @@ describe('Periodic vesting project unit tests', () => {
     it('Should set vesting contract', async () => {
       const [deployer] = await ethers.getSigners();
 
-      const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address]);
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      const project: Project = await deploy('Project', deployer, [
+        defaultProjectName,
+        deployer.address,
+        swapper.address
+      ]);
       const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
 
       await expect(project.setVesting(vesting.address))
@@ -81,6 +92,18 @@ describe('Periodic vesting project unit tests', () => {
         formatBytes32String('Added'),
         vesting.address
       ]);
+    });
+  });
+
+  const SOME_ADDRESS = '0xbd3Afb0bB76683eCb4225F9DBc91f998713C3b01';
+
+  describe('#sellVestedToInvestmentFund()', () => {
+    it('Should reject if amount is zero', async () => {
+      const { project } = await loadFixture(deployProject);
+
+      await expect(project.sellVestedToInvestmentFund(0, SOME_ADDRESS)).to.be.revertedWith(
+        'Amount has to be above zero'
+      );
     });
   });
 });

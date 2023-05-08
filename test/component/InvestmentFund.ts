@@ -8,7 +8,7 @@ import { deploy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
 import { getLogs, toUsdc } from '../utils';
 
-describe('Investment Fund integration tests', () => {
+describe('Investment Fund component tests', () => {
   const managementFee = 1000;
   const defaultInvestmentCap = toUsdc('1000000');
   const tokenUri = 'ipfs://token-uri';

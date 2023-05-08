@@ -31,4 +31,10 @@ interface IVesting {
      * @return Number of vested tokens
      */
     function getVestedAmount(uint256 blockNumber) external view returns (uint256);
+
+    /**
+     * @notice Returns address of vested token
+     * @return address of vested token
+     */
+    function getVestedToken() external view returns (address);
 }

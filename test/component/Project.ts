@@ -3,10 +3,20 @@ import { expect } from 'chai';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { IPeriodicVesting__factory, IVesting__factory, PeriodicVesting, Project, USDC } from '../../typechain-types';
+import {
+  IPeriodicVesting__factory,
+  IVesting__factory,
+  PeriodicVesting,
+  Project,
+  UniswapSwapper,
+  USDC
+} from '../../typechain-types';
 import { getInterfaceId, getInterfaceIdWithBase, toUsdc } from '../utils';
 
-describe('Project integration tests', () => {
+const FAKE_ADDRESS = '0x68B1D87F95878fE05B998F19b66F4baba5De1aed';
+const ZERO_POINT_THREE_FEE_TIER = 3000;
+
+describe('Project component tests', () => {
   const defaultProjectName = 'Project 1';
   const IPeriodicVestingId = ethers.utils.arrayify(
     getInterfaceIdWithBase([IPeriodicVesting__factory.createInterface(), IVesting__factory.createInterface()])
@@ -16,7 +26,8 @@ describe('Project integration tests', () => {
   const deployProjectWithPeriodicVesting = async () => {
     const [deployer] = await ethers.getSigners();
 
-    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address]);
+    const swapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [FAKE_ADDRESS, ZERO_POINT_THREE_FEE_TIER]);
+    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address, swapper.address]);
 
     const beneficiary = project;
     const startBlock = (await ethers.provider.getBlockNumber()) + 10;

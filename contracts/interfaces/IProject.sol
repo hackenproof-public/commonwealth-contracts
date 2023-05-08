@@ -30,4 +30,11 @@ interface IProject {
      * @return Project details
      */
     function getDetails() external view returns (ProjectDetails memory);
+
+    /**
+     * @notice Sells amount of vested tokens to a given investment fund
+     * @param amount amount of vested tokens to be sold
+     * @param investmentFund address of investmentFund to receive the sold tokens
+     */
+    function sellVestedToInvestmentFund(uint256 amount, address investmentFund) external;
 }

@@ -32,7 +32,7 @@ describe('Periodic vesting unit tests', () => {
     it('Should return initial parameters', async () => {
       const { vesting, usdc, beneficiary, startBlock, totalAllocation } = await loadFixture(deployPeriodicVesting);
 
-      expect(await vesting.token()).to.equal(usdc.address);
+      expect(await vesting.getVestedToken()).to.equal(usdc.address);
       expect(await vesting.beneficiary()).to.equal(beneficiary.address);
       expect(await vesting.startBlock()).to.equal(startBlock);
       expect(await vesting.totalAllocation()).to.equal(totalAllocation);
