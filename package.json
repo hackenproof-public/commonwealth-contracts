@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
-    "coverage": "hardhat coverage",
+    "coverage": "hardhat coverage --testfiles \"test/!(integration)**\"",
     "docgen": "hardhat docgen",
     "lint": "solhint \"contracts/**/*.sol\"",
     "size-contracts": "hardhat size-contracts",

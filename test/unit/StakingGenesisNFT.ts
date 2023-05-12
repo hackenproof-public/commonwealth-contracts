@@ -1,0 +1,476 @@
+import { FakeContract, smock } from '@defi-wonderland/smock';
+import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
+import chai from 'chai';
+import { ethers } from 'hardhat';
+import { deployProxy } from '../../scripts/utils';
+import { IERC721Upgradeable, StakingGenesisNFT } from '../../typechain-types';
+
+chai.use(smock.matchers);
+const { expect } = chai;
+
+describe('Common Wealth Staking Genesis NFT unit tests', () => {
+  const timestamp = Date.now();
+  const TIMESTAMP_IN_THE_FUTURE = timestamp + 600;
+  const SPECIFIC_TIMESTAMP = timestamp + 1234;
+  const TIMESTAMP_IN_THE_PAST = 0;
+  const SOME_STAKE = [1, 2, 5];
+  const SOME_OTHER_STAKE = [3, 7, 9, 11];
+  const DAILY_REWARD_SMALL = 5;
+  const DAILY_REWARD_LARGE = 27;
+  const SECONDS_PER_DAY = 86_400;
+
+  const deployStakingGenesisNFT = async () => {
+    const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+    const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+    smallGenesisNFT.ownerOf.reset();
+    largeGenesisNFT.ownerOf.reset();
+    smallGenesisNFT['safeTransferFrom(address,address,uint256)'].reset();
+    largeGenesisNFT['safeTransferFrom(address,address,uint256)'].reset();
+
+    const [deployer, owner] = await ethers.getSigners();
+
+    const stakingGenesisNft: StakingGenesisNFT = await deployProxy('StakingGenesisNFT', deployer, [
+      owner.address,
+      TIMESTAMP_IN_THE_FUTURE,
+      smallGenesisNFT.address,
+      largeGenesisNFT.address,
+      SECONDS_PER_DAY
+    ]);
+
+    return { stakingGenesisNft, deployer, owner, smallGenesisNFT, largeGenesisNFT };
+  };
+
+  const deployStakingGenesisNFTwithEmptyNftContracts = async () => {
+    const [deployer, owner] = await ethers.getSigners();
+
+    const stakingGenesisNft: StakingGenesisNFT = await deployProxy('StakingGenesisNFT', deployer, [
+      owner.address,
+      TIMESTAMP_IN_THE_FUTURE,
+      ethers.constants.AddressZero,
+      ethers.constants.AddressZero,
+      SECONDS_PER_DAY
+    ]);
+
+    return { stakingGenesisNft, deployer, owner };
+  };
+
+  describe('Deployment', () => {
+    it('Should deploy with correct owner', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(stakingGenesisNft.connect(deployer).pause()).to.be.reverted;
+      await expect(stakingGenesisNft.connect(owner).pause()).not.to.be.reverted;
+    });
+
+    it('Should allow deploying with empty Genesis NFT contracts', async () => {
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+
+      await expect(stakingGenesisNft.connect(owner).pause()).not.to.be.reverted;
+    });
+  });
+
+  describe('#setFinalTimestamp', () => {
+    it('Should not allow non-owner to change number', async () => {
+      const { stakingGenesisNft, deployer } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(stakingGenesisNft.connect(deployer).setFinalTimestamp(TIMESTAMP_IN_THE_FUTURE)).to.be.reverted;
+    });
+
+    it('Should allow owner to change number', async () => {
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
+
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(SPECIFIC_TIMESTAMP);
+
+      expect(await stakingGenesisNft.finalTimestamp()).to.equal(SPECIFIC_TIMESTAMP);
+    });
+
+    it('Should not allow owner to change number for a one in the past', async () => {
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(stakingGenesisNft.connect(owner).setFinalTimestamp(TIMESTAMP_IN_THE_PAST)).to.be.revertedWith(
+        'Cannot set final timestamp for one in the past'
+      );
+    });
+  });
+
+  describe('#stake', () => {
+    it('Should not allow to stake when paused', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+
+      await stakingGenesisNft.connect(owner).pause();
+      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.reverted;
+    });
+
+    it('Should not allow to stake when staking ended', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+      const timestampBefore = await time.latest();
+
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(timestampBefore + 1);
+      await time.increase(2);
+
+      const timestampAfter = await time.latest();
+
+      expect(timestampAfter).to.be.greaterThan(timestampBefore + 1);
+      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.revertedWith('Staking time has ended');
+    });
+
+    it('Should not allow to stake unowned tokens', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(owner.address));
+
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWith('Unexpected tokenId');
+    });
+
+    it('Should allow to stake owned tokens', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).not.to.be.reverted;
+    });
+
+    it('Should not allow staking small tokens if small contract is not initialised', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
+
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWith(
+        'Small NFT contract was not configured'
+      );
+    });
+
+    it('Should not allow staking large tokens if large contract is not initialised', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
+
+      await expect(stakingGenesisNft.connect(deployer).stake([], SOME_STAKE)).to.be.revertedWith(
+        'Large NFT contract was not configured'
+      );
+    });
+
+    it('Should allow staking if small contract is uninitialised but we use large', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+
+      await expect(stakingGenesisNft.connect(deployer).stake([], SOME_STAKE)).not.to.be.reverted;
+    });
+
+    it('Should allow staking if large contract is uninitialised but we use small', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).not.to.be.reverted;
+    });
+  });
+
+  describe('#getRewardSmall', () => {
+    it('Should not give reward if no full day elapsed', async () => {
+      const { stakingGenesisNft, deployer, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
+      await time.increase(SECONDS_PER_DAY - 1);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardSmall(deployer.address)).to.equal(0);
+    });
+
+    it('Should give reward based on number of days staked after tokens unstaked', async () => {
+      const { stakingGenesisNft, deployer, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardSmall(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_SMALL
+      );
+
+      await time.increase(SECONDS_PER_DAY * 5);
+
+      await stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, []);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardSmall(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_SMALL * 6
+      );
+    });
+
+    it('Should not give rewards when final timestamp was reached', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      const timestampBefore = await time.latest();
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(timestampBefore + SECONDS_PER_DAY * 3 + 2);
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
+      await time.increaseTo(timestampBefore + SECONDS_PER_DAY * 5);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardSmall(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_SMALL * 3
+      );
+    });
+  });
+
+  describe('#getRewardLarge', () => {
+    it('Should not give reward if no full day elapsed', async () => {
+      const { stakingGenesisNft, deployer, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
+      await time.increase(SECONDS_PER_DAY - 1);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(0);
+    });
+
+    it('Should give reward based on number of days stake1d', async () => {
+      const { stakingGenesisNft, deployer, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_LARGE
+      );
+
+      await time.increase(SECONDS_PER_DAY * 5);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_LARGE * 6
+      );
+    });
+
+    it('Should not give rewards when final timestamp was reached', async () => {
+      const { stakingGenesisNft, deployer, owner, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      const timestampBefore = await time.latest();
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(timestampBefore + SECONDS_PER_DAY * 3 + 2);
+      await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
+      await time.increaseTo(timestampBefore + SECONDS_PER_DAY * 5);
+
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_LARGE * 3
+      );
+    });
+
+    it('Should give small and large rewards at the same time', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT, largeGenesisNFT } = await loadFixture(
+        deployStakingGenesisNFT
+      );
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, SOME_OTHER_STAKE);
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.connect(owner).getRewardSmall(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_SMALL
+      );
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
+        SOME_OTHER_STAKE.length * DAILY_REWARD_LARGE
+      );
+    });
+
+    it('Should give small and large rewards for multiple stakes', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT, largeGenesisNFT } = await loadFixture(
+        deployStakingGenesisNFT
+      );
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, SOME_OTHER_STAKE);
+      await time.increase(SECONDS_PER_DAY);
+      await stakingGenesisNft.connect(deployer).stake(SOME_OTHER_STAKE, SOME_STAKE);
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.connect(owner).getRewardSmall(deployer.address)).to.equal(
+        SOME_STAKE.length * DAILY_REWARD_SMALL * 2 + SOME_OTHER_STAKE.length * DAILY_REWARD_SMALL
+      );
+      expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
+        SOME_OTHER_STAKE.length * DAILY_REWARD_LARGE * 2 + SOME_STAKE.length * DAILY_REWARD_LARGE
+      );
+    });
+  });
+
+  describe('#unstake', () => {
+    it('Should not allow to unstake tokens that were not staked', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE.slice(1), []);
+
+      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWith(
+        'You have not staked some of these tokens'
+      );
+    });
+
+    it('Should not allow to unstake when paused', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      await stakingGenesisNft.connect(owner).pause();
+
+      await expect(stakingGenesisNft.connect(deployer).unstake([], [])).to.be.reverted;
+    });
+
+    it('Should unstake', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT, largeGenesisNFT } = await loadFixture(
+        deployStakingGenesisNFT
+      );
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, SOME_OTHER_STAKE);
+      await time.increase(SECONDS_PER_DAY * 5);
+
+      const smallReward = await stakingGenesisNft.connect(owner).getRewardSmall(deployer.address);
+      const largeReward = await stakingGenesisNft.connect(owner).getRewardLarge(deployer.address);
+
+      expect(smallReward).to.be.greaterThan(0);
+      expect(largeReward).to.be.greaterThan(0);
+
+      smallGenesisNFT['safeTransferFrom(address,address,uint256)'].reset();
+
+      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, SOME_OTHER_STAKE)).not.to.be.reverted;
+      expect(await stakingGenesisNft.connect(owner).getRewardSmall(deployer.address)).to.be.equal(smallReward);
+      expect(await stakingGenesisNft.connect(owner).getRewardLarge(deployer.address)).to.be.equal(largeReward);
+      SOME_STAKE.forEach((id) =>
+        expect(smallGenesisNFT['safeTransferFrom(address,address,uint256)']).to.have.been.calledWith(
+          stakingGenesisNft.address,
+          deployer.address,
+          id
+        )
+      );
+      SOME_OTHER_STAKE.forEach((id) =>
+        expect(largeGenesisNFT['safeTransferFrom(address,address,uint256)']).to.have.been.calledWith(
+          stakingGenesisNft.address,
+          deployer.address,
+          id
+        )
+      );
+    });
+
+    it('Should only provide rewards for the small tokens that are being unstaked', async () => {
+      const { stakingGenesisNft, deployer, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
+      await stakingGenesisNft.connect(deployer).stake(SOME_OTHER_STAKE, []);
+      await time.increase(SECONDS_PER_DAY);
+      const unstaked = SOME_STAKE.slice(1);
+
+      await stakingGenesisNft.connect(deployer).unstake(unstaked, []);
+
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.getRewardSmall(deployer.address)).to.equal(
+        unstaked.length * DAILY_REWARD_SMALL +
+          (SOME_STAKE.length - unstaked.length + SOME_OTHER_STAKE.length) * DAILY_REWARD_SMALL * 2
+      );
+    });
+
+    it('Should only provide rewards for the large tokens that are being unstaked', async () => {
+      const { stakingGenesisNft, deployer, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
+      await stakingGenesisNft.connect(deployer).stake([], SOME_OTHER_STAKE);
+      await time.increase(SECONDS_PER_DAY);
+      const unstaked = SOME_STAKE.slice(1);
+
+      await stakingGenesisNft.connect(deployer).unstake([], unstaked);
+
+      await time.increase(SECONDS_PER_DAY);
+
+      expect(await stakingGenesisNft.getRewardLarge(deployer.address)).to.equal(
+        unstaked.length * DAILY_REWARD_LARGE +
+          (SOME_STAKE.length - unstaked.length + SOME_OTHER_STAKE.length) * DAILY_REWARD_LARGE * 2
+      );
+    });
+  });
+
+  describe('#getStakedTokensSmall', () => {
+    it('Should calculate currently staked small tokens', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
+      await time.increase(3);
+      await stakingGenesisNft.connect(deployer).stake(SOME_OTHER_STAKE, []);
+
+      expect(await stakingGenesisNft.connect(owner).getStakedTokensSmall(deployer.address)).to.deep.equal([
+        ...SOME_STAKE,
+        ...SOME_OTHER_STAKE
+      ]);
+    });
+  });
+
+  describe('#getStakedTokensLarge', () => {
+    it('Should calculate currently staked large tokens', async () => {
+      const { stakingGenesisNft, deployer, owner, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      SOME_OTHER_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
+      await time.increase(3);
+      await stakingGenesisNft.connect(deployer).stake([], SOME_OTHER_STAKE);
+
+      expect(await stakingGenesisNft.connect(owner).getStakedTokensLarge(deployer.address)).to.deep.equal([
+        ...SOME_STAKE,
+        ...SOME_OTHER_STAKE
+      ]);
+    });
+  });
+
+  describe('#initialiseSmallNft', () => {
+    it('Should not allow non-owner to init small nft', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await expect(stakingGenesisNft.connect(deployer).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('Should not allow init small nft if it was already initialised', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await expect(stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
+        'Small NFT was already initialised'
+      );
+    });
+
+    it('Should init small nft', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
+
+      expect(await stakingGenesisNft.smallNft()).to.equal(smallGenesisNFT.address);
+    });
+  });
+
+  describe('#initialiseLargeNft', () => {
+    it('Should not allow non-owner to init large nft', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await expect(stakingGenesisNft.connect(deployer).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('Should not allow init large nft if it was already initialised', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await expect(stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
+        'Large NFT was already initialised'
+      );
+    });
+
+    it('Should init large nft', async () => {
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
+
+      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
+
+      expect(await stakingGenesisNft.largeNft()).to.equal(largeGenesisNFT.address);
+    });
+  });
+});
