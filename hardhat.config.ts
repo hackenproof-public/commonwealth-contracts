@@ -40,8 +40,7 @@ const config: HardhatUserConfig = {
     goerli: {
       url: process.env.GOERLI_RPC_URL || '',
       chainId: 5,
-      accounts: !!process.env.GOERLI_WALLET_PRIVATE_KEY ? [process.env.GOERLI_WALLET_PRIVATE_KEY] : [],
-      gas: 415426000
+      accounts: !!process.env.GOERLI_WALLET_PRIVATE_KEY ? [process.env.GOERLI_WALLET_PRIVATE_KEY] : []
     },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || '',
