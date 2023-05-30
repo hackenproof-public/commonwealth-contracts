@@ -28,7 +28,7 @@ jobs:
 
       - run: yarn --ignore-scripts
 
-      - name: Run Linter
+      - name: Run linter
         run: yarn check-style
 
       - name: Run Slither
@@ -53,8 +53,5 @@ jobs:
 
       - run: yarn --ignore-scripts
 
-      - name: Run Unit Tests
-        run: yarn coverage --testfiles test/unit/
-
-      - name: Run Integration Tests
-        run: yarn test test/integration/*
+      - name: Run unit and component tests
+        run: yarn coverage

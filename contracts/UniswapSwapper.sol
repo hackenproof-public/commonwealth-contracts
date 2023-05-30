@@ -2,11 +2,11 @@
 pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import {TransferHelper} from "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./interfaces/ISwapper.sol";
+import {ISwapper} from "./interfaces/ISwapper.sol";
 
 contract UniswapSwapper is ISwapper, ReentrancyGuard {
     ISwapRouter public swapRouter;

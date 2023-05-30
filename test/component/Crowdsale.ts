@@ -192,23 +192,6 @@ describe('Crowdsale component tests', () => {
       );
       expect(await genesisNft.balanceOf(user.address)).to.equal(44);
     });
-    //
-    // it(`Should not allow to buy if tranche supply was exceeded`, async () => {
-    //   const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
-    //
-    //   await crowdsale.connect(owner).unpause();
-    //   await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
-    //   await crowdsale.connect(owner).addToKolWhitelist([user.address]);
-    //   await usdc.connect(user).approve(crowdsale.address, 1000 * PUBLIC_PRICE);
-    //
-    //   expect(await usdc.balanceOf(user.address)).to.equal(USER_INITIAL_BALANCE);
-    //   expect(await genesisNft.balanceOf(user.address)).to.equal(0);
-    //
-    //   await mineUpTo(tranche1.start + (await crowdsale.WHITELISTED_PHASE_DURATION()).toNumber() + 1);
-    //
-    //   expect (await crowdsale.connect(user).buyTokens(999)).not.to.be.reverted;
-    //   expect (await crowdsale.connect(user).buyTokens(1)).to.be.reverted;
-    // });
 
     it(`Should not allow to buy if its inactive`, async () => {
       const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
