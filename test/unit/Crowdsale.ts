@@ -1,21 +1,30 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
-import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, mineUpTo, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { Crowdsale, GenesisNFT, USDC } from '../../typechain-types';
+import { CrowdsalePhase } from '../types';
 import { toUsdc } from '../utils';
 
 describe('Crowdsale unit tests', () => {
-  const supply = 1000;
+  let startBlock: number;
   const nftPrice = toUsdc('1000');
-  const txTokenLimit = 100;
+  const tranchesCount = 9;
+  const whitelistDuration = 55;
+  const publicDuration = 77;
+  const durationBetweenTranches = 200;
+  const maxKolTokensToBuy = 5;
+  const trancheSupply = 999;
+  const someTrancheNumber = 3;
 
   let restorer: SnapshotRestorer;
 
   const setup = async () => {
+    startBlock = (await ethers.provider.getBlockNumber()) + 10;
+
     const [deployer, owner, user, treasury, royaltyWallet] = await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -25,8 +34,11 @@ describe('Crowdsale unit tests', () => {
       treasury.address,
       usdc.address,
       genesisNft.address,
-      0,
-      0
+      startBlock,
+      tranchesCount,
+      whitelistDuration,
+      publicDuration,
+      durationBetweenTranches
     ]);
 
     return { crowdsale, genesisNft, usdc, deployer, owner, user, treasury, royaltyWallet };
@@ -43,13 +55,16 @@ describe('Crowdsale unit tests', () => {
       expect(await crowdsale.fundsRaised()).to.equal(0);
       expect(await crowdsale.paused()).to.equal(true);
 
-      expect(await crowdsale.getTranchesCount()).to.equal(1);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([0, 0, 0, 0, 0]);
+      expect(await crowdsale.getTranchesCount()).to.equal(tranchesCount);
+      expect(await crowdsale.getCurrentTrancheDetails()).to.deep.equal([
+        [0, 0, 0, 0, 0, 0, 0],
+        CrowdsalePhase.Inactive,
+        0
+      ]);
       expect(await crowdsale.supply()).to.equal(0);
-      expect(await crowdsale.TOKEN_LIMIT_PER_PURCHASE()).to.equal(txTokenLimit);
     });
 
-    it('Should deploy with initial tranche', async () => {
+    it('Should deploy with no tranches', async () => {
       const [deployer, owner, treasury] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -59,21 +74,14 @@ describe('Crowdsale unit tests', () => {
         treasury.address,
         usdc.address,
         genesisNft.address,
-        supply,
-        nftPrice
+        startBlock,
+        0,
+        whitelistDuration,
+        publicDuration,
+        durationBetweenTranches
       ]);
 
-      expect(await crowdsale.owner()).to.equal(owner.address);
-      expect(await crowdsale.token()).to.equal(genesisNft.address);
-      expect(await crowdsale.currency()).to.equal(usdc.address);
-      expect(await crowdsale.wallet()).to.equal(treasury.address);
-      expect(await crowdsale.fundsRaised()).to.equal(0);
-      expect(await crowdsale.paused()).to.equal(true);
-
-      expect(await crowdsale.getTranchesCount()).to.equal(1);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([nftPrice, supply, 0, 0, 0]);
-      expect(await crowdsale.supply()).to.equal(supply);
-      expect(await crowdsale.TOKEN_LIMIT_PER_PURCHASE()).to.equal(txTokenLimit);
+      expect(await crowdsale.getTranchesCount()).to.equal(0);
     });
   });
 
@@ -102,195 +110,160 @@ describe('Crowdsale unit tests', () => {
   describe('#addTranche()', async () => {
     it('Should add tokens for sale', async () => {
       const { crowdsale, owner, user } = await loadFixture(setup);
-      expect(await crowdsale.getTranchesCount()).to.equal(1);
 
-      const tranche1 = { supply: 1, price: toUsdc('650') };
-      await crowdsale.connect(owner).addTranche(tranche1.supply, tranche1.price);
-      expect(await crowdsale.getTranchesCount()).to.equal(2);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche1.price, tranche1.supply, 0, 0, 0]);
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect(await crowdsale.available(user.address)).to.equal(tranche1.supply);
+      const supply = await crowdsale.TRANCHE_SUPPLY();
+      const publicPrice = await crowdsale.PUBLIC_PRICE();
+      const blockNumber = await ethers.provider.getBlockNumber();
 
-      const tranche2 = { supply: 100, price: toUsdc('750') };
-      await crowdsale.connect(owner).addTranche(tranche2.supply, tranche2.price);
-      expect(await crowdsale.getTranchesCount()).to.equal(3);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche2.price, tranche2.supply, 0, 0, 0]);
-      expect(await crowdsale.supply()).to.equal(tranche2.supply);
-      expect(await crowdsale.available(user.address)).to.equal(tranche2.supply);
+      const tranche1 = {
+        start: blockNumber + 10 + durationBetweenTranches * (tranchesCount + 1),
+        kolPrice: toUsdc('650')
+      };
+      await crowdsale.connect(owner).addTranche(tranche1.start, tranche1.kolPrice);
+      expect(await crowdsale.getTranchesCount()).to.equal(10);
+
+      await mineUpTo(tranche1.start - 1);
+      expect((await crowdsale.getCurrentTrancheDetails()).phase).to.equal(CrowdsalePhase.Inactive);
+      expect(await crowdsale.supply()).to.equal(0);
+      expect(await crowdsale.available(user.address)).to.equal(0);
+
+      await mineUpTo(tranche1.start);
+      expect(await crowdsale.getCurrentTrancheDetails()).to.deep.equal([
+        [tranche1.start, supply, tranche1.kolPrice, publicPrice, 0, 0, 0],
+        CrowdsalePhase.Whitelisted,
+        tranchesCount + 1
+      ]);
+      expect(await crowdsale.supply()).to.equal(supply);
+      expect(await crowdsale.available(user.address)).to.equal(0);
+
+      await mineUpTo(tranche1.start + whitelistDuration);
+      expect(await crowdsale.getCurrentTrancheDetails()).to.deep.equal([
+        [tranche1.start, supply, tranche1.kolPrice, publicPrice, 0, 0, 0],
+        CrowdsalePhase.Public,
+        tranchesCount + 1
+      ]);
+      expect(await crowdsale.supply()).to.equal(supply);
+
+      await mineUpTo(tranche1.start + whitelistDuration + publicDuration);
+      expect((await crowdsale.getCurrentTrancheDetails()).phase).to.equal(CrowdsalePhase.Inactive);
+      expect(await crowdsale.supply()).to.equal(0);
+      expect(await crowdsale.available(user.address)).to.equal(0);
     });
 
-    it('Should revert putting tokens on sale if amount is zero', async () => {
+    it('Should revert putting tokens on sale if overlaps with other tranches', async () => {
       const { crowdsale, owner } = await loadFixture(setup);
 
-      await expect(crowdsale.connect(owner).addTranche(0, nftPrice)).to.be.revertedWith(
-        'Invalid token amount for sale'
+      await expect(crowdsale.connect(owner).addTranche(startBlock + 1, 0)).to.be.revertedWith(
+        'Tranche start cannot overlap another ones'
       );
     });
 
     it('Should revert putting tokens on sale if not owner', async () => {
       const { crowdsale, user } = await loadFixture(setup);
 
-      await expect(crowdsale.connect(user).addTranche(supply, nftPrice)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
-    });
-  });
-
-  describe('#addWhitelistedTranche()', async () => {
-    it('Should add tokens for sale with whitelist', async () => {
-      const { crowdsale, owner, user } = await loadFixture(setup);
-      expect(await crowdsale.getTranchesCount()).to.equal(1);
-
-      const tranche1 = { supply, price: nftPrice };
-      await crowdsale.connect(owner).addWhitelistedTranche(tranche1.supply, tranche1.price, [user.address], [10]);
-      expect(await crowdsale.getTranchesCount()).to.equal(2);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche1.price, tranche1.supply - 10, 0, 10, 0]);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(true);
-      expect(await crowdsale.isAccountWhitelisted(owner.address)).to.equal(false);
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect(await crowdsale.available(user.address)).to.equal(tranche1.supply - 10 + 10);
-
-      const tranche2 = { supply: 100, price: toUsdc('750') };
-      await crowdsale
-        .connect(owner)
-        .addWhitelistedTranche(tranche2.supply, tranche2.price, [user.address, owner.address], [10, 20]);
-      expect(await crowdsale.getTranchesCount()).to.equal(3);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche2.price, tranche2.supply - 30, 0, 30, 0]);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(true);
-      expect(await crowdsale.isAccountWhitelisted(owner.address)).to.equal(true);
-      expect(await crowdsale.supply()).to.equal(tranche2.supply);
-      expect(await crowdsale.available(user.address)).to.equal(tranche2.supply - 30 + 10);
-    });
-
-    it('Should revert adding tokens for sale with whitelist if amount is zero', async () => {
-      const { crowdsale, owner } = await loadFixture(setup);
-
-      await expect(crowdsale.connect(owner).addWhitelistedTranche(0, nftPrice, [], [])).to.be.revertedWith(
-        'Invalid token amount for sale'
-      );
-    });
-
-    it('Should revert adding tokens for sale with whitelist if arrays length mismatch', async () => {
-      const { crowdsale, owner } = await loadFixture(setup);
-
-      await expect(
-        crowdsale.connect(owner).addWhitelistedTranche(supply, nftPrice, [owner.address], [])
-      ).to.be.revertedWith('Accounts and caps length mismatch');
-    });
-
-    it('Should revert adding tokens for sale with whitelist if not owner', async () => {
-      const { crowdsale, user } = await loadFixture(setup);
-
-      await expect(crowdsale.connect(user).addWhitelistedTranche(supply, nftPrice, [], [])).to.be.revertedWith(
+      await expect(crowdsale.connect(user).addTranche(9999999999, nftPrice)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
     });
   });
 
   describe('#addToWhitelist()', async () => {
-    it('Should add accounts to whitelist', async () => {
+    it('Should add accounts to free mints whitelist', async () => {
       const { crowdsale, owner, user } = await loadFixture(setup);
 
-      const tranche1 = { supply, price: nftPrice };
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(false);
 
-      await crowdsale.connect(owner).addTranche(tranche1.supply, tranche1.price);
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
 
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(0);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(false);
-
-      await crowdsale.connect(owner).addToWhitelist([user.address], [10]);
-
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(10);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(true);
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(true);
     });
 
-    it('Should revert adding accounts to whitelist if whitelist supply exceeds total supply', async () => {
-      const { crowdsale, owner } = await loadFixture(setup);
+    it('Should add accounts to kol mints whitelist', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
 
-      const tranche1 = { supply, price: nftPrice };
-      await crowdsale.connect(owner).addTranche(tranche1.supply, tranche1.price);
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(false);
 
-      await expect(crowdsale.connect(owner).addToWhitelist([owner.address], [tranche1.supply + 1])).to.be.revertedWith(
-        'Whitelist supply exceeds total supply'
-      );
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
+
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(true);
     });
 
-    it('Should revert adding accounts to whitelist if arrays length mismatch', async () => {
-      const { crowdsale, owner } = await loadFixture(setup);
+    it('Should append to free mint whitelist instead of overwriting', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
 
-      await expect(crowdsale.connect(owner).addToWhitelist([owner.address], [])).to.be.revertedWith(
-        'Accounts and caps length mismatch'
-      );
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(false);
+
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
+
+      await mineUpTo(startBlock + 1);
+      expect(await crowdsale.connect(user).isAccountFreeMintsWhitelisted(user.address)).to.equal(true);
+      expect(await crowdsale.connect(user).isAccountKolWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.connect(user).available(user.address)).to.equal(3);
+    });
+
+    it('Should keep kole whitelist max when overwriting', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
+
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(false);
+
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
+
+      await mineUpTo(startBlock + 1);
+      expect(await crowdsale.connect(user).isAccountFreeMintsWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.connect(user).isAccountKolWhitelisted(user.address)).to.equal(true);
+      expect(await crowdsale.connect(user).available(user.address)).to.equal(trancheSupply);
     });
 
     it('Should revert adding accounts to whitelist if not owner', async () => {
       const { crowdsale, user } = await loadFixture(setup);
 
-      await expect(crowdsale.connect(user).addToWhitelist([user.address], [10])).to.be.revertedWith(
+      await expect(crowdsale.connect(user).addToFreeMintsWhitelist([user.address])).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
     });
   });
 
   describe('#removeFromWhitelist()', async () => {
-    it('Should remove accounts from whitelist', async () => {
+    it('Should remove accounts from free mint whitelist', async () => {
       const { crowdsale, owner, user } = await loadFixture(setup);
 
-      const tranche1 = { supply, price: nftPrice };
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address, owner.address]);
 
-      await crowdsale
-        .connect(owner)
-        .addWhitelistedTranche(tranche1.supply, tranche1.price, [user.address, owner.address], [10, 20]);
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(true);
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(owner.address)).to.equal(true);
 
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(30);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(true);
-      expect(await crowdsale.isAccountWhitelisted(owner.address)).to.equal(true);
+      await crowdsale.connect(owner).removeFromFreeMintsWhitelist([user.address]);
 
-      await crowdsale.connect(owner).removeFromWhitelist([user.address]);
-
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(20);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(false);
-      expect(await crowdsale.isAccountWhitelisted(owner.address)).to.equal(true);
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.isAccountFreeMintsWhitelisted(owner.address)).to.equal(true);
     });
 
-    it('Should remove accounts from whitelist if tokens sold from whitelist', async () => {
-      const { crowdsale, usdc, owner, user } = await loadFixture(setup);
-      usdc.transferFrom.returns(true);
+    it('Should remove accounts from kol whitelist', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
 
-      const tranche1 = { supply, price: nftPrice };
+      await crowdsale.connect(owner).addToKolWhitelist([user.address, owner.address]);
 
-      await crowdsale
-        .connect(owner)
-        .addWhitelistedTranche(tranche1.supply, tranche1.price, [user.address, owner.address], [10, 20]);
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(true);
+      expect(await crowdsale.isAccountKolWhitelisted(owner.address)).to.equal(true);
 
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(30);
+      await crowdsale.connect(owner).removeFromKolWhitelist([user.address]);
 
-      await crowdsale.connect(owner).unpause();
-      await crowdsale.connect(user).buyTokens(5);
-      await crowdsale.connect(owner).removeFromWhitelist([user.address]);
-
-      expect(await crowdsale.supply()).to.equal(tranche1.supply);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSupply).to.equal(25);
-      expect(await crowdsale.isAccountWhitelisted(user.address)).to.equal(false);
-      expect(await crowdsale.isAccountWhitelisted(owner.address)).to.equal(true);
-    });
-
-    it('Should revert removing accounts from whitelist if not owner', async () => {
-      const { crowdsale, user } = await loadFixture(setup);
-
-      await expect(crowdsale.connect(user).addToWhitelist([user.address], [10])).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
+      expect(await crowdsale.isAccountKolWhitelisted(user.address)).to.equal(false);
+      expect(await crowdsale.isAccountKolWhitelisted(owner.address)).to.equal(true);
     });
   });
 
   describe('#buyTokens()', async () => {
-    const tranche1 = { supply, price: nftPrice };
+    const tranche1 = {
+      start: startBlock + 10 + durationBetweenTranches * (tranchesCount + 1),
+      kolPrice: nftPrice
+    };
     let crowdsale: Crowdsale;
     let usdc: FakeContract<USDC>;
     let owner: SignerWithAddress;
@@ -299,7 +272,6 @@ describe('Crowdsale unit tests', () => {
     before(async () => {
       ({ crowdsale, usdc, owner, user } = await loadFixture(setup));
       await crowdsale.connect(owner).unpause();
-      await crowdsale.connect(owner).addTranche(tranche1.supply, tranche1.price);
 
       restorer = await takeSnapshot();
     });
@@ -310,77 +282,65 @@ describe('Crowdsale unit tests', () => {
       usdc.transferFrom.returns(true);
     });
 
-    [1, txTokenLimit].forEach((tokenAmount) => {
-      it(`Should buy tokens if no whitelist [amount=${tokenAmount}]`, async () => {
-        const expectedFundsRaised = tranche1.price.mul(tokenAmount);
+    [1, 55, 999].forEach((tokenAmount) => {
+      it(`Should buy tokens in public phase [amount=${tokenAmount}]`, async () => {
+        const expectedFundsRaised = (await crowdsale.PUBLIC_PRICE()).mul(tokenAmount);
+
+        await mineUpTo(startBlock + whitelistDuration + 1);
 
         await expect(crowdsale.connect(user).buyTokens(tokenAmount))
           .to.emit(crowdsale, 'TokensPurchased')
           .withArgs(user.address, expectedFundsRaised, tokenAmount);
 
         expect(await crowdsale.sold()).to.equal(tokenAmount);
-        expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche1.price, tranche1.supply, tokenAmount, 0, 0]);
         expect(await crowdsale.fundsRaised()).to.equal(expectedFundsRaised);
       });
     });
 
-    it('Should buy tokens if multiple tranches', async () => {
-      const amount1 = 1;
-      let expectedFundsRaised = tranche1.price.mul(amount1);
-      await crowdsale.connect(user).buyTokens(amount1);
+    it('Should buy kol tokens', async () => {
+      await mineUpTo(startBlock + 1);
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
 
-      expect(await crowdsale.sold()).to.equal(amount1);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche1.price, tranche1.supply, amount1, 0, 0]);
-      expect(await crowdsale.fundsRaised()).to.equal(expectedFundsRaised);
+      await crowdsale.connect(user).buyTokens(maxKolTokensToBuy);
 
-      const tranche2 = { supply: 500, price: toUsdc('750') };
-      const amount2 = 100;
-      expectedFundsRaised = expectedFundsRaised.add(tranche2.price.mul(amount2));
-
-      await crowdsale.connect(owner).addTranche(tranche2.supply, tranche2.price);
-      await crowdsale.connect(user).buyTokens(amount2);
-
-      expect(await crowdsale.sold()).to.equal(amount2);
-      expect(await crowdsale.getTrancheDetails()).to.deep.equal([tranche2.price, tranche2.supply, amount2, 0, 0]);
-      expect(await crowdsale.fundsRaised()).to.equal(expectedFundsRaised);
+      expect(await crowdsale.sold()).to.equal(maxKolTokensToBuy);
+      expect((await crowdsale.getCurrentTrancheDetails()).details.kolSold).to.equal(maxKolTokensToBuy);
+      expect(await crowdsale.connect(user).boughtCountKol(user.address)).to.equal(maxKolTokensToBuy);
     });
 
-    it('Should buy tokens if user is whitelisted', async () => {
-      const tranche = { supply: 100, price: toUsdc('750') };
-      const cap = 10;
-      await crowdsale.connect(owner).addWhitelistedTranche(tranche.supply, tranche.price, [user.address], [cap]);
+    it('Should buy free mint tokens', async () => {
+      await mineUpTo(startBlock + 1);
+      await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
 
-      const amount = tranche.supply;
-      await crowdsale.connect(user).buyTokens(amount);
+      await crowdsale.connect(user).buyTokens(1);
 
-      expect(await crowdsale.sold()).to.equal(amount);
-      expect((await crowdsale.getTrancheDetails()).whitelistedSold).to.equal(cap);
+      expect(await crowdsale.sold()).to.equal(1);
+      expect((await crowdsale.getCurrentTrancheDetails()).details.freeMintsSold).to.equal(1);
+      expect(await crowdsale.connect(user).boughtCountFreeMint(user.address)).to.equal(1);
     });
 
-    it('Should revert buying tokens if claimed amount exceeds public pool and user is not whitelisted', async () => {
-      const tranche = { supply: 100, price: toUsdc('750') };
-      const cap = 10;
-      await crowdsale.connect(owner).addWhitelistedTranche(tranche.supply, tranche.price, [user.address], [cap]);
+    it('Should revert buying KOL tokens if claimed amount exceeds max', async () => {
+      await mineUpTo(startBlock + 1);
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
 
-      const amount = tranche.supply;
-      await expect(crowdsale.connect(owner).buyTokens(amount)).to.be.revertedWith('Too many tokens claimed');
-    });
-
-    it('Should revert buying tokens exceeding limit', async () => {
-      const amount = txTokenLimit + 1;
-
-      await expect(crowdsale.connect(user).buyTokens(amount)).to.be.revertedWith('Too many tokens claimed');
+      await expect(crowdsale.connect(owner).buyTokens(maxKolTokensToBuy + 1)).to.be.revertedWith(
+        'Too many tokens claimed'
+      );
     });
 
     it('Should revert buying tokens if crowdsale is paused', async () => {
-      await expect(crowdsale.buyTokens(1)).not.to.be.reverted;
+      await mineUpTo(startBlock + 1);
+      await crowdsale.connect(owner).addToKolWhitelist([user.address]);
+      await expect(crowdsale.connect(user).buyTokens(1)).not.to.be.reverted;
 
       await crowdsale.connect(owner).pause();
-      await expect(crowdsale.buyTokens(1)).to.be.revertedWith('Pausable: paused');
+      await expect(crowdsale.connect(user).buyTokens(1)).to.be.revertedWith('Pausable: paused');
     });
 
     it('Should revert buying tokens if amount exceeds the sale supply', async () => {
-      await expect(crowdsale.buyTokens(supply + 1)).to.be.revertedWith('Too many tokens claimed');
+      await mineUpTo(startBlock + whitelistDuration + 1);
+
+      await expect(crowdsale.connect(user).buyTokens(trancheSupply + 1)).to.be.revertedWith('Too many tokens claimed');
     });
 
     it('Should revert buying tokens if amount is zero', async () => {
@@ -388,6 +348,7 @@ describe('Crowdsale unit tests', () => {
     });
 
     it('Should revert buying tokens if currency transfer fails', async () => {
+      await mineUpTo(startBlock + whitelistDuration + 1);
       usdc.transferFrom.returns(false);
 
       await expect(crowdsale.buyTokens(1)).to.be.revertedWith('SafeERC20: ERC20 operation did not succeed');
@@ -493,6 +454,43 @@ describe('Crowdsale unit tests', () => {
 
       await expect(crowdsale.connect(user).unpause()).to.be.revertedWith('Ownable: caller is not the owner');
       await expect(crowdsale.connect(user).pause()).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+  });
+
+  describe('#updateTrancheStartBlock', async () => {
+    it('Should not allow non-owner to update tranche start block', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
+
+      await expect(crowdsale.connect(user).updateTrancheStartBlock(0, 0)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('Should not allow to update tranche start block to one in the past', async () => {
+      const { crowdsale, owner, user } = await loadFixture(setup);
+
+      await mineUpTo(startBlock);
+
+      await expect(crowdsale.connect(owner).updateTrancheStartBlock(3, startBlock - 1)).to.be.revertedWith(
+        'Cannot update start block to one in the past'
+      );
+    });
+
+    it('Should update tranche start block', async () => {
+      const { crowdsale, owner } = await loadFixture(setup);
+
+      const oldTranche = await crowdsale.tranches(someTrancheNumber);
+      await mineUpTo(startBlock);
+      await crowdsale.connect(owner).updateTrancheStartBlock(someTrancheNumber, startBlock + 1);
+      const newTranche = await crowdsale.tranches(someTrancheNumber);
+
+      expect(newTranche.start).to.equal(startBlock + 1);
+      expect(newTranche.supply).to.equal(oldTranche.supply);
+      expect(newTranche.kolPrice).to.equal(oldTranche.kolPrice);
+      expect(newTranche.publicPrice).to.equal(oldTranche.publicPrice);
+      expect(newTranche.freeMintsSold).to.equal(oldTranche.freeMintsSold);
+      expect(newTranche.kolSold).to.equal(oldTranche.kolSold);
+      expect(newTranche.publicSold).to.equal(oldTranche.publicSold);
     });
   });
 });

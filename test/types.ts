@@ -7,6 +7,12 @@ export enum FundState {
   Closed = 'Closed'
 }
 
+export enum CrowdsalePhase {
+  Whitelisted = 0,
+  Public,
+  Inactive
+}
+
 export type InvestmentFundDeploymentParameters = {
   fundName?: string;
   treasuryAddress?: string;

@@ -19,6 +19,21 @@
       "address": "0xAB14624691d0D1b62F9797368104Ef1F8C20dF83",
       "txHash": "0x542526395d7603bd2c508e1680f6c6a9f7271ad57fcc07c8277dee8b1e49db0a",
       "kind": "transparent"
+    },
+    {
+      "address": "0xAE2DfbDDEF17998a638b26B38AAfD7e4625cA41A",
+      "txHash": "0x697e0bccda83359817b2d87827e6d20a098023f4213c306d1aab1f93a838606e",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x4A4DfBb2E947033Cb481A0e354507C821327d276",
+      "txHash": "0x0d0f0e657b0b781f01784384f38df14bdc51945dd4ed4726299aa9a2b357e014",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x887f8D81d36fe9cc939131Edb8B756227B2A8947",
+      "txHash": "0x50ffba542f0be84affa66af568411bfc574baf4227cfa0681b600b89f8c611df",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -740,6 +755,268 @@
           "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)": {
             "label": "mapping(uint256 => uint256[])",
             "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "ed2b20a0962684f96284075a972b2b09dbb0fa861034be8f222444e805955064": {
+      "address": "0xd878caFE48F7A6dCD947e0C169F5dfBfC187ee24",
+      "txHash": "0x6c47966056af3a60af796d889a64a902d22fec7e581bce97859007e716458054",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "whitelistPhaseDuration",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_uint256",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:22"
+          },
+          {
+            "label": "publicPhaseDuration",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_uint256",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:23"
+          },
+          {
+            "label": "durationBetweenTranches",
+            "offset": 0,
+            "slot": "153",
+            "type": "t_uint256",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:24"
+          },
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "154",
+            "type": "t_address",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:35"
+          },
+          {
+            "label": "currency",
+            "offset": 0,
+            "slot": "155",
+            "type": "t_contract(IERC20Upgradeable)505",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:40"
+          },
+          {
+            "label": "wallet",
+            "offset": 0,
+            "slot": "156",
+            "type": "t_address",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:45"
+          },
+          {
+            "label": "tranches",
+            "offset": 0,
+            "slot": "157",
+            "type": "t_mapping(t_uint256,t_struct(Tranche)4730_storage)",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:50"
+          },
+          {
+            "label": "tranchesCounter",
+            "offset": 0,
+            "slot": "158",
+            "type": "t_uint256",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:51"
+          },
+          {
+            "label": "_kolWhitelist",
+            "offset": 0,
+            "slot": "159",
+            "type": "t_mapping(t_address,t_struct(Whitelist)4744_storage)",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:53"
+          },
+          {
+            "label": "_freeMintsWhitelist",
+            "offset": 0,
+            "slot": "160",
+            "type": "t_mapping(t_address,t_struct(Whitelist)4744_storage)",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:54"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "161",
+            "type": "t_array(t_uint256)44_storage",
+            "contract": "Crowdsale",
+            "src": "contracts/Crowdsale.sol:373"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)44_storage": {
+            "label": "uint256[44]",
+            "numberOfBytes": "1408"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_contract(IERC20Upgradeable)505": {
+            "label": "contract IERC20Upgradeable",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(Whitelist)4744_storage)": {
+            "label": "mapping(address => struct ICrowdsale.Whitelist)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Tranche)4730_storage)": {
+            "label": "mapping(uint256 => struct ICrowdsale.Tranche)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Tranche)4730_storage": {
+            "label": "struct ICrowdsale.Tranche",
+            "members": [
+              {
+                "label": "start",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "supply",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "kolPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "publicPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "freeMintsSold",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "kolSold",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "publicSold",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              }
+            ],
+            "numberOfBytes": "224"
+          },
+          "t_struct(Whitelist)4744_storage": {
+            "label": "struct ICrowdsale.Whitelist",
+            "members": [
+              {
+                "label": "cap",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "contribution",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
           },
           "t_uint256": {
             "label": "uint256",

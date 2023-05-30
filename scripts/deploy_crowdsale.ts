@@ -3,17 +3,22 @@ import { deployProxyAndVerify } from './utils';
 
 async function main() {
   const parameters = [
-    { name: 'owner', value: env.OWNER_ACCOUNT },
-    { name: 'wallet', value: env.CROWDSALE_WALLET },
-    { name: 'currency', value: env.USDC_CONTRACT },
-    { name: 'token', value: env.GENESIS_NFT_CONTRACT },
-    { name: 'initialSupply', value: env.CROWDSALE_TOKEN_SUPPLY },
-    { name: 'price', value: env.CROWDSALE_TOKEN_PRICE }
+    { name: 'owner_', value: env.OWNER_ACCOUNT },
+    { name: 'wallet_', value: env.CROWDSALE_WALLET },
+    { name: 'currency_', value: env.USDC_CONTRACT },
+    { name: 'token_', value: env.GENESIS_NFT_CONTRACT },
+    { name: 'start_', value: -1},
+    { name: 'tranchesCount_', value: 9 },
+    { name: 'whitelistPhaseDuration_', value: 300 }, // 1 hour in blocks
+    { name: 'publicPhaseDuration_', value: 300 * 9 }, // 9 hours in blocks
+    { name: 'durationBetweenTranches_', value: 300 * 24 } // 24 hours in blocks
   ];
 
   await deployProxyAndVerify('Crowdsale', parameters);
 }
 
+// We recommend this pattern to be able to use async/await everywhere
+// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
