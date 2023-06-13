@@ -1,48 +1,67 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC721, ERC721Enumerable, IERC165, IERC721Enumerable, IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import {ERC721Pausable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
-import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import {Checkpoints} from "@openzeppelin/contracts/utils/Checkpoints.sol";
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721EnumerableUpgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {ERC721PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
+import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import {CheckpointsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CheckpointsUpgradeable.sol";
+import {CountersUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
+import {OwnablePausable} from "./OwnablePausable.sol";
 
 /**
  * @title Investment NFT contract
  */
-contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ownable, IInvestmentNFT {
-    using Checkpoints for Checkpoints.History;
-    using Counters for Counters.Counter;
-    using EnumerableSet for EnumerableSet.AddressSet;
+contract InvestmentNFT is
+    ERC721EnumerableUpgradeable,
+    ERC721URIStorageUpgradeable,
+    ERC721PausableUpgradeable,
+    OwnablePausable,
+    IInvestmentNFT
+{
+    using CheckpointsUpgradeable for CheckpointsUpgradeable.History;
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     /**
      * @notice Investment value assigned to token
      */
     mapping(uint256 => uint256) public tokenValue;
 
-    Counters.Counter private _tokenIdCounter;
+    CountersUpgradeable.Counter private _tokenIdCounter;
     mapping(address => bool) private _minters;
 
-    EnumerableSet.AddressSet private _investors;
-    mapping(address => Checkpoints.History) private _accountValueHistory;
-    Checkpoints.History private _totalValueHistory;
+    EnumerableSetUpgradeable.AddressSet private _investors;
+    mapping(address => CheckpointsUpgradeable.History) private _accountValueHistory;
+    CheckpointsUpgradeable.History private _totalValueHistory;
 
     modifier onlyMinter() {
-        require(_minters[msg.sender], "Account does not have minter rights");
+        require(_minters[_msgSender()], "Account does not have minter rights");
         _;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
     }
 
     /**
      * @notice Initializes the contract
+     * @param name Investment NFT name
+     * @param symbol Investment NFT symbol
+     * @param owner Contract owner
      */
-    constructor(string memory name, string memory symbol, address owner) ERC721(name, symbol) {
-        require(owner != address(0), "Owner is zero address");
+    function initialize(string memory name, string memory symbol, address owner) public initializer {
+        __Context_init();
+        __ERC165_init();
+        __ERC721_init(name, symbol);
+        __ERC721Enumerable_init();
+        __ERC721URIStorage_init();
+        __ERC721Pausable_init();
+        __OwnablePausable_init(owner);
 
-        _transferOwnership(owner);
         _minters[owner] = true;
     }
 
@@ -53,7 +72,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
      */
     function setTokenUri(uint256 tokenId, string memory tokenUri) external onlyOwner {
         _setTokenURI(tokenId, tokenUri);
-        emit TokenURIChanged(msg.sender, tokenId, tokenUri);
+        emit TokenURIChanged(_msgSender(), tokenId, tokenUri);
     }
 
     /**
@@ -64,7 +83,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
         require(!_minters[account], "Account already has minter rights");
 
         _minters[account] = true;
-        emit MinterAdded(msg.sender, account);
+        emit MinterAdded(_msgSender(), account);
     }
 
     /**
@@ -75,7 +94,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
         require(_minters[account], "Account does not have minter rights");
 
         _minters[account] = false;
-        emit MinterRemoved(msg.sender, account);
+        emit MinterRemoved(_msgSender(), account);
     }
 
     /**
@@ -84,20 +103,6 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
      */
     function isMinter(address account) external view returns (bool) {
         return _minters[account];
-    }
-
-    /**
-     * @notice Disables operations on contract
-     */
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @notice Enables operations on contract
-     */
-    function unpause() external onlyOwner {
-        _unpause();
     }
 
     /**
@@ -119,7 +124,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
             _mintWithURI(owner, values[i], tokenUris[i]);
         }
 
-        emit TokenSplitted(msg.sender, tokenId);
+        emit TokenSplitted(_msgSender(), tokenId);
     }
 
     /**
@@ -172,18 +177,20 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
     }
 
     /**
-     * @inheritdoc IERC721Metadata
+     * @inheritdoc IERC721MetadataUpgradeable
      */
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 
     /**
-     * @inheritdoc IERC165
+     * @inheritdoc IERC165Upgradeable
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165, ERC721, ERC721Enumerable) returns (bool) {
+    ) public view virtual override(IERC165Upgradeable, ERC721Upgradeable, ERC721EnumerableUpgradeable) returns (bool) {
         return interfaceId == type(IInvestmentNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -198,7 +205,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
         _setTokenURI(tokenId, tokenUri);
     }
 
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+    function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
         super._burn(tokenId);
         tokenValue[tokenId] = 0;
     }
@@ -218,7 +225,7 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
         address to,
         uint256 tokenId,
         uint256 batchSize
-    ) internal override(ERC721, ERC721Enumerable, ERC721Pausable) whenNotPaused {
+    ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721PausableUpgradeable) whenNotPaused {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
@@ -270,4 +277,6 @@ contract InvestmentNFT is ERC721Enumerable, ERC721URIStorage, ERC721Pausable, Ow
             _investors.remove(account);
         }
     }
+
+    uint256[44] private __gap;
 }

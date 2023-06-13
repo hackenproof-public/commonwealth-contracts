@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {IERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
 
-interface IInvestmentNFT is IERC721Enumerable {
+interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     /**
      * @notice Emitted when token URI is changed
      * @param caller Address which changed token URI

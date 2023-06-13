@@ -2,7 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deploy, deployProxy } from '../../scripts/utils';
 import {
   IPeriodicVesting__factory,
   IVesting__factory,
@@ -24,10 +24,18 @@ describe('Project component tests', () => {
   const IVestingId = ethers.utils.arrayify(getInterfaceId(IVesting__factory.createInterface()));
 
   const deployProjectWithPeriodicVesting = async () => {
-    const [deployer] = await ethers.getSigners();
+    const [deployer, owner] = await ethers.getSigners();
 
-    const swapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [FAKE_ADDRESS, ZERO_POINT_THREE_FEE_TIER]);
-    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address, swapper.address]);
+    const swapper: UniswapSwapper = await deployProxy(
+      'UniswapSwapper',
+      [owner.address, FAKE_ADDRESS, ZERO_POINT_THREE_FEE_TIER],
+      deployer
+    );
+    const project: Project = await deployProxy(
+      'Project',
+      [defaultProjectName, deployer.address, swapper.address],
+      deployer
+    );
 
     const beneficiary = project;
     const startBlock = (await ethers.provider.getBlockNumber()) + 10;
@@ -36,13 +44,12 @@ describe('Project component tests', () => {
     const cadence = 1;
     const cliff = 0;
 
-    const usdc: USDC = await deploy('USDC', deployer, []);
-    const vesting: PeriodicVesting = await deploy('PeriodicVesting', deployer, [
-      usdc.address,
-      beneficiary.address,
-      startBlock,
-      [[totalAllocation, duration, cadence, cliff]]
-    ]);
+    const usdc: USDC = await deploy('USDC', [], deployer);
+    const vesting: PeriodicVesting = await deployProxy(
+      'PeriodicVesting',
+      [usdc.address, beneficiary.address, startBlock, [[totalAllocation, duration, cadence, cliff]]],
+      deployer
+    );
 
     await project.setVesting(vesting.address);
 

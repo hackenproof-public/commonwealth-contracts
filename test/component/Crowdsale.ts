@@ -19,33 +19,34 @@ describe('Crowdsale component tests', () => {
 
   const royalty = 650;
   const tokenUri = 'ipfs://token-uri';
-  const genesisNftFactor = 7;
+  const treasuryWallet = ethers.Wallet.createRandom().address;
+  const royaltyWallet = ethers.Wallet.createRandom().address;
   let tranche1: { start: number; price: BigNumber };
 
   const setup = async () => {
-    const [deployer, owner, user, treasury, royaltyWallet] = await ethers.getSigners();
+    const [deployer, owner, user] = await ethers.getSigners();
 
-    const usdc: USDC = await deploy('USDC', deployer, []);
-    const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
-      'Common Wealth Genesis NFT',
-      'CWOGNFT',
-      genesisNftFactor,
-      owner.address,
-      royaltyWallet.address,
-      royalty,
-      tokenUri
-    ]);
-    const crowdsale: Crowdsale = await deployProxy('Crowdsale', deployer, [
-      owner.address,
-      treasury.address,
-      usdc.address,
-      genesisNft.address,
-      0,
-      0,
-      WHITELIST_DURATION,
-      PUBLIC_DURATION,
-      DURATION_BETWEEN_TRANCHES
-    ]);
+    const usdc: USDC = await deploy('USDC', [], deployer);
+    const genesisNft: GenesisNFT = await deployProxy(
+      'GenesisNFT',
+      ['Common Wealth Genesis NFT', 'CWOGNFT', 1, owner.address, royaltyWallet, royalty, tokenUri],
+      deployer
+    );
+    const crowdsale: Crowdsale = await deployProxy(
+      'Crowdsale',
+      [
+        owner.address,
+        treasuryWallet,
+        usdc.address,
+        genesisNft.address,
+        0,
+        0,
+        WHITELIST_DURATION,
+        PUBLIC_DURATION,
+        DURATION_BETWEEN_TRANCHES
+      ],
+      deployer
+    );
 
     tranche1 = { start: (await ethers.provider.getBlockNumber()) + 10, price: BigNumber.from(KOL_PRICE) };
 
@@ -53,17 +54,17 @@ describe('Crowdsale component tests', () => {
     await genesisNft.connect(owner).grantRole(MINTER_ROLE, crowdsale.address);
     await crowdsale.connect(owner).addTranche(tranche1.start, tranche1.price);
 
-    return { crowdsale, genesisNft, usdc, deployer, owner, user, treasury, royaltyWallet };
+    return { crowdsale, genesisNft, usdc, deployer, owner, user, royaltyWallet };
   };
 
   describe('Deployment', () => {
     it('Should return initial parameters', async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       expect(await crowdsale.owner()).to.equal(owner.address);
       expect(await crowdsale.token()).to.equal(genesisNft.address);
       expect(await crowdsale.currency()).to.equal(usdc.address);
-      expect(await crowdsale.wallet()).to.equal(treasury.address);
+      expect(await crowdsale.wallet()).to.equal(treasuryWallet);
       expect(await crowdsale.fundsRaised()).to.equal(0);
       expect(await crowdsale.paused()).to.equal(true);
 
@@ -79,7 +80,7 @@ describe('Crowdsale component tests', () => {
 
   describe('Buy tokens', async () => {
     it(`Should get free mint for free`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await usdc.connect(user).approve(crowdsale.address, USER_INITIAL_BALANCE);
       await crowdsale.connect(owner).unpause();
@@ -98,7 +99,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should not allow getting more than one free mint`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
@@ -112,7 +113,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should buy kol whitelist tokens`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await crowdsale.connect(owner).addToKolWhitelist([user.address]);
@@ -133,7 +134,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should first claim free mints and then buy kol whitelist tokens`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
@@ -154,7 +155,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should buy tokens on a public price`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await usdc.connect(user).approve(crowdsale.address, 44 * PUBLIC_PRICE);
@@ -173,7 +174,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should ignore whitelists if in public phase`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);
@@ -194,7 +195,7 @@ describe('Crowdsale component tests', () => {
     });
 
     it(`Should not allow to buy if its inactive`, async () => {
-      const { crowdsale, genesisNft, usdc, owner, user, treasury } = await loadFixture(setup);
+      const { crowdsale, genesisNft, usdc, owner, user } = await loadFixture(setup);
 
       await crowdsale.connect(owner).unpause();
       await crowdsale.connect(owner).addToFreeMintsWhitelist([user.address]);

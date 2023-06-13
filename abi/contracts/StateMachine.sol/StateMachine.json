@@ -1,14 +1,21 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "initialState",
-        "type": "bytes32"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
   },
   {
     "inputs": [],

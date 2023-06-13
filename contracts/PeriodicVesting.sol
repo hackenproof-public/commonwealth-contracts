@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {IPeriodicVesting, IVesting} from "./interfaces/IPeriodicVesting.sol";
 
 /**
  * @title Periodic vesting schedule contract
  */
-contract PeriodicVesting is IPeriodicVesting, ERC165 {
-    using SafeERC20 for IERC20;
+contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
      * @notice Vested token address
@@ -46,6 +46,11 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
      */
     uint256 public released;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initializes the contract
      * @param token_ Vested token implementing IERC20 interface
@@ -53,12 +58,12 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
      * @param startBlock_ Vesting start block
      * @param periods_ Vesting periods
      */
-    constructor(
+    function initialize(
         address token_,
         address beneficiary_,
         uint256 startBlock_,
         IPeriodicVesting.VestingPeriod[] memory periods_
-    ) {
+    ) public initializer {
         require(token_ != address(0), "Token is zero address");
         require(beneficiary_ != address(0), "Beneficiary is zero address");
         _validatePeriods(periods_);
@@ -89,7 +94,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
         released += amount;
         emit Released(msg.sender, token, amount);
 
-        IERC20(token).safeTransfer(beneficiary, amount);
+        IERC20Upgradeable(token).safeTransfer(beneficiary, amount);
     }
 
     /**
@@ -142,7 +147,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
     }
 
     /**
-     * @inheritdoc IERC165
+     * @inheritdoc IERC165Upgradeable
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return
@@ -179,4 +184,6 @@ contract PeriodicVesting is IPeriodicVesting, ERC165 {
             return (period.allocation * vestedBlocks) / period.duration;
         }
     }
+
+    uint256[43] private __gap;
 }

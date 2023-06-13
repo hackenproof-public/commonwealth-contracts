@@ -3,14 +3,17 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
-import { IERC721Enumerable__factory, IInvestmentNFT__factory, InvestmentNFT } from '../../typechain-types';
+import { deployProxy } from '../../scripts/utils';
+import { IERC721EnumerableUpgradeable__factory, IInvestmentNFT__factory, InvestmentNFT } from '../../typechain-types';
 import { getInterfaceIdWithBase } from '../utils';
 
 describe('Investment NFT unit tests', () => {
   const tokenUri = 'ipfs://token-uri';
   const IInvestmentNFTId = utils.arrayify(
-    getInterfaceIdWithBase([IInvestmentNFT__factory.createInterface(), IERC721Enumerable__factory.createInterface()])
+    getInterfaceIdWithBase([
+      IInvestmentNFT__factory.createInterface(),
+      IERC721EnumerableUpgradeable__factory.createInterface()
+    ])
   );
   const name = 'Common Wealth Investment NFT';
   const symbol = 'CWI';
@@ -22,17 +25,17 @@ describe('Investment NFT unit tests', () => {
   let investmentNft: InvestmentNFT;
 
   const deployFixture = async () => {
-    const [deployer, owner, user, admin, minter] = await ethers.getSigners();
+    const [deployer, owner, user, minter] = await ethers.getSigners();
 
-    const investmentNft: InvestmentNFT = await deploy('InvestmentNFT', deployer, [name, symbol, owner.address]);
+    const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', [name, symbol, owner.address], deployer);
     await investmentNft.connect(owner).addMinter(minter.address);
 
-    return { investmentNft, deployer, owner, user, admin, minter };
+    return { investmentNft, deployer, owner, user, minter };
   };
 
   describe('Deployment', () => {
     it('Should deploy and return initial parameters', async () => {
-      const { investmentNft, deployer, user, admin, minter } = await loadFixture(deployFixture);
+      const { investmentNft, deployer, user, minter } = await loadFixture(deployFixture);
 
       expect(await investmentNft.name()).to.equal(name);
       expect(await investmentNft.symbol()).to.equal(symbol);
@@ -47,7 +50,7 @@ describe('Investment NFT unit tests', () => {
     it('Should revert deployment if owner is zero address', async () => {
       const [deployer] = await ethers.getSigners();
 
-      await expect(deploy('InvestmentNFT', deployer, [name, symbol, constants.AddressZero])).to.be.revertedWith(
+      await expect(deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)).to.be.revertedWith(
         'Owner is zero address'
       );
     });
@@ -294,7 +297,7 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should revert adding minter if already exists', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, user } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).addMinter(user.address);
       await expect(investmentNft.connect(owner).addMinter(user.address)).to.be.revertedWith(
@@ -303,7 +306,7 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should revert removing minter if does not exist', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, minter } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).removeMinter(minter.address);
       await expect(investmentNft.connect(owner).removeMinter(minter.address)).to.be.revertedWith(

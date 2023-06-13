@@ -33,4 +33,6 @@ contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
     function unpause() public onlyOwner {
         _unpause();
     }
+
+    uint256[50] private __gap;
 }

@@ -15,7 +15,7 @@ export enum CrowdsalePhase {
 
 export type InvestmentFundDeploymentParameters = {
   fundName?: string;
-  treasuryAddress?: string;
+  treasuryWallet?: string;
   managementFee?: number;
   cap?: BigNumber;
 };

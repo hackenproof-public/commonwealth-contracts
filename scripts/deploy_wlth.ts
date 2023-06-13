@@ -1,22 +1,15 @@
-import { ethers } from 'hardhat';
-import { Wlth } from '../typechain-types';
-import { confirm, deploy, verifyContract } from './utils';
+import { env } from 'process';
+import { deployProxyAndVerify } from './utils';
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const parameters = [
+    { name: 'name', value: env.WLTH_NAME },
+    { name: 'symbol', value: env.WLTH_SYMBOL }
+  ];
 
-  console.log('Deploying Wlth contract...');
-  const wlth: Wlth = await deploy('Wlth', deployer, []);
-
-  console.log(`Common Wealth Token deployed to ${wlth.address}`);
-
-  if (await confirm('\nDo you want to verify contract? [y/N] ')) {
-    await verifyContract(wlth.address);
-  }
+  await deployProxyAndVerify('Wlth', parameters);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

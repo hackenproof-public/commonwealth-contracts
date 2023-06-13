@@ -20,8 +20,8 @@ export type DeploymentParam = {
 
 export async function deploy<Type extends Contract>(
   contractName: string,
-  signer: Signer,
-  parameters: any[]
+  parameters: any[],
+  signer: Signer
 ): Promise<Type> {
   const contract = await ethers.deployContract(contractName, parameters, signer);
   await contract.deployed();
@@ -31,8 +31,8 @@ export async function deploy<Type extends Contract>(
 
 export async function deployProxy<Type extends Contract>(
   contractName: string,
-  signer: Signer,
   parameters: any[],
+  signer: Signer,
   opts?: DeployProxyOptions
 ): Promise<Type> {
   const contractFactory = await ethers.getContractFactory(contractName, signer);
@@ -81,7 +81,7 @@ export async function deployProxyAndVerify(
   if (await confirm('\nDo you want to continue? [y/N] ')) {
     console.log(`Deploying ${contractName} contract...`);
 
-    const contract = await deployProxy(contractName, deployer, paramsList, opts);
+    const contract = await deployProxy(contractName, paramsList, deployer, opts);
 
     console.log(`${contractName} deployed to ${contract.address}`);
 

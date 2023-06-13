@@ -29,17 +29,21 @@ describe('Crowdsale unit tests', () => {
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const genesisNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
-    const crowdsale: Crowdsale = await deployProxy('Crowdsale', deployer, [
-      owner.address,
-      treasury.address,
-      usdc.address,
-      genesisNft.address,
-      startBlock,
-      tranchesCount,
-      whitelistDuration,
-      publicDuration,
-      durationBetweenTranches
-    ]);
+    const crowdsale: Crowdsale = await deployProxy(
+      'Crowdsale',
+      [
+        owner.address,
+        treasury.address,
+        usdc.address,
+        genesisNft.address,
+        startBlock,
+        tranchesCount,
+        whitelistDuration,
+        publicDuration,
+        durationBetweenTranches
+      ],
+      deployer
+    );
 
     return { crowdsale, genesisNft, usdc, deployer, owner, user, treasury, royaltyWallet };
   };
@@ -69,17 +73,21 @@ describe('Crowdsale unit tests', () => {
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const genesisNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
-      const crowdsale: Crowdsale = await deployProxy('Crowdsale', deployer, [
-        owner.address,
-        treasury.address,
-        usdc.address,
-        genesisNft.address,
-        startBlock,
-        0,
-        whitelistDuration,
-        publicDuration,
-        durationBetweenTranches
-      ]);
+      const crowdsale: Crowdsale = await deployProxy(
+        'Crowdsale',
+        [
+          owner.address,
+          treasury.address,
+          usdc.address,
+          genesisNft.address,
+          startBlock,
+          0,
+          whitelistDuration,
+          publicDuration,
+          durationBetweenTranches
+        ],
+        deployer
+      );
 
       expect(await crowdsale.getTranchesCount()).to.equal(0);
     });
@@ -260,10 +268,6 @@ describe('Crowdsale unit tests', () => {
   });
 
   describe('#buyTokens()', async () => {
-    const tranche1 = {
-      start: startBlock + 10 + durationBetweenTranches * (tranchesCount + 1),
-      kolPrice: nftPrice
-    };
     let crowdsale: Crowdsale;
     let usdc: FakeContract<USDC>;
     let owner: SignerWithAddress;
@@ -459,7 +463,7 @@ describe('Crowdsale unit tests', () => {
 
   describe('#updateTrancheStartBlock', async () => {
     it('Should not allow non-owner to update tranche start block', async () => {
-      const { crowdsale, owner, user } = await loadFixture(setup);
+      const { crowdsale, user } = await loadFixture(setup);
 
       await expect(crowdsale.connect(user).updateTrancheStartBlock(0, 0)).to.be.revertedWith(
         'Ownable: caller is not the owner'
@@ -467,7 +471,7 @@ describe('Crowdsale unit tests', () => {
     });
 
     it('Should not allow to update tranche start block to one in the past', async () => {
-      const { crowdsale, owner, user } = await loadFixture(setup);
+      const { crowdsale, owner } = await loadFixture(setup);
 
       await mineUpTo(startBlock);
 

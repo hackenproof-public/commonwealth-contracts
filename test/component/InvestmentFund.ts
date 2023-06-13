@@ -4,7 +4,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deploy, deployProxy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
 import { getLogs, toUsdc } from '../utils';
 
@@ -27,16 +27,21 @@ describe('Investment Fund component tests', () => {
   async function deployFixture() {
     [deployer, owner, wallet, profitProvider, treasuryWallet] = await ethers.getSigners();
 
-    const usdc: USDC = await deploy('USDC', deployer, []);
-    const investmentNft: InvestmentNFT = await deploy('InvestmentNFT', deployer, ['INFT', 'CWI', owner.address]);
-    const investmentFund: InvestmentFund = await deploy('InvestmentFund', deployer, [
-      'Investment Fund',
-      usdc.address,
-      investmentNft.address,
-      treasuryWallet.address,
-      managementFee,
-      defaultInvestmentCap
-    ]);
+    const usdc: USDC = await deploy('USDC', [], deployer);
+    const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', ['INFT', 'CWI', owner.address], deployer);
+    const investmentFund: InvestmentFund = await deployProxy(
+      'InvestmentFund',
+      [
+        owner.address,
+        'Investment Fund',
+        usdc.address,
+        investmentNft.address,
+        treasuryWallet.address,
+        managementFee,
+        defaultInvestmentCap
+      ],
+      deployer
+    );
     await investmentNft.connect(owner).addMinter(investmentFund.address);
 
     await usdc.mint(deployer.address, toUsdc('1000000'));

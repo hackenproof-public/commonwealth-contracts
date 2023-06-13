@@ -6,7 +6,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   console.log('Deploying USDC contract...');
-  const usdc: USDC = await deploy('USDC', deployer, []);
+  const usdc: USDC = await deploy('USDC', [], deployer);
 
   console.log(`USD Coin deployed to ${usdc.address}`);
 
@@ -15,8 +15,6 @@ async function main() {
   }
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

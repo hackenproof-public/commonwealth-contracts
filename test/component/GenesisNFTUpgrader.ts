@@ -13,40 +13,35 @@ describe('GenesisNFTUpgrader component tests', () => {
   const erc1155Royalty = 650;
   const erc1155TokenURI = 'ipfs://token-uri';
   const erc1155TokenId = 1;
+  const royaltyWallet = ethers.Wallet.createRandom().address;
 
   let deployer: SignerWithAddress;
   let owner: SignerWithAddress;
   let user: SignerWithAddress;
-  let royaltyAccount: SignerWithAddress;
 
   const deployFixture = async () => {
-    [deployer, owner, user, royaltyAccount] = await ethers.getSigners();
+    [deployer, owner, user] = await ethers.getSigners();
 
-    const genNft: GenNFT = await deployProxy('GenNFT', deployer, [
-      owner.address,
-      royaltyAccount.address,
-      erc1155Royalty,
-      erc1155ContractUri
-    ]);
+    const genNft: GenNFT = await deployProxy(
+      'GenNFT',
+      [owner.address, royaltyWallet, erc1155Royalty, erc1155ContractUri],
+      deployer
+    );
 
     const GenNFTV2Factory = await ethers.getContractFactory('GenNFTV2');
     const sourceNft = (await upgrades.upgradeProxy(genNft.address, GenNFTV2Factory)) as GenNFTV2;
 
-    const targetNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
-      'Common Wealth Genesis NFT',
-      'CWOGNFT',
-      7,
-      owner.address,
-      royaltyAccount.address,
-      erc1155Royalty,
-      erc1155TokenURI
-    ]);
+    const targetNft: GenesisNFT = await deployProxy(
+      'GenesisNFT',
+      ['Common Wealth Genesis NFT', 'CWOGNFT', 1, owner.address, royaltyWallet, erc1155Royalty, erc1155TokenURI],
+      deployer
+    );
 
-    const upgrader: GenesisNFTUpgrader = await deployProxy('GenesisNFTUpgrader', deployer, [
-      owner.address,
-      sourceNft.address,
-      targetNft.address
-    ]);
+    const upgrader: GenesisNFTUpgrader = await deployProxy(
+      'GenesisNFTUpgrader',
+      [owner.address, sourceNft.address, targetNft.address],
+      deployer
+    );
 
     return { upgrader, sourceNft, targetNft, owner, user };
   };

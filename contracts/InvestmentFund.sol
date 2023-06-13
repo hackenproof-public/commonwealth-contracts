@@ -1,22 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
-import {IProject} from "./interfaces/IProject.sol";
 import {LibFund} from "./libraries/LibFund.sol";
+import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
 
 /**
  * @title Investment Fund contract
  */
-contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC165 {
-    using EnumerableSet for EnumerableSet.AddressSet;
+contract InvestmentFund is
+    OwnablePausable,
+    StateMachine,
+    IInvestmentFund,
+    ReentrancyGuardUpgradeable,
+    ERC165Upgradeable
+{
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     struct PayoutPtr {
         uint256 index;
@@ -31,7 +37,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     /**
      * @notice Address of token collected from investors
      */
-    IERC20 public currency;
+    IERC20Upgradeable public currency;
 
     /**
      * @notice Address of Investment NFT contract
@@ -76,10 +82,16 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     /**
      * @dev List of projects
      */
-    EnumerableSet.AddressSet private _projects;
+    EnumerableSetUpgradeable.AddressSet private _projects;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
     /**
      * @dev Initializes the contract
+     * @param owner_ Contract owner
      * @param name_ Investment fund name
      * @param currency_ Address of currency for investments
      * @param investmentNft_ Address of investment NFT contract
@@ -87,26 +99,33 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
      * @param managementFee_ Management fee in basis points
      * @param cap_ Cap value
      */
-    constructor(
+    function initialize(
+        address owner_,
         string memory name_,
         address currency_,
         address investmentNft_,
         address treasuryWallet_,
         uint16 managementFee_,
         uint256 cap_
-    ) StateMachine(LibFund.STATE_FUNDS_IN) {
+    ) public initializer {
+        __Context_init();
+        __OwnablePausable_init(owner_);
+        __StateMachine_init(LibFund.STATE_FUNDS_IN);
+        __ReentrancyGuard_init();
+        __ERC165_init();
+
         require(currency_ != address(0), "Invalid currency address");
         require(investmentNft_ != address(0), "Invalid NFT address");
         require(treasuryWallet_ != address(0), "Invalid treasury wallet address");
         require(managementFee_ < 10000, "Invalid management fee");
         require(cap_ > 0, "Invalid investment cap");
         require(
-            IERC165(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true,
+            IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true,
             "Required interface not supported"
         );
 
         name = name_;
-        currency = IERC20(currency_);
+        currency = IERC20Upgradeable(currency_);
         investmentNft = IInvestmentNFT(investmentNft_);
         treasuryWallet = treasuryWallet_;
         managementFee = managementFee_;
@@ -129,7 +148,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
             emit CapReached(cap);
         }
 
-        _invest(msg.sender, amount, tokenUri);
+        _invest(_msgSender(), amount, tokenUri);
     }
 
     /**
@@ -139,18 +158,18 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         require(amount > 0, "Attempt to withdraw zero tokens");
 
         (uint256 actualAmount, uint256 carryFee, PayoutPtr memory currentPayout) = _getWithdrawalDetails(
-            msg.sender,
+            _msgSender(),
             amount
         );
 
         require(actualAmount == amount, "Withdrawal amount exceeds available funds");
 
-        userTotalWithdrawal[msg.sender] += amount;
-        _currentPayout[msg.sender] = currentPayout;
+        userTotalWithdrawal[_msgSender()] += amount;
+        _currentPayout[_msgSender()] = currentPayout;
 
-        emit ProfitWithdrawn(msg.sender, address(currency), amount);
+        emit ProfitWithdrawn(_msgSender(), address(currency), amount);
 
-        _transfer(currency, msg.sender, amount - carryFee);
+        _transfer(currency, _msgSender(), amount - carryFee);
     }
 
     /**
@@ -189,7 +208,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
 
         require(_projects.add(project), "Project already exists");
 
-        emit ProjectAdded(msg.sender, project);
+        emit ProjectAdded(_msgSender(), project);
     }
 
     /**
@@ -213,7 +232,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         // TODO: limit role access
         require(_projects.remove(project), "Project does not exist");
 
-        emit ProjectRemoved(msg.sender, project);
+        emit ProjectRemoved(_msgSender(), project);
     }
 
     function stopCollectingFunds() external onlyAllowedStates {
@@ -262,9 +281,9 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         emit ProfitProvided(address(this), amount, carryFee, block.number);
 
         if (carryFee > 0) {
-            _transferFrom(currency, msg.sender, treasuryWallet, carryFee);
+            _transferFrom(currency, _msgSender(), treasuryWallet, carryFee);
         }
-        _transferFrom(currency, msg.sender, address(this), amount - carryFee);
+        _transferFrom(currency, _msgSender(), address(this), amount - carryFee);
     }
 
     function closeFund() external onlyAllowedStates {
@@ -299,7 +318,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
     }
 
     /**
-     * @inheritdoc IERC165
+     * @inheritdoc IERC165Upgradeable
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IInvestmentFund).interfaceId || super.supportsInterface(interfaceId);
@@ -424,7 +443,7 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         uint256 amount
     ) private pure returns (uint256) {
         uint256 carryFee = _getCarryFee(account, blockNumber);
-        return Math.mulDiv(amount, carryFee, LibFund.BASIS_POINT_DIVISOR);
+        return MathUpgradeable.mulDiv(amount, carryFee, LibFund.BASIS_POINT_DIVISOR);
     }
 
     function _calculateCarryFeeFromPayout(
@@ -448,11 +467,13 @@ contract InvestmentFund is StateMachine, IInvestmentFund, ReentrancyGuard, ERC16
         return carryFee;
     }
 
-    function _transferFrom(IERC20 erc20Token, address from, address to, uint256 amount) private {
+    function _transferFrom(IERC20Upgradeable erc20Token, address from, address to, uint256 amount) private {
         require(erc20Token.transferFrom(from, to, amount), "Currency transfer failed");
     }
 
-    function _transfer(IERC20 erc20Token, address to, uint256 amount) private {
+    function _transfer(IERC20Upgradeable erc20Token, address to, uint256 amount) private {
         require(erc20Token.transfer(to, amount), "Currency transfer failed");
     }
+
+    uint256[39] private __gap;
 }

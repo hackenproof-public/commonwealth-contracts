@@ -1,22 +1,40 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IInvestmentFundRegistry} from "./interfaces/IInvestmentFundRegistry.sol";
 
 /**
  * @title Investment fund registry contract
  */
-contract InvestmentFundRegistry is IInvestmentFundRegistry {
-    using EnumerableSet for EnumerableSet.AddressSet;
+contract InvestmentFundRegistry is OwnableUpgradeable, IInvestmentFundRegistry {
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    EnumerableSet.AddressSet private _funds;
+    EnumerableSetUpgradeable.AddressSet private _funds;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initializes the contract
+     * @param owner Address of registry contract owner
+     */
+    function initialize(address owner) public initializer {
+        require(owner != address(0), "Owner is zero address");
+
+        __Context_init();
+        __Ownable_init();
+
+        _transferOwnership(owner);
+    }
 
     /**
      * @inheritdoc IInvestmentFundRegistry
      */
-    function addFund(address fundAddress) external {
-        // TODO limit roles access
+    function addFund(address fundAddress) external onlyOwner {
         require(fundAddress != address(0), "Invalid fund address");
 
         emit FundAddedToRegistry(fundAddress);
@@ -41,10 +59,11 @@ contract InvestmentFundRegistry is IInvestmentFundRegistry {
     /**
      * @inheritdoc IInvestmentFundRegistry
      */
-    function removeFund(address fundAddress) external {
-        // TODO limit roles access
+    function removeFund(address fundAddress) external onlyOwner {
         emit FundRemovedFromRegistry(fundAddress);
 
         require(_funds.remove(fundAddress), "Removing fund from registry failed");
     }
+
+    uint256[49] private __gap;
 }

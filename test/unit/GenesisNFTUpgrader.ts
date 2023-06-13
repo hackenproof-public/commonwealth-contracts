@@ -17,11 +17,11 @@ describe('GenesisNFTUpgrader unit tests', () => {
 
     const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
     const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
-    const upgrader: GenesisNFTUpgrader = await deployProxy('GenesisNFTUpgrader', deployer, [
-      owner.address,
-      sourceNft.address,
-      targetNft.address
-    ]);
+    const upgrader: GenesisNFTUpgrader = await deployProxy(
+      'GenesisNFTUpgrader',
+      [owner.address, sourceNft.address, targetNft.address],
+      deployer
+    );
 
     return { upgrader, sourceNft, targetNft, deployer, owner, user };
   };
@@ -41,7 +41,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
       const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
       const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
       await expect(
-        deployProxy('GenesisNFTUpgrader', deployer, [constants.AddressZero, sourceNft.address, targetNft.address])
+        deployProxy('GenesisNFTUpgrader', [constants.AddressZero, sourceNft.address, targetNft.address], deployer)
       ).to.be.revertedWith('Owner is zero address');
     });
 
@@ -50,7 +50,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
 
       const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
       await expect(
-        deployProxy('GenesisNFTUpgrader', deployer, [owner.address, constants.AddressZero, targetNft.address])
+        deployProxy('GenesisNFTUpgrader', [owner.address, constants.AddressZero, targetNft.address], deployer)
       ).to.be.revertedWith('Source contract is zero address');
     });
 
@@ -59,7 +59,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
 
       const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
       await expect(
-        deployProxy('GenesisNFTUpgrader', deployer, [owner.address, sourceNft.address, constants.AddressZero])
+        deployProxy('GenesisNFTUpgrader', [owner.address, sourceNft.address, constants.AddressZero], deployer)
       ).to.be.revertedWith('Target contract is zero address');
     });
   });

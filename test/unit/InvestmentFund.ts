@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { BigNumber, constants } from 'ethers';
 import { formatBytes32String, parseBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { IInvestmentFund__factory, InvestmentFund, InvestmentNFT, Project, USDC } from '../../typechain-types';
 import { FundState, InvestmentFundDeploymentParameters } from '../types';
 import { getInterfaceId, toUsdc } from '../utils';
@@ -17,6 +17,7 @@ describe('Investment Fund unit tests', () => {
   const defaultInvestmentCap = toUsdc('1000000');
   const IInvestmentFundId = ethers.utils.arrayify(getInterfaceId(IInvestmentFund__factory.createInterface()));
   const tokenUri = 'ipfs://token-uri';
+  const defaultTreasury = ethers.Wallet.createRandom().address;
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
@@ -24,28 +25,23 @@ describe('Investment Fund unit tests', () => {
   let restorer: SnapshotRestorer;
   let deployer: SignerWithAddress;
   let wallet: SignerWithAddress;
-  let treasuryWallet: SignerWithAddress;
 
   const deployInvestmentFund = async ({
     fundName = 'Investment Fund',
-    treasuryAddress = undefined,
+    treasuryWallet = defaultTreasury,
     managementFee = defaultManagementFee,
     cap = defaultInvestmentCap
   }: InvestmentFundDeploymentParameters = {}) => {
-    const [deployer, treasuryWallet, wallet] = await ethers.getSigners();
+    const [deployer, owner, wallet] = await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
     investmentNft.supportsInterface.returns(true);
 
-    const investmentFundFactory = await ethers.getContractFactory('InvestmentFund');
-    const investmentFund = await investmentFundFactory.deploy(
-      fundName,
-      usdc.address,
-      investmentNft.address,
-      treasuryAddress !== undefined ? treasuryAddress : treasuryWallet.address,
-      managementFee,
-      cap
+    const investmentFund: InvestmentFund = await deployProxy(
+      'InvestmentFund',
+      [owner.address, fundName, usdc.address, investmentNft.address, treasuryWallet, managementFee, cap],
+      deployer
     );
 
     return { investmentFund, usdc, investmentNft, deployer, treasuryWallet, wallet };
@@ -79,13 +75,13 @@ describe('Investment Fund unit tests', () => {
 
   describe('Deployment', () => {
     it('Should return initial parameters', async () => {
-      const { investmentFund, usdc, investmentNft, treasuryWallet } = await setup();
+      const { investmentFund, usdc, investmentNft } = await setup();
 
       expect(await investmentFund.supportsInterface(IInvestmentFundId)).to.equal(true);
       expect(await investmentFund.name()).to.equal('Investment Fund');
       expect(await investmentFund.investmentNft()).to.equal(investmentNft.address);
       expect(await investmentFund.currency()).to.equal(usdc.address);
-      expect(await investmentFund.treasuryWallet()).to.equal(treasuryWallet.address);
+      expect(await investmentFund.treasuryWallet()).to.equal(defaultTreasury);
       expect(await investmentFund.managementFee()).to.equal(defaultManagementFee);
       expect(await investmentFund.cap()).to.equal(defaultInvestmentCap);
       expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.FundsIn);
@@ -94,7 +90,7 @@ describe('Investment Fund unit tests', () => {
         'Investment Fund',
         usdc.address,
         investmentNft.address,
-        treasuryWallet.address,
+        defaultTreasury,
         defaultManagementFee,
         defaultInvestmentCap,
         BigNumber.from(0),
@@ -104,104 +100,156 @@ describe('Investment Fund unit tests', () => {
       ]);
     });
 
-    it('Should revert deployment if invalid currency', async () => {
-      const [deployer, treasuryWallet] = await ethers.getSigners();
-
-      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
-      await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          constants.AddressZero,
-          investmentNft.address,
-          treasuryWallet.address,
-          defaultManagementFee,
-          defaultInvestmentCap
-        ])
-      ).to.be.revertedWith('Invalid currency address');
-    });
-
-    it('Should revert deployment if invalid NFT address', async () => {
-      const [deployer, treasuryWallet] = await ethers.getSigners();
-
-      const usdc: FakeContract<USDC> = await smock.fake('USDC');
-      await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          usdc.address,
-          constants.AddressZero,
-          treasuryWallet.address,
-          defaultManagementFee,
-          defaultInvestmentCap
-        ])
-      ).to.be.revertedWith('Invalid NFT address');
-    });
-
-    it('Should revert deployment if invalid treasury wallet address', async () => {
+    it('Should revert deployment if invalid owner', async () => {
       const [deployer] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          usdc.address,
-          investmentNft.address,
-          constants.AddressZero,
-          defaultManagementFee,
-          defaultInvestmentCap
-        ])
+        deployProxy(
+          'InvestmentFund',
+          [
+            constants.AddressZero,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            defaultTreasury,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Owner is zero address');
+    });
+
+    it('Should revert deployment if invalid currency', async () => {
+      const [deployer, owner] = await ethers.getSigners();
+
+      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      await expect(
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            constants.AddressZero,
+            investmentNft.address,
+            defaultTreasury,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Invalid currency address');
+    });
+
+    it('Should revert deployment if invalid NFT address', async () => {
+      const [deployer, owner] = await ethers.getSigners();
+
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      await expect(
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            constants.AddressZero,
+            defaultTreasury,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Invalid NFT address');
+    });
+
+    it('Should revert deployment if invalid treasury wallet address', async () => {
+      const [deployer, owner] = await ethers.getSigners();
+
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      await expect(
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            constants.AddressZero,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
       ).to.be.revertedWith('Invalid treasury wallet address');
     });
 
     it('Should revert deployment if invalid management fee', async () => {
-      const [deployer, treasuryWallet] = await ethers.getSigners();
+      const [deployer, owner] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          usdc.address,
-          investmentNft.address,
-          treasuryWallet.address,
-          10000,
-          defaultInvestmentCap
-        ])
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            defaultTreasury,
+            10000,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
       ).to.be.revertedWith('Invalid management fee');
     });
 
     it('Should revert deployment if invalid investment cap', async () => {
-      const [deployer, treasuryWallet] = await ethers.getSigners();
+      const [deployer, owner] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          usdc.address,
-          investmentNft.address,
-          treasuryWallet.address,
-          defaultManagementFee,
-          0
-        ])
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            defaultTreasury,
+            defaultManagementFee,
+            0
+          ],
+          deployer
+        )
       ).to.be.revertedWith('Invalid investment cap');
     });
 
     it('Should revert deployment if NFT contract does not support proper interface', async () => {
-      const [deployer, treasuryWallet] = await ethers.getSigners();
+      const [deployer, owner] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       investmentNft.supportsInterface.returns(false);
       await expect(
-        deploy('InvestmentFund', deployer, [
-          'Investment Fund',
-          usdc.address,
-          investmentNft.address,
-          treasuryWallet.address,
-          defaultManagementFee,
-          defaultInvestmentCap
-        ])
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            defaultTreasury,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
       ).to.be.revertedWith('Required interface not supported');
     });
   });
@@ -243,7 +291,6 @@ describe('Investment Fund unit tests', () => {
       const { investmentFund, wallet } = await setup();
 
       const amount = defaultInvestmentCap.add(1);
-      const fee = amount.mul(defaultManagementFee).div(10000);
 
       await expect(investmentFund.connect(wallet).invest(amount, tokenUri)).to.be.revertedWith(
         'Total invested funds exceed cap'
@@ -388,47 +435,40 @@ describe('Investment Fund unit tests', () => {
       usdc.transfer.returns(true);
     });
 
-    describe('if no profit provided', () => {
-      it('Should revert retrieving profit and fee if no profit provided', async () => {
-        await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith(
-          'Payout does not exist'
-        );
-      });
+    it('Should revert retrieving carry fee if no profit provided', async () => {
+      await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith('Payout does not exist');
     });
 
-    describe('if profit provided', () => {
-      before(async () => {
+    it('Should retrieve carry fee equal to 0 for payouts before or equal to breakeven', async () => {
+      usdc.transferFrom.returns(true);
+      await investmentFund.provideProfit(investmentValue);
+
+      expect(await investmentFund.isInProfit()).to.equal(false);
+      expect(await investmentFund.getWithdrawalCarryFee(wallet.address, investmentValue)).to.equal(0);
+    });
+
+    [
+      { amount: investmentValue.add(1), profit: investmentValue.add(1), fee: 0 },
+      { amount: toUsdc('20'), profit: toUsdc('15'), fee: toUsdc('5') }
+    ].forEach(async (data) => {
+      it('Should retrieve carry fee for payouts after breakeven', async () => {
         usdc.transferFrom.returns(true);
         await investmentFund.provideProfit(defaultProfit);
 
-        restorer = await takeSnapshot();
+        expect(await investmentFund.isInProfit()).to.equal(true);
+        expect(await investmentFund.getWithdrawalCarryFee(wallet.address, data.amount)).to.deep.equal(data.fee);
       });
+    });
 
-      beforeEach(async () => {
-        await restorer.restore();
-      });
+    it('Should revert retrieving carry fee if no investment is done', async () => {
+      investmentNft.getParticipation.returns([0, 0]);
+      investmentNft.getPastParticipation.returns([0, 0]);
+      usdc.transferFrom.returns(true);
+      await investmentFund.provideProfit(defaultProfit);
 
-      it('Should retrieve profit and fee for payouts before breakeven', async () => {
-        expect(await investmentFund.getWithdrawalCarryFee(wallet.address, investmentValue)).to.equal(0);
-      });
-
-      [
-        { amount: investmentValue.add(1), profit: investmentValue.add(1), fee: 0 },
-        { amount: toUsdc('20'), profit: toUsdc('15'), fee: toUsdc('5') }
-      ].forEach(async (data) => {
-        it('Should retrieve profit and fee for payouts after breakeven', async () => {
-          expect(await investmentFund.getWithdrawalCarryFee(wallet.address, data.amount)).to.deep.equal(data.fee);
-        });
-      });
-
-      it('Should revert retrieving carry fee if no investment is done', async () => {
-        investmentNft.getParticipation.returns([0, 0]);
-        investmentNft.getPastParticipation.returns([0, 0]);
-
-        await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith(
-          'Withdrawal amount exceeds available funds'
-        );
-      });
+      await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith(
+        'Withdrawal amount exceeds available funds'
+      );
     });
   });
 
@@ -497,7 +537,7 @@ describe('Investment Fund unit tests', () => {
     const investmentValue = toUsdc('100');
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet, treasuryWallet } = await setup());
+      ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
 
       await investmentFund.connect(deployer).invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();

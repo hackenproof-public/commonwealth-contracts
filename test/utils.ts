@@ -2,8 +2,6 @@ import { Log, TransactionReceipt } from '@ethersproject/providers';
 import { BigNumber, ContractTransaction, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
-const BASIS_POINT_DIVISOR: number = 10000;
-
 export const getLogs = async (
   tx: ContractTransaction,
   contractAddress: string | undefined,

@@ -3,7 +3,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { IProject__factory, PeriodicVesting, Project, UniswapSwapper } from '../../typechain-types';
 import { getInterfaceId } from '../utils';
 
@@ -15,7 +15,11 @@ describe('Periodic vesting project unit tests', () => {
     const [deployer, wallet] = await ethers.getSigners();
 
     const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
-    const project: Project = await deploy('Project', deployer, [defaultProjectName, deployer.address, swapper.address]);
+    const project: Project = await deployProxy(
+      'Project',
+      [defaultProjectName, deployer.address, swapper.address],
+      deployer
+    );
 
     const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
     await project.setVesting(vesting.address);
@@ -28,11 +32,11 @@ describe('Periodic vesting project unit tests', () => {
       const [deployer] = await ethers.getSigners();
 
       const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
-      const project: Project = await deploy('Project', deployer, [
-        defaultProjectName,
-        deployer.address,
-        swapper.address
-      ]);
+      const project: Project = await deployProxy(
+        'Project',
+        [defaultProjectName, deployer.address, swapper.address],
+        deployer
+      );
 
       expect(await project.name()).to.equal(defaultProjectName);
       expect(await project.status()).to.equal(formatBytes32String('Added'));
@@ -44,7 +48,11 @@ describe('Periodic vesting project unit tests', () => {
       const [deployer] = await ethers.getSigners();
 
       await expect(
-        deploy('Project', deployer, [defaultProjectName, ethers.constants.AddressZero, ethers.constants.AddressZero])
+        deployProxy(
+          'Project',
+          [defaultProjectName, ethers.constants.AddressZero, ethers.constants.AddressZero],
+          deployer
+        )
       ).to.be.revertedWith('Owner is zero address');
     });
   });
@@ -54,11 +62,11 @@ describe('Periodic vesting project unit tests', () => {
       const [deployer] = await ethers.getSigners();
 
       const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
-      const project: Project = await deploy('Project', deployer, [
-        defaultProjectName,
-        deployer.address,
-        swapper.address
-      ]);
+      const project: Project = await deployProxy(
+        'Project',
+        [defaultProjectName, deployer.address, swapper.address],
+        deployer
+      );
       const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
 
       await expect(project.setVesting(vesting.address))
@@ -69,7 +77,7 @@ describe('Periodic vesting project unit tests', () => {
     });
 
     it('Should revert setting vesting contract if not owner', async () => {
-      const { project, vesting, wallet } = await loadFixture(deployProject);
+      const { project } = await loadFixture(deployProject);
 
       await expect(project.setVesting(ethers.constants.AddressZero)).to.be.revertedWith('Vesting is zero address');
     });

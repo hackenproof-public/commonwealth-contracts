@@ -24,7 +24,11 @@ describe('UniswapSwapper goerli integration tests', function () {
     /* Deploy the UniswapSwapper contract */
     console.log(`deploying UniswapSwapper using [${signers[0].address}]...`);
     const uniswapSwapperFactory = await ethers.getContractFactory('UniswapSwapper', signers[0]);
-    const uniswapSwapper = await uniswapSwapperFactory.deploy(SWAP_ROUTER_ADDRESS, ZERO_POINT_THREE_FEE_TIER);
+    const uniswapSwapper = await uniswapSwapperFactory.deploy(
+      signers[0].address,
+      SWAP_ROUTER_ADDRESS,
+      ZERO_POINT_THREE_FEE_TIER
+    );
     await uniswapSwapper.deployed();
     console.log(`UniswapSwapper deployed at: [${uniswapSwapper.address}]`);
 

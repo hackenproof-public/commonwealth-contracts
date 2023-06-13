@@ -1,6 +1,7 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import chai from 'chai';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { IERC721Upgradeable, StakingGenesisNFT } from '../../typechain-types';
@@ -30,13 +31,11 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
 
     const [deployer, owner] = await ethers.getSigners();
 
-    const stakingGenesisNft: StakingGenesisNFT = await deployProxy('StakingGenesisNFT', deployer, [
-      owner.address,
-      TIMESTAMP_IN_THE_FUTURE,
-      smallGenesisNFT.address,
-      largeGenesisNFT.address,
-      SECONDS_PER_DAY
-    ]);
+    const stakingGenesisNft: StakingGenesisNFT = await deployProxy(
+      'StakingGenesisNFT',
+      [owner.address, TIMESTAMP_IN_THE_FUTURE, smallGenesisNFT.address, largeGenesisNFT.address, SECONDS_PER_DAY],
+      deployer
+    );
 
     return { stakingGenesisNft, deployer, owner, smallGenesisNFT, largeGenesisNFT };
   };
@@ -44,13 +43,11 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
   const deployStakingGenesisNFTwithEmptyNftContracts = async () => {
     const [deployer, owner] = await ethers.getSigners();
 
-    const stakingGenesisNft: StakingGenesisNFT = await deployProxy('StakingGenesisNFT', deployer, [
-      owner.address,
-      TIMESTAMP_IN_THE_FUTURE,
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero,
-      SECONDS_PER_DAY
-    ]);
+    const stakingGenesisNft: StakingGenesisNFT = await deployProxy(
+      'StakingGenesisNFT',
+      [owner.address, TIMESTAMP_IN_THE_FUTURE, constants.AddressZero, constants.AddressZero, SECONDS_PER_DAY],
+      deployer
+    );
 
     return { stakingGenesisNft, deployer, owner };
   };
@@ -123,7 +120,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should allow to stake owned tokens', async () => {
-      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      const { stakingGenesisNft, deployer, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
 
       await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).not.to.be.reverted;
@@ -200,10 +197,16 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     it('Should not give rewards when final timestamp was reached', async () => {
       const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
-      const timestampBefore = await time.latest();
-      await stakingGenesisNft.connect(owner).setFinalTimestamp(timestampBefore + SECONDS_PER_DAY * 3 + 2);
+      const settingFinalTimestampTime = (await time.latest()) + 5;
+      const stakingTime = settingFinalTimestampTime + 5;
+
+      await time.setNextBlockTimestamp(settingFinalTimestampTime);
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(stakingTime + SECONDS_PER_DAY * 3 + 2);
+
+      await time.setNextBlockTimestamp(stakingTime);
       await stakingGenesisNft.connect(deployer).stake(SOME_STAKE, []);
-      await time.increaseTo(timestampBefore + SECONDS_PER_DAY * 5);
+
+      await time.increaseTo(stakingTime + SECONDS_PER_DAY * 5);
 
       expect(await stakingGenesisNft.connect(deployer).getRewardSmall(deployer.address)).to.equal(
         SOME_STAKE.length * DAILY_REWARD_SMALL * 3
@@ -241,10 +244,16 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     it('Should not give rewards when final timestamp was reached', async () => {
       const { stakingGenesisNft, deployer, owner, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
-      const timestampBefore = await time.latest();
-      await stakingGenesisNft.connect(owner).setFinalTimestamp(timestampBefore + SECONDS_PER_DAY * 3 + 2);
+      const settingFinalTimestampTime = (await time.latest()) + 5;
+      const stakingTime = settingFinalTimestampTime + 5;
+
+      await time.setNextBlockTimestamp(settingFinalTimestampTime);
+      await stakingGenesisNft.connect(owner).setFinalTimestamp(stakingTime + SECONDS_PER_DAY * 3 + 2);
+
+      await time.setNextBlockTimestamp(stakingTime);
       await stakingGenesisNft.connect(deployer).stake([], SOME_STAKE);
-      await time.increaseTo(timestampBefore + SECONDS_PER_DAY * 5);
+
+      await time.increaseTo(stakingTime + SECONDS_PER_DAY * 5);
 
       expect(await stakingGenesisNft.connect(deployer).getRewardLarge(deployer.address)).to.equal(
         SOME_STAKE.length * DAILY_REWARD_LARGE * 3
@@ -292,7 +301,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
 
   describe('#unstake', () => {
     it('Should not allow to unstake tokens that were not staked', async () => {
-      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      const { stakingGenesisNft, deployer, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
       await stakingGenesisNft.connect(deployer).stake(SOME_STAKE.slice(1), []);
 
@@ -302,7 +311,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should not allow to unstake when paused', async () => {
-      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
       await stakingGenesisNft.connect(owner).pause();
 
       await expect(stakingGenesisNft.connect(deployer).unstake([], [])).to.be.reverted;
@@ -418,7 +427,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
 
   describe('#initialiseSmallNft', () => {
     it('Should not allow non-owner to init small nft', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const { stakingGenesisNft, deployer } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
       const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await expect(stakingGenesisNft.connect(deployer).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
@@ -427,7 +436,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should not allow init small nft if it was already initialised', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
       const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await expect(stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
@@ -436,7 +445,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should init small nft', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
       const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
@@ -447,7 +456,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
 
   describe('#initialiseLargeNft', () => {
     it('Should not allow non-owner to init large nft', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const { stakingGenesisNft, deployer } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
       const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await expect(stakingGenesisNft.connect(deployer).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
@@ -456,7 +465,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should not allow init large nft if it was already initialised', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFT);
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
       const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await expect(stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
@@ -465,7 +474,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     });
 
     it('Should init large nft', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
+      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
       const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
 
       await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);

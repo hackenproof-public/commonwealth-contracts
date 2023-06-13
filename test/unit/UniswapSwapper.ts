@@ -2,7 +2,7 @@ import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { ISwapRouter, UniswapSwapper } from '../../typechain-types';
 
 describe('Uniswap swapper unit tests', () => {
@@ -13,27 +13,29 @@ describe('Uniswap swapper unit tests', () => {
   const ZERO_POINT_THREE_FEE_TIER = 3000;
 
   const deploySwapper = async () => {
-    const [deployer] = await ethers.getSigners();
+    const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
     router.exactInputSingle.returns(SOME_OTHER_AMOUNT);
 
-    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [
-      router.address,
-      ZERO_POINT_THREE_FEE_TIER
-    ]);
+    const uniswapSwapper: UniswapSwapper = await deployProxy(
+      'UniswapSwapper',
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
+      deployer
+    );
 
-    return { uniswapSwapper, deployer };
+    return { uniswapSwapper, deployer, owner };
   };
 
   it('Should deploy with correct router', async () => {
-    const [deployer] = await ethers.getSigners();
+    const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const uniswapSwapper: UniswapSwapper = await deploy('UniswapSwapper', deployer, [
-      router.address,
-      ZERO_POINT_THREE_FEE_TIER
-    ]);
+    const uniswapSwapper: UniswapSwapper = await deployProxy(
+      'UniswapSwapper',
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
+      deployer
+    );
 
     expect(await uniswapSwapper.swapRouter()).to.equal(router.address);
   });
@@ -41,8 +43,17 @@ describe('Uniswap swapper unit tests', () => {
   it('Should emit swapped event', async () => {
     const { uniswapSwapper, deployer } = await loadFixture(deploySwapper);
 
-    await expect(await uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS))
+    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS))
       .to.emit(uniswapSwapper, 'Swapped')
       .withArgs(deployer.address, SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_AMOUNT, SOME_OTHER_ADDRESS);
+  });
+
+  it('Should revert swapping if paused', async () => {
+    const { uniswapSwapper, owner } = await loadFixture(deploySwapper);
+
+    await uniswapSwapper.connect(owner).pause();
+    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS)).to.be.revertedWith(
+      'Pausable: paused'
+    );
   });
 });

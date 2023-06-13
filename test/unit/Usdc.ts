@@ -5,13 +5,13 @@ import { deploy } from '../../scripts/utils';
 import { USDC } from '../../typechain-types';
 
 describe('USDC', function () {
-  async function deployFixture() {
+  const deployFixture = async () => {
     const [deployer] = await ethers.getSigners();
 
-    const usdc: USDC = await deploy('USDC', deployer, []);
+    const usdc: USDC = await deploy('USDC', [], deployer);
 
     return { usdc, deployer };
-  }
+  };
 
   describe('Deployment', function () {
     it('Should deploy', async () => {

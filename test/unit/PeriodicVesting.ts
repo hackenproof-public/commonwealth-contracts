@@ -2,7 +2,7 @@ import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { PeriodicVesting, USDC } from '../../typechain-types';
 import { toUsdc } from '../utils';
 
@@ -18,12 +18,11 @@ describe('Periodic vesting unit tests', () => {
     const cliff = 0;
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
-    const vesting: PeriodicVesting = await deploy('PeriodicVesting', deployer, [
-      usdc.address,
-      beneficiary.address,
-      startBlock,
-      [[totalAllocation, duration, cadence, cliff]]
-    ]);
+    const vesting: PeriodicVesting = await deployProxy(
+      'PeriodicVesting',
+      [usdc.address, beneficiary.address, startBlock, [[totalAllocation, duration, cadence, cliff]]],
+      deployer
+    );
 
     return { vesting, usdc, deployer, beneficiary, startBlock, totalAllocation, duration, cadence, cliff };
   };
@@ -60,12 +59,11 @@ describe('Periodic vesting unit tests', () => {
         const totalAllocation = 1000;
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
-        const vesting: PeriodicVesting = await deploy('PeriodicVesting', deployer, [
-          usdc.address,
-          wallet.address,
-          startBlock,
-          [[totalAllocation, data.duration, data.cadence, 0]]
-        ]);
+        const vesting: PeriodicVesting = await deployProxy(
+          'PeriodicVesting',
+          [usdc.address, wallet.address, startBlock, [[totalAllocation, data.duration, data.cadence, 0]]],
+          deployer
+        );
 
         for (let i = 0; i < data.distribution.length; i++) {
           await mineUpTo(startBlock + i);
@@ -82,12 +80,11 @@ describe('Periodic vesting unit tests', () => {
       const duration = 0;
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
-      const vesting: PeriodicVesting = await deploy('PeriodicVesting', deployer, [
-        usdc.address,
-        wallet.address,
-        startBlock,
-        [[totalAllocation, duration, duration, 0]]
-      ]);
+      const vesting: PeriodicVesting = await deployProxy(
+        'PeriodicVesting',
+        [usdc.address, wallet.address, startBlock, [[totalAllocation, duration, duration, 0]]],
+        deployer
+      );
 
       await mineUpTo(startBlock);
       expect(await vesting.getReleasableAmount()).to.equal(totalAllocation);
@@ -121,12 +118,11 @@ describe('Periodic vesting unit tests', () => {
         let inputPeriods = data.periods.map((p) => [p.allocation, p.duration, p.cadence, p.cliff]);
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
-        const vesting: PeriodicVesting = await deploy('PeriodicVesting', deployer, [
-          usdc.address,
-          wallet.address,
-          startBlock,
-          inputPeriods
-        ]);
+        const vesting: PeriodicVesting = await deployProxy(
+          'PeriodicVesting',
+          [usdc.address, wallet.address, startBlock, inputPeriods],
+          deployer
+        );
 
         for (let i = 0; i < data.distribution.length; i++) {
           await mineUpTo(startBlock + i);

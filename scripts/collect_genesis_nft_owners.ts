@@ -53,17 +53,22 @@ const saveToCsv = (report: ReportData[], path: string) => {
 };
 
 const getGenesisNFTSupply = async (): Promise<[number, number]> => {
-  const genesisNftLegacySeries1Contract = await ethers.getContractAt('GenNFT', GENESIS_NFT_LEGACY_SERIES_1);
-  const genesisNftSeries1Contract = await ethers.getContractAt('GenesisNFT', GENESIS_NFT_SERIES_1);
-  const genesisNftSeries2Contract = await ethers.getContractAt('GenesisNFT', GENESIS_NFT_SERIES_2);
+  const [genesisNftLegacySeries1Contract, genesisNftSeries1Contract, genesisNftSeries2Contract] = await Promise.all([
+    ethers.getContractAt('GenNFT', GENESIS_NFT_LEGACY_SERIES_1),
+    ethers.getContractAt('GenesisNFT', GENESIS_NFT_SERIES_1),
+    ethers.getContractAt('GenesisNFT', GENESIS_NFT_SERIES_2)
+  ]);
 
-  const legacySeries1Supply = await genesisNftLegacySeries1Contract.totalSupply(1);
-  const series1Supply = await genesisNftSeries1Contract.totalSupply();
-  const series2Supply = await genesisNftSeries2Contract.totalSupply();
+  const [legacySeries1Supply, series1Supply, series2Supply, genesisNftSeries1Staked, genesisNftSeries2Staked] =
+    await Promise.all([
+      genesisNftLegacySeries1Contract.totalSupply(1),
+      genesisNftSeries1Contract.totalSupply(),
+      genesisNftSeries2Contract.totalSupply(),
+      genesisNftSeries1Contract.balanceOf(STAKING_GENESIS_NFT),
+      genesisNftSeries2Contract.balanceOf(STAKING_GENESIS_NFT)
+    ]);
+
   const genesisNftTotalSupply = legacySeries1Supply.add(series1Supply).add(series2Supply);
-
-  const genesisNftSeries1Staked = await genesisNftSeries1Contract.balanceOf(STAKING_GENESIS_NFT);
-  const genesisNftSeries2Staked = await genesisNftSeries2Contract.balanceOf(STAKING_GENESIS_NFT);
   const genesisNftTotalStaked = genesisNftSeries1Staked.add(genesisNftSeries2Staked);
 
   return [genesisNftTotalSupply.toNumber(), genesisNftTotalStaked.toNumber()];

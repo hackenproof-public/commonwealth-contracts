@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {IProject} from "./interfaces/IProject.sol";
 import {ISwapper} from "./interfaces/ISwapper.sol";
 import {IVesting} from "./interfaces/IVesting.sol";
 import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {LibProject} from "./libraries/LibProject.sol";
+import {OwnablePausable} from "./OwnablePausable.sol";
 
 /**
  * @title Project contract
  * @dev Holds tokens deployed by system for project and contract defining project tokens vesting schedule
  */
-contract Project is IProject, ERC165, Ownable {
-    using SafeERC20 for IERC20;
+contract Project is IProject, OwnablePausable, ERC165Upgradeable {
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
      * @notice Project name
@@ -42,17 +43,23 @@ contract Project is IProject, ERC165, Ownable {
      */
     ISwapper public swapper;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initializes the contract
      * @param name_ Investment fund name
      * @param owner_ Address with admin rights for project
+     * @param swapper_ Address of contract for project tokens swap
      */
-    constructor(string memory name_, address owner_, address swapper_) {
-        require(owner_ != address(0), "Owner is zero address");
+    function initialize(string memory name_, address owner_, address swapper_) public initializer {
+        __Context_init();
+        __OwnablePausable_init(owner_);
 
         name = name_;
         status = LibProject.STATUS_ADDED;
-        transferOwnership(owner_);
         swapper = ISwapper(swapper_);
     }
 
@@ -62,7 +69,7 @@ contract Project is IProject, ERC165, Ownable {
     function setVesting(address vesting_) external onlyOwner {
         require(vesting_ != address(0), "Vesting is zero address");
 
-        emit VestingContractChanged(msg.sender, address(vesting), vesting_);
+        emit VestingContractChanged(_msgSender(), address(vesting), vesting_);
         vesting = IVesting(vesting_);
     }
 
@@ -84,10 +91,10 @@ contract Project is IProject, ERC165, Ownable {
         address sourceToken = vesting.getVestedToken();
         address targetToken = IInvestmentFund(investmentFund).getDetails().currency;
 
-        IERC20(sourceToken).safeApprove(address(swapper), amount);
+        IERC20Upgradeable(sourceToken).safeApprove(address(swapper), amount);
         uint256 amountOut = swapper.swap(amount, sourceToken, targetToken);
 
-        IERC20(targetToken).safeTransfer(investmentFund, amountOut);
+        IERC20Upgradeable(targetToken).safeTransfer(investmentFund, amountOut);
     }
 
     function deployFunds(uint256 amount) external {
@@ -97,9 +104,11 @@ contract Project is IProject, ERC165, Ownable {
     }
 
     /**
-     * @inheritdoc IERC165
+     * @inheritdoc IERC165Upgradeable
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IProject).interfaceId || super.supportsInterface(interfaceId);
     }
+
+    uint256[45] private __gap;
 }

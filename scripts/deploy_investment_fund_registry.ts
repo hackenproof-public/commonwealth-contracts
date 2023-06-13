@@ -1,22 +1,12 @@
-import { ethers } from 'hardhat';
-import { InvestmentFundRegistry } from '../typechain-types';
-import { confirm, deploy, verifyContract } from './utils';
+import { env } from 'process';
+import { deployProxyAndVerify } from './utils';
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const parameters = [{ name: 'owner', value: env.OWNER_ACCOUNT }];
 
-  console.log('Deploying Investment Fund Registry contract...');
-  const investmentFundRegistry: InvestmentFundRegistry = await deploy('InvestmentFundRegistry', deployer, []);
-
-  console.log(`Investment Fund Registry deployed to ${investmentFundRegistry.address}`);
-
-  if (await confirm('\nDo you want to verify contract? [y/N] ')) {
-    await verifyContract(investmentFundRegistry.address);
-  }
+  await deployProxyAndVerify('InvestmentFundRegistry', parameters);
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

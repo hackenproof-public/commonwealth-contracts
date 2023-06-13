@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { Wlth } from '../../typechain-types';
 
 describe('Common Wealth Token unit tests', () => {
@@ -11,7 +11,7 @@ describe('Common Wealth Token unit tests', () => {
     it('Should return initial parameters', async () => {
       const [deployer] = await ethers.getSigners();
 
-      const wlth: Wlth = await deploy('Wlth', deployer, []);
+      const wlth: Wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH'], deployer);
 
       expect(await wlth.name()).to.equal('Common Wealth Token');
       expect(await wlth.symbol()).to.equal('WLTH');

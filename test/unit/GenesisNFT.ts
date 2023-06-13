@@ -21,15 +21,11 @@ describe('Common Wealth Genesis NFT unit tests', () => {
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
-    const genesisNft: GenesisNFT = await deployProxy('GenesisNFT', deployer, [
-      name,
-      symbol,
-      series,
-      owner.address,
-      royaltyWallet.address,
-      royalty,
-      defaultTokenURI
-    ]);
+    const genesisNft: GenesisNFT = await deployProxy(
+      'GenesisNFT',
+      [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI],
+      deployer
+    );
     await genesisNft.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, admin.address);
     await genesisNft.connect(owner).grantRole(MINTER_ROLE, minter.address);
     await genesisNft.connect(owner).grantRole(PAUSER_ROLE, pauser.address);
@@ -68,15 +64,11 @@ describe('Common Wealth Genesis NFT unit tests', () => {
       const [deployer, royaltyAccount] = await ethers.getSigners();
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [
-          name,
-          symbol,
-          series,
-          constants.AddressZero,
-          royaltyAccount.address,
-          royalty,
-          defaultTokenURI
-        ])
+        deployProxy(
+          'GenesisNFT',
+          [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI],
+          deployer
+        )
       ).to.be.revertedWith('Owner account is zero address');
     });
 
@@ -84,27 +76,19 @@ describe('Common Wealth Genesis NFT unit tests', () => {
       const [deployer, owner, royaltyAccount] = await ethers.getSigners();
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [
-          name,
-          symbol,
-          series,
-          owner.address,
-          constants.AddressZero,
-          royalty,
-          defaultTokenURI
-        ])
+        deployProxy(
+          'GenesisNFT',
+          [name, symbol, series, owner.address, constants.AddressZero, royalty, defaultTokenURI],
+          deployer
+        )
       ).to.be.revertedWith('ERC2981: invalid receiver');
 
       await expect(
-        deployProxy('GenesisNFT', deployer, [
-          name,
-          symbol,
-          series,
-          owner.address,
-          royaltyAccount.address,
-          10001,
-          defaultTokenURI
-        ])
+        deployProxy(
+          'GenesisNFT',
+          [name, symbol, series, owner.address, royaltyAccount.address, 10001, defaultTokenURI],
+          deployer
+        )
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
     });
   });
