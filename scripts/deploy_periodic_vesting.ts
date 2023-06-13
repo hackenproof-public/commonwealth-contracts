@@ -1,7 +1,7 @@
 import hre, { ethers } from 'hardhat';
+import { env } from 'process';
 import { toUsdc } from '../test/utils';
 import { deployProxyAndVerify, getEnvByNetwork } from './utils';
-import { env } from 'process';
 
 async function main() {
   const beneficiary = env.OWNER_ACCOUNT as string;

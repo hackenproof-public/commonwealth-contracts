@@ -6,6 +6,7 @@ import 'hardhat-contract-sizer';
 import 'hardhat-docgen';
 import 'hardhat-tracer';
 import { HardhatUserConfig } from 'hardhat/config';
+import { env } from 'process';
 
 dotenv.config();
 
@@ -24,28 +25,28 @@ const config: HardhatUserConfig = {
     except: ['^contracts/test']
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: env.ETHERSCAN_API_KEY
   },
   gasReporter: {
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    enabled: process.env.REPORT_GAS?.toLowerCase() === 'true',
+    coinmarketcap: env.COINMARKETCAP_API_KEY,
+    enabled: env.REPORT_GAS?.toLowerCase() === 'true',
     showTimeSpent: true
   },
   networks: {
     ethereum: {
-      url: process.env.ETHEREUM_RPC_URL || '',
+      url: env.ETHEREUM_RPC_URL || '',
       chainId: 1,
-      accounts: !!process.env.ETHEREUM_WALLET_PRIVATE_KEY ? [process.env.ETHEREUM_WALLET_PRIVATE_KEY] : []
+      accounts: !!env.ETHEREUM_WALLET_PRIVATE_KEY ? [env.ETHEREUM_WALLET_PRIVATE_KEY] : []
     },
     goerli: {
-      url: process.env.GOERLI_RPC_URL || '',
+      url: env.GOERLI_RPC_URL || '',
       chainId: 5,
-      accounts: !!process.env.GOERLI_WALLET_PRIVATE_KEY ? [process.env.GOERLI_WALLET_PRIVATE_KEY] : []
+      accounts: !!env.GOERLI_WALLET_PRIVATE_KEY ? [env.GOERLI_WALLET_PRIVATE_KEY] : []
     },
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || '',
+      url: env.SEPOLIA_RPC_URL || '',
       chainId: 11155111,
-      accounts: !!process.env.SEPOLIA_WALLET_PRIVATE_KEY ? [process.env.SEPOLIA_WALLET_PRIVATE_KEY] : []
+      accounts: !!env.SEPOLIA_WALLET_PRIVATE_KEY ? [env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     },
     localhost: {
       chainId: 31337
