@@ -1,12 +1,19 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
-import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, mineUpTo, SnapshotRestorer, takeSnapshot, time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, constants } from 'ethers';
 import { formatBytes32String, parseBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { IInvestmentFund__factory, InvestmentFund, InvestmentNFT, Project, USDC } from '../../typechain-types';
+import {
+  IInvestmentFund__factory,
+  InvestmentFund,
+  InvestmentNFT,
+  Project,
+  StakingWlth,
+  USDC
+} from '../../typechain-types';
 import { FundState, InvestmentFundDeploymentParameters } from '../types';
 import { getInterfaceId, toUsdc } from '../utils';
 
@@ -18,10 +25,12 @@ describe('Investment Fund unit tests', () => {
   const IInvestmentFundId = ethers.utils.arrayify(getInterfaceId(IInvestmentFund__factory.createInterface()));
   const tokenUri = 'ipfs://token-uri';
   const defaultTreasury = ethers.Wallet.createRandom().address;
+  const maxStakingDiscount = 4000;
 
   let investmentFund: InvestmentFund;
   let usdc: FakeContract<USDC>;
   let investmentNft: FakeContract<InvestmentNFT>;
+  let staking: FakeContract<StakingWlth>;
   let restorer: SnapshotRestorer;
   let deployer: SignerWithAddress;
   let wallet: SignerWithAddress;
@@ -36,22 +45,36 @@ describe('Investment Fund unit tests', () => {
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+    const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
     investmentNft.supportsInterface.returns(true);
 
     const investmentFund: InvestmentFund = await deployProxy(
       'InvestmentFund',
-      [owner.address, fundName, usdc.address, investmentNft.address, treasuryWallet, managementFee, cap],
+      [
+        owner.address,
+        fundName,
+        usdc.address,
+        investmentNft.address,
+        staking.address,
+        treasuryWallet,
+        managementFee,
+        cap
+      ],
       deployer
     );
 
-    return { investmentFund, usdc, investmentNft, deployer, treasuryWallet, wallet };
+    return { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet };
   };
 
   const deployFixture = async () => {
     return deployInvestmentFund();
   };
 
-  const resetFakes = (usdc: FakeContract<USDC>, investmentNft: FakeContract<InvestmentNFT>) => {
+  const resetFakes = (
+    usdc: FakeContract<USDC>,
+    investmentNft: FakeContract<InvestmentNFT>,
+    staking: FakeContract<StakingWlth>
+  ) => {
     investmentNft.getParticipation.reset();
     investmentNft.getPastParticipation.reset();
     investmentNft.getTotalInvestmentValue.reset();
@@ -59,18 +82,21 @@ describe('Investment Fund unit tests', () => {
     investmentNft.supportsInterface.reset();
     usdc.transfer.reset();
     usdc.transferFrom.reset();
+    staking.getDiscountInTimestamp.reset();
   };
 
   const setup = async () => {
-    const { investmentFund, usdc, investmentNft, deployer, treasuryWallet, wallet } = await loadFixture(deployFixture);
+    const { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet } = await loadFixture(
+      deployFixture
+    );
 
-    resetFakes(usdc, investmentNft);
+    resetFakes(usdc, investmentNft, staking);
 
     usdc.transferFrom.returns(true);
     investmentNft.supportsInterface.returns(true);
     investmentNft.mint.returns(1);
 
-    return { investmentFund, usdc, investmentNft, deployer, treasuryWallet, wallet };
+    return { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet };
   };
 
   describe('Deployment', () => {
@@ -105,6 +131,7 @@ describe('Investment Fund unit tests', () => {
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -113,6 +140,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             investmentNft.address,
+            staking.address,
             defaultTreasury,
             defaultManagementFee,
             defaultInvestmentCap
@@ -126,6 +154,7 @@ describe('Investment Fund unit tests', () => {
       const [deployer, owner] = await ethers.getSigners();
 
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -134,6 +163,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             constants.AddressZero,
             investmentNft.address,
+            staking.address,
             defaultTreasury,
             defaultManagementFee,
             defaultInvestmentCap
@@ -147,6 +177,7 @@ describe('Investment Fund unit tests', () => {
       const [deployer, owner] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -155,6 +186,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             constants.AddressZero,
+            staking.address,
             defaultTreasury,
             defaultManagementFee,
             defaultInvestmentCap
@@ -164,7 +196,7 @@ describe('Investment Fund unit tests', () => {
       ).to.be.revertedWith('Invalid NFT address');
     });
 
-    it('Should revert deployment if invalid treasury wallet address', async () => {
+    it('Should revert deployment if invalid staking address', async () => {
       const [deployer, owner] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
@@ -177,6 +209,31 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             investmentNft.address,
+            constants.AddressZero,
+            defaultTreasury,
+            defaultManagementFee,
+            defaultInvestmentCap
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Invalid staking contract address');
+    });
+
+    it('Should revert deployment if invalid treasury wallet address', async () => {
+      const [deployer, owner] = await ethers.getSigners();
+
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+      await expect(
+        deployProxy(
+          'InvestmentFund',
+          [
+            owner.address,
+            'Investment Fund',
+            usdc.address,
+            investmentNft.address,
+            staking.address,
             constants.AddressZero,
             defaultManagementFee,
             defaultInvestmentCap
@@ -191,6 +248,7 @@ describe('Investment Fund unit tests', () => {
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -199,6 +257,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             investmentNft.address,
+            staking.address,
             defaultTreasury,
             10000,
             defaultInvestmentCap
@@ -213,6 +272,7 @@ describe('Investment Fund unit tests', () => {
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -221,6 +281,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             investmentNft.address,
+            staking.address,
             defaultTreasury,
             defaultManagementFee,
             0
@@ -235,6 +296,7 @@ describe('Investment Fund unit tests', () => {
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       investmentNft.supportsInterface.returns(false);
       await expect(
         deployProxy(
@@ -244,6 +306,7 @@ describe('Investment Fund unit tests', () => {
             'Investment Fund',
             usdc.address,
             investmentNft.address,
+            staking.address,
             defaultTreasury,
             defaultManagementFee,
             defaultInvestmentCap
@@ -345,7 +408,7 @@ describe('Investment Fund unit tests', () => {
     const defaultProfit = BigNumber.from(10);
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
+      ({ investmentFund, usdc, investmentNft, staking, deployer, wallet } = await setup());
       await investmentFund.invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
@@ -356,12 +419,13 @@ describe('Investment Fund unit tests', () => {
     beforeEach(async () => {
       await restorer.restore();
 
-      resetFakes(usdc, investmentNft);
+      resetFakes(usdc, investmentNft, staking);
 
       investmentNft.getParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
+      staking.getDiscountInTimestamp.returns(0);
     });
 
     describe('if no profit provided', () => {
@@ -415,7 +479,7 @@ describe('Investment Fund unit tests', () => {
     const defaultProfit = toUsdc('20');
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
+      ({ investmentFund, usdc, investmentNft, staking, deployer, wallet } = await setup());
       await investmentFund.invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
@@ -426,13 +490,14 @@ describe('Investment Fund unit tests', () => {
     beforeEach(async () => {
       await restorer.restore();
 
-      resetFakes(usdc, investmentNft);
+      resetFakes(usdc, investmentNft, staking);
 
       investmentNft.getParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getTotalInvestmentValue.returns(investmentValue);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
+      staking.getDiscountInTimestamp.returns(0);
     });
 
     it('Should revert retrieving carry fee if no profit provided', async () => {
@@ -453,6 +518,21 @@ describe('Investment Fund unit tests', () => {
     ].forEach(async (data) => {
       it('Should retrieve carry fee for payouts after breakeven', async () => {
         usdc.transferFrom.returns(true);
+        await investmentFund.provideProfit(defaultProfit);
+
+        expect(await investmentFund.isInProfit()).to.equal(true);
+        expect(await investmentFund.getWithdrawalCarryFee(wallet.address, data.amount)).to.deep.equal(data.fee);
+      });
+    });
+
+    [
+      { amount: toUsdc('20'), discount: 0, fee: toUsdc('5') },
+      { amount: toUsdc('20'), discount: 1, fee: toUsdc('4.999') },
+      { amount: toUsdc('20'), discount: maxStakingDiscount, fee: toUsdc('1') }
+    ].forEach((data) => {
+      it('Should retrieve carry fee for payouts after breakeven if user staked for discount', async () => {
+        usdc.transferFrom.returns(true);
+        staking.getDiscountInTimestamp.returns(data.discount);
         await investmentFund.provideProfit(defaultProfit);
 
         expect(await investmentFund.isInProfit()).to.equal(true);
@@ -537,7 +617,7 @@ describe('Investment Fund unit tests', () => {
     const investmentValue = toUsdc('100');
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet } = await setup());
+      ({ investmentFund, usdc, investmentNft, staking, deployer, wallet } = await setup());
 
       await investmentFund.connect(deployer).invest(investmentValue, tokenUri);
       await investmentFund.stopCollectingFunds();
@@ -549,66 +629,82 @@ describe('Investment Fund unit tests', () => {
     beforeEach(async () => {
       await restorer.restore();
 
-      resetFakes(usdc, investmentNft);
+      resetFakes(usdc, investmentNft, staking);
       usdc.transferFrom.returns(true);
       investmentNft.getParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getInvestors.returns([deployer.address]);
       investmentNft.getTotalInvestmentValue.returns(investmentValue);
+      staking.getDiscountInTimestamp.returns(0);
     });
 
     [1, investmentValue.sub(1)].forEach((value) => {
       it(`Should provide profit lower than breakeven [value=${value}]`, async () => {
+        const profitBlock = (await time.latestBlock()) + 10;
+        await mineUpTo(profitBlock - 1);
+
         await expect(investmentFund.provideProfit(value))
           .to.emit(investmentFund, 'ProfitProvided')
-          .withArgs(investmentFund.address, value, 0, await ethers.provider.getBlockNumber());
+          .withArgs(investmentFund.address, value, 0, profitBlock);
 
         expect(await investmentFund.totalIncome()).to.equal(value);
         expect(await investmentFund.getPayoutsCount()).to.equal(1);
         expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(value);
 
-        expect(await investmentFund.payouts(0)).to.deep.equal([
-          value,
-          0,
-          await ethers.provider.getBlockNumber(),
-          false
-        ]);
+        const block = await ethers.provider.getBlock(profitBlock);
+        expect(await investmentFund.payouts(0)).to.deep.equal([value, 0, [block.number, block.timestamp], false]);
       });
     });
 
     it('Should provide profit equal to breakeven', async () => {
+      const profitBlock = (await time.latestBlock()) + 10;
+      await mineUpTo(profitBlock - 1);
+
       await expect(investmentFund.provideProfit(investmentValue))
         .to.emit(investmentFund, 'ProfitProvided')
-        .withArgs(investmentFund.address, investmentValue, 0, await ethers.provider.getBlockNumber())
+        .withArgs(investmentFund.address, investmentValue, 0, profitBlock)
         .to.emit(investmentFund, 'BreakevenReached')
         .withArgs(investmentValue);
 
       expect(await investmentFund.totalIncome()).to.equal(investmentValue);
       expect(await investmentFund.getPayoutsCount()).to.equal(1);
 
-      const blockNumber = await ethers.provider.getBlockNumber();
-      expect(await investmentFund.payouts(0)).to.deep.equal([investmentValue, 0, blockNumber, false]);
+      const block = await ethers.provider.getBlock(profitBlock);
+      expect(await investmentFund.payouts(0)).to.deep.equal([
+        investmentValue,
+        0,
+        [block.number, block.timestamp],
+        false
+      ]);
     });
 
     // [investmentValue.add(1), constants.MaxUint256].forEach((value) => {
     [investmentValue.add(1)].forEach((value) => {
       it(`Should provide profit higher than breakeven [value=${value}]`, async () => {
+        const profitBlock = (await time.latestBlock()) + 10;
+        await mineUpTo(profitBlock - 1);
+
         const fee = value.sub(investmentValue).div(2);
         await expect(investmentFund.provideProfit(value))
           .to.emit(investmentFund, 'ProfitProvided')
-          .withArgs(investmentFund.address, value.sub(fee), fee, await ethers.provider.getBlockNumber())
+          .withArgs(investmentFund.address, value.sub(fee), fee, profitBlock)
           .to.emit(investmentFund, 'BreakevenReached')
           .withArgs(investmentValue);
 
         expect(await investmentFund.totalIncome()).to.equal(value);
         expect(await investmentFund.getPayoutsCount()).to.equal(2);
 
-        const blockNumber = await ethers.provider.getBlockNumber();
-        expect(await investmentFund.payouts(0)).to.deep.equal([investmentValue, 0, blockNumber, false]);
+        const block = await ethers.provider.getBlock(profitBlock);
+        expect(await investmentFund.payouts(0)).to.deep.equal([
+          investmentValue,
+          0,
+          [block.number, block.timestamp],
+          false
+        ]);
         expect(await investmentFund.payouts(1)).to.deep.equal([
           value.sub(investmentValue).sub(fee),
           fee,
-          blockNumber,
+          [block.number, block.timestamp],
           true
         ]);
       });
@@ -768,7 +864,7 @@ describe('Investment Fund unit tests', () => {
       beforeEach(async () => {
         await restorer.restore();
 
-        resetFakes(usdc, investmentNft);
+        resetFakes(usdc, investmentNft, staking);
 
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);

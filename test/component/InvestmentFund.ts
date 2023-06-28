@@ -1,18 +1,36 @@
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { Log } from '@ethersproject/providers';
-import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, SnapshotRestorer, takeSnapshot, time } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, ContractTransaction } from 'ethers';
+import { parseUnits } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy, deployProxy } from '../../scripts/utils';
-import { InvestmentFund, InvestmentNFT, USDC } from '../../typechain-types';
+import {
+  InvestmentFund,
+  InvestmentNFT,
+  StakingWlth,
+  TestQuoter,
+  UniswapQuoter,
+  USDC,
+  Wlth
+} from '../../typechain-types';
 import { getLogs, toUsdc } from '../utils';
 
 describe('Investment Fund component tests', () => {
+  const SECONDS_IN_YEAR = 31536000;
+  const ONE_YEAR = 1 * SECONDS_IN_YEAR;
+  const TWO_YEARS = 2 * SECONDS_IN_YEAR;
+  const THREE_YEARS = 3 * SECONDS_IN_YEAR;
+  const FOUR_YEARS = 4 * SECONDS_IN_YEAR;
   const managementFee = 1000;
+  const defaultFee = 200;
   const defaultInvestmentCap = toUsdc('1000000');
   const tokenUri = 'ipfs://token-uri';
   const mintedEventTopic = ethers.utils.id('Transfer(address,address,uint256)');
+  const defaultTreasury = ethers.Wallet.createRandom().address;
+  const maxStakingDiscount = 4000;
 
   let investmentFund: InvestmentFund;
   let usdc: USDC;
@@ -20,15 +38,33 @@ describe('Investment Fund component tests', () => {
   let deployer: SignerWithAddress;
   let owner: SignerWithAddress;
   let wallet: SignerWithAddress;
-  let treasuryWallet: SignerWithAddress;
   let profitProvider: SignerWithAddress;
   let restorer: SnapshotRestorer;
 
   async function deployFixture() {
-    [deployer, owner, wallet, profitProvider, treasuryWallet] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider] = await ethers.getSigners();
 
+    const treasury = defaultTreasury;
     const usdc: USDC = await deploy('USDC', [], deployer);
     const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', ['INFT', 'CWI', owner.address], deployer);
+    const wlth: Wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH'], deployer);
+    const extQuoter: FakeContract<TestQuoter> = await smock.fake('TestQuoter');
+    const quoter: UniswapQuoter = await deployProxy('UniswapQuoter', [extQuoter.address, 3000], deployer);
+    const staking: StakingWlth = await deployProxy(
+      'StakingWlth',
+      [
+        owner.address,
+        wlth.address,
+        usdc.address,
+        quoter.address,
+        defaultFee,
+        treasury,
+        maxStakingDiscount,
+        [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
+        [5000, 3750, 3125, 2500]
+      ],
+      deployer
+    );
     const investmentFund: InvestmentFund = await deployProxy(
       'InvestmentFund',
       [
@@ -36,18 +72,33 @@ describe('Investment Fund component tests', () => {
         'Investment Fund',
         usdc.address,
         investmentNft.address,
-        treasuryWallet.address,
+        staking.address,
+        treasury,
         managementFee,
         defaultInvestmentCap
       ],
       deployer
     );
     await investmentNft.connect(owner).addMinter(investmentFund.address);
+    await staking.connect(owner).registerFund(investmentFund.address);
 
     await usdc.mint(deployer.address, toUsdc('1000000'));
     await usdc.mint(wallet.address, toUsdc('1000000'));
+    await usdc.mint(profitProvider.address, toUsdc('1000'));
 
-    return { investmentFund, usdc, investmentNft, deployer, owner, wallet, treasuryWallet, profitProvider };
+    return {
+      investmentFund,
+      usdc,
+      investmentNft,
+      staking,
+      extQuoter,
+      wlth,
+      deployer,
+      owner,
+      wallet,
+      profitProvider,
+      treasury
+    };
   }
 
   describe('Deployment', () => {
@@ -79,7 +130,7 @@ describe('Investment Fund component tests', () => {
         const tokenId: BigNumber = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
 
         expect(await usdc.balanceOf(wallet.address)).to.equal(initialBalance.sub(data.amount));
-        expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(data.fee);
+        expect(await usdc.balanceOf(defaultTreasury)).to.equal(data.fee);
         expect(await usdc.balanceOf(investmentFund.address)).to.equal(data.invested);
         expect(await investmentNft.tokenValue(tokenId)).to.equal(data.amount);
         expect(await investmentNft.getTotalInvestmentValue()).to.equal(data.amount);
@@ -97,10 +148,8 @@ describe('Investment Fund component tests', () => {
   });
 
   describe('Provide profit', () => {
-    it('Should provide profit for multiple investors', async () => {
-      const { investmentFund, usdc, deployer, wallet, profitProvider } = await loadFixture(deployFixture);
-
-      await usdc.mint(profitProvider.address, toUsdc('1000'));
+    it('Should provide profit with no carry fee for multiple investors if not in breakeven', async () => {
+      const { investmentFund, usdc, deployer, wallet, profitProvider, treasury } = await loadFixture(deployFixture);
 
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
       await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
@@ -109,22 +158,19 @@ describe('Investment Fund component tests', () => {
       await investmentFund.stopCollectingFunds();
       await investmentFund.deployFunds();
 
-      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('3'));
-      await investmentFund.connect(profitProvider).provideProfit(toUsdc('3'));
+      const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
+      const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
+      const profit = toUsdc('3');
 
-      expect(await investmentFund.totalIncome()).to.equal(toUsdc('3'));
-      expect(await investmentFund.getPayoutsCount()).to.equal(1);
-      const payout = await investmentFund.payouts(0);
-      expect(payout.value).to.equal(toUsdc('3'));
-      expect(payout.fee).to.equal(toUsdc('0'));
-      expect(payout.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-      expect(payout.inProfit).to.equal(false);
+      await usdc.connect(profitProvider).approve(investmentFund.address, profit);
+      await investmentFund.connect(profitProvider).provideProfit(profit);
+
+      expect(await usdc.balanceOf(investmentFund.address)).to.equal(fundBalanceBeforeProfit.add(profit));
+      expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit);
     });
 
-    it('Should provide profit for multiple investors after breakeven', async () => {
-      const { investmentFund, usdc, deployer, wallet, profitProvider } = await loadFixture(deployFixture);
-
-      await usdc.mint(profitProvider.address, toUsdc('1000'));
+    it('Should provide profit with carry fee for multiple investors after breakeven', async () => {
+      const { investmentFund, usdc, deployer, wallet, profitProvider, treasury } = await loadFixture(deployFixture);
 
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
       await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
@@ -134,27 +180,62 @@ describe('Investment Fund component tests', () => {
       await investmentFund.deployFunds();
 
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('120'));
-      await investmentFund.connect(profitProvider).provideProfit(toUsdc('30')); // breakeven reached
 
-      expect(await investmentFund.totalIncome()).to.equal(toUsdc('30'));
-      expect(await investmentFund.getPayoutsCount()).to.equal(1);
+      const profit0 = toUsdc('30');
+      const profit1 = toUsdc('90');
+      const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
+      const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
+      const expectedFundBalanceAfterProfit0 = fundBalanceBeforeProfit.add(profit0);
+      const expectedCarryFee = toUsdc('45');
 
-      const payout0 = await investmentFund.payouts(0);
-      expect(payout0.value).to.equal(toUsdc('30'));
-      expect(payout0.fee).to.equal(toUsdc('0'));
-      expect(payout0.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-      expect(payout0.inProfit).to.equal(false);
+      await investmentFund.connect(profitProvider).provideProfit(profit0); // breakeven reached
 
-      await investmentFund.connect(profitProvider).provideProfit(toUsdc('90')); // provide profit above breakeven
+      expect(await usdc.balanceOf(investmentFund.address)).to.equal(expectedFundBalanceAfterProfit0);
+      expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit);
 
-      expect(await investmentFund.totalIncome()).to.equal(toUsdc('120'));
-      expect(await investmentFund.getPayoutsCount()).to.equal(2);
+      await investmentFund.connect(profitProvider).provideProfit(profit1); // provide profit above breakeven
 
-      const payout1 = await investmentFund.payouts(1);
-      expect(payout1.value).to.equal(toUsdc('90'));
-      expect(payout1.fee).to.equal(toUsdc('45'));
-      expect(payout1.blockNumber).to.equal(await ethers.provider.getBlockNumber());
-      expect(payout1.inProfit).to.equal(true);
+      expect(await usdc.balanceOf(investmentFund.address)).to.equal(
+        expectedFundBalanceAfterProfit0.add(profit1).sub(expectedCarryFee)
+      );
+      expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(expectedCarryFee));
+    });
+
+    [
+      { elapsed: 1, fee: toUsdc('50') },
+      { elapsed: SECONDS_IN_YEAR / 2, fee: toUsdc('30') },
+      { elapsed: SECONDS_IN_YEAR, fee: toUsdc('10') }
+    ].forEach((data) => {
+      it('Should provide profit with decreased carry fee if user staked for discount', async () => {
+        const { investmentFund, usdc, staking, extQuoter, wlth, deployer, profitProvider, treasury } =
+          await loadFixture(deployFixture);
+
+        await usdc.connect(deployer).approve(investmentFund.address, toUsdc('20'));
+        await investmentFund.connect(deployer).invest(toUsdc('20'), tokenUri);
+        await investmentFund.stopCollectingFunds();
+        await investmentFund.deployFunds();
+
+        const stake = { amount: parseUnits('10', 6), period: ONE_YEAR };
+        extQuoter.quoteExactInputSingle.returns([stake.amount, 0, 0, 0]);
+        await wlth.connect(deployer).approve(staking.address, stake.amount);
+        await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('120'));
+
+        const stakeTime = (await time.latest()) + 100;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(deployer).stake(investmentFund.address, stake.amount, stake.period);
+
+        const profit = toUsdc('120');
+        const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
+        const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
+
+        await time.setNextBlockTimestamp(stakeTime + data.elapsed);
+        await investmentFund.connect(profitProvider).provideProfit(profit); // breakeven reached
+
+        expect(await usdc.balanceOf(investmentFund.address)).to.equal(
+          fundBalanceBeforeProfit.add(profit).sub(data.fee)
+        );
+        expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(data.fee));
+      });
     });
   });
 
@@ -165,11 +246,7 @@ describe('Investment Fund component tests', () => {
     let walletTokenId: BigNumber;
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet, treasuryWallet, profitProvider } = await loadFixture(
-        deployFixture
-      ));
-
-      await usdc.mint(profitProvider.address, toUsdc('1000'));
+      ({ investmentFund, usdc, investmentNft, deployer, wallet, profitProvider } = await loadFixture(deployFixture));
 
       await usdc.connect(deployer).approve(investmentFund.address, deployerInvestment);
       let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment, tokenUri);
@@ -194,11 +271,11 @@ describe('Investment Fund component tests', () => {
     });
 
     it('Should withdraw profit', async () => {
-      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
+      const treasuryBalance = await usdc.balanceOf(defaultTreasury);
 
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('3'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('3'));
-      expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(treasuryBalance);
+      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance);
 
       const walletBalance = await usdc.balanceOf(wallet.address);
       const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
@@ -213,12 +290,12 @@ describe('Investment Fund component tests', () => {
     });
 
     it('Should withdraw profit if breakeven reached', async () => {
-      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
+      const treasuryBalance = await usdc.balanceOf(defaultTreasury);
 
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
-      expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(treasuryBalance.add(toUsdc('30')));
+      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance.add(toUsdc('30')));
 
       const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
       const walletBalance = await usdc.balanceOf(wallet.address);
@@ -292,12 +369,12 @@ describe('Investment Fund component tests', () => {
 
       const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
       const walletBalance = await usdc.balanceOf(wallet.address);
-      const treasuryBalance = await usdc.balanceOf(treasuryWallet.address);
+      const treasuryBalance = await usdc.balanceOf(defaultTreasury);
 
       await investmentFund.connect(wallet).withdraw(expectedWalletProfit);
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.sub(expectedWalletProfit));
       expect(await usdc.balanceOf(wallet.address)).to.equal(walletBalance.add(expectedWalletProfit));
-      expect(await usdc.balanceOf(treasuryWallet.address)).to.equal(treasuryBalance);
+      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance);
     });
 
     it('Should retrieve available profit for account', async () => {

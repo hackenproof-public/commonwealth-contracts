@@ -14,7 +14,7 @@ const config: HardhatUserConfig = {
   abiExporter: {
     path: './abi',
     clear: true,
-    except: ['@openzeppelin'],
+    except: ['@openzeppelin', '@uniswap'],
     spacing: 2,
     format: 'json'
   },

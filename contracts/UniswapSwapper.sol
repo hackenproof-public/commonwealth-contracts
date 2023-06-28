@@ -49,7 +49,7 @@ contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable
             deadline: block.timestamp,
             amountIn: amountIn,
             amountOutMinimum: 0,
-            sqrtPriceLimitX96: 0
+            sqrtPriceLimitX96: 0 // this must be set to protect against price slippage!
         });
 
         uint256 amountOut = swapRouter.exactInputSingle(params);

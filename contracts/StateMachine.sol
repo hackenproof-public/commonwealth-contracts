@@ -2,10 +2,11 @@
 pragma solidity ^0.8.18;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IStateMachine} from "./interfaces/IStateMachine.sol";
 
-contract StateMachine is Initializable {
+contract StateMachine is IStateMachine, Initializable {
     /**
-     * @notice Current state
+     * @dev Current state
      */
     bytes32 public currentState;
 

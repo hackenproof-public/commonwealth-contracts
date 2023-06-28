@@ -251,7 +251,7 @@
     "name": "currency",
     "outputs": [
       {
-        "internalType": "contract IERC20Upgradeable",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -357,9 +357,21 @@
                 "type": "uint256"
               },
               {
-                "internalType": "uint248",
-                "name": "blockNumber",
-                "type": "uint248"
+                "components": [
+                  {
+                    "internalType": "uint128",
+                    "name": "number",
+                    "type": "uint128"
+                  },
+                  {
+                    "internalType": "uint128",
+                    "name": "timestamp",
+                    "type": "uint128"
+                  }
+                ],
+                "internalType": "struct IInvestmentFund.Block",
+                "name": "blockData",
+                "type": "tuple"
               },
               {
                 "internalType": "bool",
@@ -459,6 +471,11 @@
       },
       {
         "internalType": "address",
+        "name": "stakingWlth_",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "treasuryWallet_",
         "type": "address"
       },
@@ -501,7 +518,7 @@
     "name": "investmentNft",
     "outputs": [
       {
-        "internalType": "contract IInvestmentNFT",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -615,9 +632,21 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint248",
-        "name": "blockNumber",
-        "type": "uint248"
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "number",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "timestamp",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct IInvestmentFund.Block",
+        "name": "blockData",
+        "type": "tuple"
       },
       {
         "internalType": "bool",
@@ -659,6 +688,19 @@
     "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "stakingWlth",
+    "outputs": [
+      {
+        "internalType": "contract IStakingWlth",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
