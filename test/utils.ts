@@ -23,6 +23,10 @@ export const toUsdc = (value: string) => {
   return utils.parseUnits(value, 6);
 };
 
+export const toWlth = (value: string) => {
+  return utils.parseUnits(value, 18);
+};
+
 export const getInterfaceId = (contractInterface: utils.Interface): BigNumber => {
   let interfaceId = ethers.constants.Zero;
   Object.keys(contractInterface.functions).forEach(
