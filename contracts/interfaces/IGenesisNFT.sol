@@ -6,5 +6,5 @@ interface IGenesisNFT {
      * @notice Returns Genesis NFT series number
      * @return Genesis NFT series number
      */
-    function getSeries() external returns (uint256);
+    function getSeries() external view returns (uint256);
 }
