@@ -10,13 +10,17 @@ import { deploy, deployProxy } from '../../scripts/utils';
 import {
   InvestmentFund,
   InvestmentNFT,
+  IProject__factory,
+  PeriodicVesting,
+  Project,
   StakingWlth,
   TestQuoter,
   UniswapQuoter,
+  UniswapSwapper,
   USDC,
   Wlth
 } from '../../typechain-types';
-import { getLogs, toUsdc } from '../utils';
+import { getInterfaceId, getLogs, toUsdc } from '../utils';
 
 describe('Investment Fund component tests', () => {
   const SECONDS_IN_YEAR = 31536000;
@@ -35,6 +39,7 @@ describe('Investment Fund component tests', () => {
   let investmentFund: InvestmentFund;
   let usdc: USDC;
   let investmentNft: InvestmentNFT;
+  let project: Project;
   let deployer: SignerWithAddress;
   let owner: SignerWithAddress;
   let wallet: SignerWithAddress;
@@ -49,7 +54,11 @@ describe('Investment Fund component tests', () => {
     const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', ['INFT', 'CWI', owner.address], deployer);
     const wlth: Wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH', owner.address], deployer);
     const extQuoter: FakeContract<TestQuoter> = await smock.fake('TestQuoter');
+    const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
     const quoter: UniswapQuoter = await deployProxy('UniswapQuoter', [extQuoter.address, 3000], deployer);
+    const defaultProjectName = 'Project 1';
+    const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
+    const IProjectId = ethers.utils.arrayify(getInterfaceId(IProject__factory.createInterface()));
     const staking: StakingWlth = await deployProxy(
       'StakingWlth',
       [
@@ -79,6 +88,17 @@ describe('Investment Fund component tests', () => {
       ],
       deployer
     );
+
+    const project: Project = await deployProxy(
+      'Project',
+      [defaultProjectName, owner.address, swapper.address],
+      deployer
+    );
+
+    await project.connect(owner).setVesting(vesting.address);
+    // await investmentFund.connect(owner).addProject(project.address);
+    // profitProvider = await ethers.getSigner(project.address);
+
     await investmentNft.connect(owner).addMinter(investmentFund.address);
     await staking.connect(owner).registerFund(investmentFund.address);
 
@@ -96,18 +116,20 @@ describe('Investment Fund component tests', () => {
       deployer,
       owner,
       wallet,
-      profitProvider,
-      treasury
+      treasury,
+      project,
+      profitProvider
     };
   }
 
   describe('Deployment', () => {
     it('Should deploy', async () => {
-      const { investmentFund, usdc } = await loadFixture(deployFixture);
+      const { investmentFund, usdc, project } = await loadFixture(deployFixture);
 
       expect(await investmentFund.name()).to.equal('Investment Fund');
       expect(await usdc.balanceOf(deployer.address)).to.equal(toUsdc('1000000'));
       expect(await usdc.balanceOf(wallet.address)).to.equal(toUsdc('1000000'));
+      expect(await usdc.balanceOf(profitProvider.address)).to.equal(toUsdc('1000'));
     });
   });
 
@@ -149,19 +171,19 @@ describe('Investment Fund component tests', () => {
 
   describe('Provide profit', () => {
     it('Should provide profit with no carry fee for multiple investors if not in breakeven', async () => {
-      const { investmentFund, usdc, deployer, wallet, profitProvider, treasury } = await loadFixture(deployFixture);
+      const { investmentFund, usdc, deployer, wallet, treasury, project } = await loadFixture(deployFixture);
 
+      await investmentFund.connect(owner).addProject(profitProvider.address);
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
       await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
       await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
       await investmentFund.connect(wallet).invest(toUsdc('20'), tokenUri);
-      await investmentFund.stopCollectingFunds();
-      await investmentFund.deployFunds();
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await investmentFund.connect(owner).deployFunds();
 
       const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
       const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
       const profit = toUsdc('3');
-
       await usdc.connect(profitProvider).approve(investmentFund.address, profit);
       await investmentFund.connect(profitProvider).provideProfit(profit);
 
@@ -170,14 +192,17 @@ describe('Investment Fund component tests', () => {
     });
 
     it('Should provide profit with carry fee for multiple investors after breakeven', async () => {
-      const { investmentFund, usdc, deployer, wallet, profitProvider, treasury } = await loadFixture(deployFixture);
+      const { investmentFund, usdc, deployer, wallet, project, treasury, profitProvider } = await loadFixture(
+        deployFixture
+      );
 
+      await investmentFund.connect(owner).addProject(profitProvider.address);
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
       await investmentFund.connect(deployer).invest(toUsdc('10'), tokenUri);
       await usdc.connect(wallet).approve(investmentFund.address, toUsdc('20'));
       await investmentFund.connect(wallet).invest(toUsdc('20'), tokenUri);
-      await investmentFund.stopCollectingFunds();
-      await investmentFund.deployFunds();
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await investmentFund.connect(owner).deployFunds();
 
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('120'));
 
@@ -207,13 +232,13 @@ describe('Investment Fund component tests', () => {
       { elapsed: SECONDS_IN_YEAR, fee: toUsdc('10') }
     ].forEach((data) => {
       it('Should provide profit with decreased carry fee if user staked for discount', async () => {
-        const { investmentFund, usdc, staking, extQuoter, wlth, deployer, profitProvider, treasury } =
+        const { investmentFund, usdc, staking, extQuoter, wlth, deployer, project, treasury, profitProvider } =
           await loadFixture(deployFixture);
-
+        await investmentFund.connect(owner).addProject(profitProvider.address);
         await usdc.connect(deployer).approve(investmentFund.address, toUsdc('20'));
         await investmentFund.connect(deployer).invest(toUsdc('20'), tokenUri);
-        await investmentFund.stopCollectingFunds();
-        await investmentFund.deployFunds();
+        await investmentFund.connect(owner).stopCollectingFunds();
+        await investmentFund.connect(owner).deployFunds();
 
         const stake = { amount: parseUnits('10', 6), period: ONE_YEAR };
         extQuoter.quoteExactInputSingle.returns([stake.amount, 0, 0, 0]);
@@ -246,8 +271,11 @@ describe('Investment Fund component tests', () => {
     let walletTokenId: BigNumber;
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet, profitProvider } = await loadFixture(deployFixture));
+      ({ investmentFund, usdc, investmentNft, deployer, wallet, project, profitProvider } = await loadFixture(
+        deployFixture
+      ));
 
+      await investmentFund.connect(owner).addProject(profitProvider.address);
       await usdc.connect(deployer).approve(investmentFund.address, deployerInvestment);
       let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment, tokenUri);
 
@@ -260,8 +288,8 @@ describe('Investment Fund component tests', () => {
       logsMinted = await getLogs(tx, investmentNft.address, mintedEventTopic);
       walletTokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
 
-      await investmentFund.stopCollectingFunds();
-      await investmentFund.deployFunds();
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await investmentFund.connect(owner).deployFunds();
 
       restorer = await takeSnapshot();
     });

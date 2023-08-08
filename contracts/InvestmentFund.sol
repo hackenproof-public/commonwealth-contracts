@@ -214,8 +214,7 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function addProject(address project) external onlyAllowedStates {
-        // TODO: limit role access
+    function addProject(address project) external onlyAllowedStates onlyOwner {
         require(project != address(0), "Project is zero address");
 
         require(_projects.add(project), "Project already exists");
@@ -240,20 +239,17 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function removeProject(address project) external onlyAllowedStates {
-        // TODO: limit role access
+    function removeProject(address project) external onlyAllowedStates onlyOwner {
         require(_projects.remove(project), "Project does not exist");
 
         emit ProjectRemoved(_msgSender(), project);
     }
 
-    function stopCollectingFunds() external onlyAllowedStates {
-        // TODO: limit role access
+    function stopCollectingFunds() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CAP_REACHED;
     }
 
-    function deployFunds() external onlyAllowedStates {
-        // TODO: limit role access
+    function deployFunds() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
     }
 
@@ -261,7 +257,7 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function provideProfit(uint256 amount) external onlyAllowedStates nonReentrant {
-        // TODO: limit role access
+        require(_projects.contains(_msgSender()), "Access Denied");
         require(amount > 0, "Zero profit provided");
 
         Block memory blockData = Block(uint128(block.number), uint128(block.timestamp));
@@ -298,8 +294,7 @@ contract InvestmentFund is
         _transferFrom(currency, _msgSender(), address(this), amount - carryFee);
     }
 
-    function closeFund() external onlyAllowedStates {
-        // TODO: limit role access
+    function closeFund() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CLOSED;
     }
 

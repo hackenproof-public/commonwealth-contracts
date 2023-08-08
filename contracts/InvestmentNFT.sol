@@ -37,11 +37,6 @@ contract InvestmentNFT is
     mapping(address => CheckpointsUpgradeable.History) private _accountValueHistory;
     CheckpointsUpgradeable.History private _totalValueHistory;
 
-    modifier onlyMinter() {
-        require(_minters[_msgSender()], "Account does not have minter rights");
-        _;
-    }
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -108,7 +103,8 @@ contract InvestmentNFT is
     /**
      * @inheritdoc IInvestmentNFT
      */
-    function mint(address to, uint256 value, string calldata tokenUri) external onlyMinter whenNotPaused {
+    function mint(address to, uint256 value, string calldata tokenUri) external whenNotPaused {
+        require(_minters[_msgSender()], "Account does not have minter rights");
         _mintWithURI(to, value, tokenUri);
     }
 
