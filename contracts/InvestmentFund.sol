@@ -197,7 +197,9 @@ contract InvestmentFund is
     function getAvailableFunds(address account) external view returns (uint256) {
         uint256 availableFunds = _getRemainingUserIncomeFromCurrentPayout(account);
         for (uint256 i = _currentPayout[account].index + 1; i < payouts.length; i++) {
-            availableFunds += _getUserIncomeFromPayout(account, i);
+            uint256 income = _getUserIncomeFromPayout(account, i);
+            uint256 fee = _calculateCarryFeeFromPayout(account, i, income);
+            availableFunds += (income - fee);
         }
         return availableFunds;
     }
@@ -435,13 +437,19 @@ contract InvestmentFund is
         return _getUserIncomeFromPayout(account, currentPayout.index) - currentPayout.withdrawn;
     }
 
-    function _getCarryFeeDiscount(address account, uint256 timestamp) private view returns (uint256) {
-        return stakingWlth.getDiscountInTimestamp(account, address(this), timestamp);
+    /**
+     * @dev Returns carry fee in basis points for account in timestamp
+     */
+    function _getCarryFeeSize(address account, uint256 timestamp) private view returns (uint256) {
+        return LibFund.DEFAULT_CARRY_FEE - stakingWlth.getDiscountInTimestamp(account, address(this), timestamp);
     }
 
-    function _calculateCarryFee(address account, uint256 timestamp, uint256 amount) private view returns (uint256) {
-        uint256 carryFee = LibFund.DEFAULT_CARRY_FEE - _getCarryFeeDiscount(account, timestamp);
-        return MathUpgradeable.mulDiv(amount, carryFee, BASIS_POINT_DIVISOR);
+    /**
+     * @dev Returns carry fee in timestamp according to user's income
+     */
+    function _calculateCarryFee(address account, uint256 timestamp, uint256 income) private view returns (uint256) {
+        uint256 carryFeeSize = _getCarryFeeSize(account, timestamp);
+        return MathUpgradeable.mulDiv(income, carryFeeSize, BASIS_POINT_DIVISOR);
     }
 
     function _calculateCarryFeeFromPayout(

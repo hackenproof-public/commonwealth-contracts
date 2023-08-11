@@ -684,6 +684,7 @@ describe('Investment Fund unit tests', () => {
 
       expect(await investmentFund.totalIncome()).to.equal(investmentValue);
       expect(await investmentFund.getPayoutsCount()).to.equal(1);
+      expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(investmentValue);
 
       const block = await ethers.provider.getBlock(profitBlock);
       expect(await investmentFund.payouts(0)).to.deep.equal([
@@ -694,8 +695,7 @@ describe('Investment Fund unit tests', () => {
       ]);
     });
 
-    // [investmentValue.add(1), constants.MaxUint256].forEach((value) => {
-    [investmentValue.add(1)].forEach((value) => {
+    [investmentValue.add(1), investmentValue.mul(2)].forEach((value) => {
       it(`Should provide profit higher than breakeven [value=${value}]`, async () => {
         const profitBlock = (await time.latestBlock()) + 10;
         await mineUpTo(profitBlock - 1);
@@ -703,12 +703,13 @@ describe('Investment Fund unit tests', () => {
         const fee = value.sub(investmentValue).div(2);
         await expect(investmentFund.connect(project.wallet).provideProfit(value))
           .to.emit(investmentFund, 'ProfitProvided')
-          .withArgs(investmentFund.address, value.sub(fee), fee, profitBlock)
+          .withArgs(investmentFund.address, value, fee, profitBlock)
           .to.emit(investmentFund, 'BreakevenReached')
           .withArgs(investmentValue);
 
         expect(await investmentFund.totalIncome()).to.equal(value);
         expect(await investmentFund.getPayoutsCount()).to.equal(2);
+        expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(value.sub(fee));
 
         const block = await ethers.provider.getBlock(profitBlock);
         expect(await investmentFund.payouts(0)).to.deep.equal([
@@ -718,7 +719,7 @@ describe('Investment Fund unit tests', () => {
           false
         ]);
         expect(await investmentFund.payouts(1)).to.deep.equal([
-          value.sub(investmentValue).sub(fee),
+          value.sub(investmentValue),
           fee,
           [block.number, block.timestamp],
           true
