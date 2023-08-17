@@ -194,12 +194,13 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function getAvailableFunds(address account) external view returns (uint256) {
-        uint256 availableFunds = _getRemainingUserIncomeFromCurrentPayout(account);
-        for (uint256 i = _currentPayout[account].index + 1; i < payouts.length; i++) {
-            uint256 income = _getUserIncomeFromPayout(account, i);
-            uint256 fee = _calculateCarryFeeFromPayout(account, i, income);
-            availableFunds += (income - fee);
+    function getAvailableFunds(address account) public view returns (uint256) {
+        uint256 availableFunds = 0;
+        if (payouts.length > 0) {
+            availableFunds = _getRemainingUserIncomeFromCurrentPayout(account);
+            for (uint256 i = _currentPayout[account].index + 1; i < payouts.length; i++) {
+                availableFunds += _getUserIncomeFromPayout(account, i);
+            }
         }
         return availableFunds;
     }
@@ -208,8 +209,9 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function getWithdrawalCarryFee(address account, uint256 amount) external view returns (uint256) {
-        (uint256 actualAmount, uint256 carryFee, ) = _getWithdrawalDetails(account, amount);
-        require(actualAmount == amount, "Withdrawal amount exceeds available funds");
+        require(amount <= getAvailableFunds(account), "Withdrawal amount exceeds available funds");
+
+        (, uint256 carryFee, ) = _getWithdrawalDetails(account, amount);
         return carryFee;
     }
 

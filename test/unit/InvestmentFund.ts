@@ -43,7 +43,7 @@ describe('Investment Fund unit tests', () => {
     managementFee = defaultManagementFee,
     cap = defaultInvestmentCap
   }: InvestmentFundDeploymentParameters = {}) => {
-    const [deployer, owner, wallet] = await ethers.getSigners();
+    const [deployer, owner, user, wallet] = await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -140,7 +140,6 @@ describe('Investment Fund unit tests', () => {
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
-      const project: FakeContract<Project> = await smock.fake('Project');
       await expect(
         deployProxy(
           'InvestmentFund',
@@ -484,6 +483,66 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
+  describe('#getAvailableFunds()', () => {
+    const walletInvestment = toUsdc('6');
+    const ownerInvestment = toUsdc('4');
+    const totalInvestment = ownerInvestment.add(walletInvestment);
+    const defaultProfit = toUsdc('20');
+
+    before(async () => {
+      ({ investmentFund, usdc, investmentNft, staking, deployer, wallet, owner, project } = await setup());
+      await investmentFund.connect(wallet).invest(walletInvestment, tokenUri);
+      await investmentFund.connect(owner).invest(ownerInvestment, tokenUri);
+      await investmentFund.connect(owner).addProject(project.address);
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await investmentFund.connect(owner).deployFunds();
+
+      restorer = await takeSnapshot();
+    });
+
+    beforeEach(async () => {
+      await restorer.restore();
+
+      resetFakes(usdc, investmentNft, staking);
+
+      investmentNft.getParticipation.whenCalledWith(wallet.address).returns([walletInvestment, totalInvestment]);
+      investmentNft.getParticipation.whenCalledWith(owner.address).returns([ownerInvestment, totalInvestment]);
+      investmentNft.getPastParticipation.whenCalledWith(wallet.address).returns([walletInvestment, totalInvestment]);
+      investmentNft.getPastParticipation.whenCalledWith(owner.address).returns([ownerInvestment, totalInvestment]);
+      investmentNft.getTotalInvestmentValue.returns(totalInvestment);
+      usdc.transferFrom.returns(true);
+      usdc.transfer.returns(true);
+      staking.getDiscountInTimestamp.returns(0);
+    });
+
+    it('Should return zero available funds if no profit provided', async () => {
+      expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(0);
+    });
+
+    [
+      { amount: totalInvestment, walletProfit: walletInvestment, ownerProfit: ownerInvestment },
+      { amount: totalInvestment.add(1), walletProfit: walletInvestment, ownerProfit: ownerInvestment },
+      { amount: toUsdc('20'), walletProfit: toUsdc('12'), ownerProfit: toUsdc('8') }
+    ].forEach(async (data) => {
+      it('Should return available funds for payouts', async () => {
+        await investmentFund.connect(project.wallet).provideProfit(data.amount);
+
+        expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(data.walletProfit);
+        expect(await investmentFund.getAvailableFunds(owner.address)).to.equal(data.ownerProfit);
+      });
+    });
+
+    it('Should return zero profit if user did not invest', async () => {
+      investmentNft.getParticipation.reset();
+      investmentNft.getPastParticipation.reset();
+      investmentNft.getParticipation.returns([0, 0]);
+      investmentNft.getPastParticipation.returns([0, 0]);
+      await investmentFund.connect(project.wallet).provideProfit(defaultProfit);
+
+      expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(0);
+    });
+  });
+
   describe('#getWithdrawalCarryFee()', () => {
     const investmentValue = toUsdc('10');
     const defaultProfit = toUsdc('20');
@@ -512,7 +571,9 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert retrieving carry fee if no profit provided', async () => {
-      await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith('Payout does not exist');
+      await expect(investmentFund.getWithdrawalCarryFee(wallet.address, 1)).to.be.revertedWith(
+        'Withdrawal amount exceeds available funds'
+      );
     });
 
     it('Should retrieve carry fee equal to 0 for payouts before or equal to breakeven', async () => {
@@ -529,7 +590,7 @@ describe('Investment Fund unit tests', () => {
     ].forEach(async (data) => {
       it('Should retrieve carry fee for payouts after breakeven', async () => {
         usdc.transferFrom.returns(true);
-        await investmentFund.connect(project.wallet).provideProfit(defaultProfit);
+        await investmentFund.connect(project.wallet).provideProfit(data.amount);
 
         expect(await investmentFund.isInProfit()).to.equal(true);
         expect(await investmentFund.getWithdrawalCarryFee(wallet.address, data.amount)).to.deep.equal(data.fee);
@@ -551,7 +612,7 @@ describe('Investment Fund unit tests', () => {
       });
     });
 
-    it('Should revert retrieving carry fee if no investment is done', async () => {
+    it('Should revert retrieving carry fee if user did not invest', async () => {
       investmentNft.getParticipation.returns([0, 0]);
       investmentNft.getPastParticipation.returns([0, 0]);
       usdc.transferFrom.returns(true);
@@ -673,26 +734,22 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should provide profit equal to breakeven', async () => {
+      const profit = investmentValue;
       const profitBlock = (await time.latestBlock()) + 10;
       await mineUpTo(profitBlock - 1);
 
-      await expect(investmentFund.connect(project.wallet).provideProfit(investmentValue))
+      await expect(investmentFund.connect(project.wallet).provideProfit(profit))
         .to.emit(investmentFund, 'ProfitProvided')
-        .withArgs(investmentFund.address, investmentValue, 0, profitBlock)
+        .withArgs(investmentFund.address, profit, 0, profitBlock)
         .to.emit(investmentFund, 'BreakevenReached')
-        .withArgs(investmentValue);
+        .withArgs(profit);
 
-      expect(await investmentFund.totalIncome()).to.equal(investmentValue);
+      expect(await investmentFund.totalIncome()).to.equal(profit);
       expect(await investmentFund.getPayoutsCount()).to.equal(1);
-      expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(investmentValue);
+      expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(profit);
 
       const block = await ethers.provider.getBlock(profitBlock);
-      expect(await investmentFund.payouts(0)).to.deep.equal([
-        investmentValue,
-        0,
-        [block.number, block.timestamp],
-        false
-      ]);
+      expect(await investmentFund.payouts(0)).to.deep.equal([profit, 0, [block.number, block.timestamp], false]);
     });
 
     [investmentValue.add(1), investmentValue.mul(2)].forEach((value) => {
@@ -709,7 +766,7 @@ describe('Investment Fund unit tests', () => {
 
         expect(await investmentFund.totalIncome()).to.equal(value);
         expect(await investmentFund.getPayoutsCount()).to.equal(2);
-        expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(value.sub(fee));
+        expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(value);
 
         const block = await ethers.provider.getBlock(profitBlock);
         expect(await investmentFund.payouts(0)).to.deep.equal([

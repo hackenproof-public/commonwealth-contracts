@@ -1,6 +1,7 @@
 .env
 .idea/
 .openzeppelin/unknown-31337.json
+abi/
 coverage/
 coverage.json
 node_modules/
