@@ -234,6 +234,56 @@
       "address": "0x98AeAc6547F9e8D044fD2AAB660426dA3a6F9a02",
       "txHash": "0x978815987759d362f73fb779de84999b311b5de3f220d82344c5d208bf872119",
       "kind": "transparent"
+    },
+    {
+      "address": "0x2969A9618f7663dc081404E50a43eB144b72478F",
+      "txHash": "0x98cade55f28827a3890cef122756b4de227cb209cf5de6cc676c7957ed902b07",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x7921A772a0B24e60C15720354821cf4F014f52A7",
+      "txHash": "0xb5fe9273229e8c3f8245cfe12cac074394b1b02236d3af4b80113cd0db0da102",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xEE12fb783E24f6Bf840DA035248e06beD3E7a561",
+      "txHash": "0x820dbd65a7163a9aa6f6ff6622e8f27597a5905d05cdf4363a77b7fccdb642ff",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x49ED6CF6E41eEe4bf4945fBdbF93660759a9D922",
+      "txHash": "0x39ed85a2718bf64a40cf0c35f319c55f245930adc78e35671c4f92fab7f185fb",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x2122342aE7e3CbCad8BB9a91259cc0F4c98CCEC6",
+      "txHash": "0xa2f855f8a4294ffbdb99926de97cc63715d86cd58b65b100097f976f86bea317",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x64D541316f058c595e2b4734794BdE9b39E1037F",
+      "txHash": "0x75db8e37c524ef14ec7e9b9b339f707b2ba15ac93c1d7644ed4cb19fde97522f",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x79b389f746609d68Df743A3C0B25767e405fd7fB",
+      "txHash": "0x9128cd02ec19de281ba0ccfed88610ed813e438d866962628b186f637bc09645",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x466E2b3E63A60608a14ad3662D31FC07F36eFd5c",
+      "txHash": "0x92f1fc299aa977b03939c402600df066dd469e75c3a12fd3c91a6bc0e73fc8a0",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x0ce7F3170A86C4220867B80A9982C00d8d840f73",
+      "txHash": "0x70d5d4be4f505efd7c7cbeb7917a559edb83416b61548c3600a0d20e3b8b2e53",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xc16FAf4B5954499a8D11d3ee559BB27213aba5B7",
+      "txHash": "0x5e08b8547d59f45773594d21ade43f80e5e9f95f30c1c99fc676f629ff406277",
+      "kind": "transparent"
     }
   ],
   "impls": {
@@ -10023,6 +10073,822 @@
           "t_uint64": {
             "label": "uint64",
             "numberOfBytes": "8"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "262248c39e1bef67dfc056bbf6f8e2b4de78994b53751bd57bfe27c44e3bd672": {
+      "address": "0x857Cfaf88D9f18dd7b7a73211531Efb7775fF882",
+      "txHash": "0x14419775184281ca2ae5dd3c6c80c01a42ff8cbc5364ba5418544f2d611f46ad",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts/OwnablePausable.sol:37"
+          },
+          {
+            "label": "currentState",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_bytes32",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:11"
+          },
+          {
+            "label": "functionsAllowed",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_mapping(t_bytes4,t_bool))",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:13"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:43"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "301",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "name",
+            "offset": 0,
+            "slot": "351",
+            "type": "t_string_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:38"
+          },
+          {
+            "label": "currency",
+            "offset": 0,
+            "slot": "352",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:43"
+          },
+          {
+            "label": "investmentNft",
+            "offset": 0,
+            "slot": "353",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:48"
+          },
+          {
+            "label": "stakingWlth",
+            "offset": 0,
+            "slot": "354",
+            "type": "t_contract(IStakingWlth)4607",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:53"
+          },
+          {
+            "label": "treasuryWallet",
+            "offset": 0,
+            "slot": "355",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:58"
+          },
+          {
+            "label": "managementFee",
+            "offset": 20,
+            "slot": "355",
+            "type": "t_uint16",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:63"
+          },
+          {
+            "label": "cap",
+            "offset": 0,
+            "slot": "356",
+            "type": "t_uint256",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:68"
+          },
+          {
+            "label": "totalIncome",
+            "offset": 0,
+            "slot": "357",
+            "type": "t_uint256",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:73"
+          },
+          {
+            "label": "payouts",
+            "offset": 0,
+            "slot": "358",
+            "type": "t_array(t_struct(Payout)4204_storage)dyn_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:78"
+          },
+          {
+            "label": "userTotalWithdrawal",
+            "offset": 0,
+            "slot": "359",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:83"
+          },
+          {
+            "label": "_currentPayout",
+            "offset": 0,
+            "slot": "360",
+            "type": "t_mapping(t_address,t_struct(PayoutPtr)2635_storage)",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:88"
+          },
+          {
+            "label": "_projects",
+            "offset": 0,
+            "slot": "361",
+            "type": "t_struct(AddressSet)2298_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:93"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "363",
+            "type": "t_array(t_uint256)39_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:497"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Payout)4204_storage)dyn_storage": {
+            "label": "struct IInvestmentFund.Payout[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)39_storage": {
+            "label": "uint256[39]",
+            "numberOfBytes": "1248"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes4": {
+            "label": "bytes4",
+            "numberOfBytes": "4"
+          },
+          "t_contract(IStakingWlth)4607": {
+            "label": "contract IStakingWlth",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(PayoutPtr)2635_storage)": {
+            "label": "mapping(address => struct InvestmentFund.PayoutPtr)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_bytes4,t_bool))": {
+            "label": "mapping(bytes32 => mapping(bytes4 => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes4,t_bool)": {
+            "label": "mapping(bytes4 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)2298_storage": {
+            "label": "struct EnumerableSetUpgradeable.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)1983_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Block)4194_storage": {
+            "label": "struct IInvestmentFund.Block",
+            "members": [
+              {
+                "label": "number",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Payout)4204_storage": {
+            "label": "struct IInvestmentFund.Payout",
+            "members": [
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "fee",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "blockData",
+                "type": "t_struct(Block)4194_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "inProfit",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(PayoutPtr)2635_storage": {
+            "label": "struct InvestmentFund.PayoutPtr",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "withdrawn",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Set)1983_storage": {
+            "label": "struct EnumerableSetUpgradeable.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "0283fd8c97103fa0d27dda24586b809e320dbac7d716053117519187dddb4207": {
+      "address": "0x8DB3b85f82aEe08C051C543e2487777f8D39661f",
+      "txHash": "0x9783197f001fe2cb8b259aa18400b576c91ba35e74cd3b7e90ddfac944647e3e",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts/OwnablePausable.sol:37"
+          },
+          {
+            "label": "currentState",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_bytes32",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:11"
+          },
+          {
+            "label": "functionsAllowed",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_mapping(t_bytes4,t_bool))",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:13"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "StateMachine",
+            "src": "contracts/StateMachine.sol:43"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "301",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "name",
+            "offset": 0,
+            "slot": "351",
+            "type": "t_string_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:38"
+          },
+          {
+            "label": "currency",
+            "offset": 0,
+            "slot": "352",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:43"
+          },
+          {
+            "label": "investmentNft",
+            "offset": 0,
+            "slot": "353",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:48"
+          },
+          {
+            "label": "stakingWlth",
+            "offset": 0,
+            "slot": "354",
+            "type": "t_contract(IStakingWlth)21438",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:53"
+          },
+          {
+            "label": "treasuryWallet",
+            "offset": 0,
+            "slot": "355",
+            "type": "t_address",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:58"
+          },
+          {
+            "label": "managementFee",
+            "offset": 20,
+            "slot": "355",
+            "type": "t_uint16",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:63"
+          },
+          {
+            "label": "cap",
+            "offset": 0,
+            "slot": "356",
+            "type": "t_uint256",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:68"
+          },
+          {
+            "label": "totalIncome",
+            "offset": 0,
+            "slot": "357",
+            "type": "t_uint256",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:73"
+          },
+          {
+            "label": "payouts",
+            "offset": 0,
+            "slot": "358",
+            "type": "t_array(t_struct(Payout)20845_storage)dyn_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:78"
+          },
+          {
+            "label": "userTotalWithdrawal",
+            "offset": 0,
+            "slot": "359",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:83"
+          },
+          {
+            "label": "_currentPayout",
+            "offset": 0,
+            "slot": "360",
+            "type": "t_mapping(t_address,t_struct(PayoutPtr)15060_storage)",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:88"
+          },
+          {
+            "label": "_projects",
+            "offset": 0,
+            "slot": "361",
+            "type": "t_struct(AddressSet)11691_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:93"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "363",
+            "type": "t_array(t_uint256)39_storage",
+            "contract": "InvestmentFund",
+            "src": "contracts/InvestmentFund.sol:478"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_struct(Payout)20845_storage)dyn_storage": {
+            "label": "struct IInvestmentFund.Payout[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)39_storage": {
+            "label": "uint256[39]",
+            "numberOfBytes": "1248"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_bytes4": {
+            "label": "bytes4",
+            "numberOfBytes": "4"
+          },
+          "t_contract(IStakingWlth)21438": {
+            "label": "contract IStakingWlth",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(PayoutPtr)15060_storage)": {
+            "label": "mapping(address => struct InvestmentFund.PayoutPtr)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_bytes4,t_bool))": {
+            "label": "mapping(bytes32 => mapping(bytes4 => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes4,t_bool)": {
+            "label": "mapping(bytes4 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)11691_storage": {
+            "label": "struct EnumerableSetUpgradeable.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)11376_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Block)20835_storage": {
+            "label": "struct IInvestmentFund.Block",
+            "members": [
+              {
+                "label": "number",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "timestamp",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Payout)20845_storage": {
+            "label": "struct IInvestmentFund.Payout",
+            "members": [
+              {
+                "label": "value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "fee",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "blockData",
+                "type": "t_struct(Block)20835_storage",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "inProfit",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(PayoutPtr)15060_storage": {
+            "label": "struct InvestmentFund.PayoutPtr",
+            "members": [
+              {
+                "label": "index",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "withdrawn",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Set)11376_storage": {
+            "label": "struct EnumerableSetUpgradeable.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
           },
           "t_uint8": {
             "label": "uint8",

@@ -1,12 +1,11 @@
 import { getImplementationAddress } from '@openzeppelin/upgrades-core';
-import { ethers } from 'hardhat';
-import { env } from 'process';
+import { ethers, network } from 'hardhat';
 import { InvestmentFund } from '../typechain-types';
-import { confirm, upgradeContract, verifyContract } from './utils';
+import { confirm, getEnvByNetwork, upgradeContract, verifyContract } from './utils';
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  const contractToUpgrade = env.INVESTMENT_FUND_CONTRACT as string;
+  const contractToUpgrade = getEnvByNetwork('INVESTMENT_FUND_CONTRACT', network.name) as string;
 
   console.log(`Upgrading InvestmentFund using ${deployer.address}`);
   const fund: InvestmentFund = await upgradeContract('InvestmentFund', contractToUpgrade, deployer);

@@ -100,6 +100,7 @@ export async function upgradeContract<Type extends Contract>(
   options?: UpgradeProxyOptions
 ) {
   const contractFactory = await ethers.getContractFactory(contractName, signer);
+  await upgrades.validateUpgrade(proxyAddress, contractFactory);
   const contract = await upgrades.upgradeProxy(proxyAddress, contractFactory, options);
   await contract.deployed();
 
