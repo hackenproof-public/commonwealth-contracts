@@ -37,6 +37,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           solc-version: 0.8.18
+          slither-version: 0.9.6
           fail-on: high
 
   tests:

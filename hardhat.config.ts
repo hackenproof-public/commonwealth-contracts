@@ -7,6 +7,7 @@ import 'hardhat-docgen';
 import 'hardhat-tracer';
 import { HardhatUserConfig } from 'hardhat/config';
 import { env } from 'process';
+import 'solidity-coverage';
 
 dotenv.config();
 

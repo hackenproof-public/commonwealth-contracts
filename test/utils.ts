@@ -1,6 +1,8 @@
 import { Log, TransactionReceipt } from '@ethersproject/providers';
+import { expect } from 'chai';
 import { BigNumber, ContractTransaction, utils } from 'ethers';
 import { ethers } from 'hardhat';
+import { EVENT_TOPIC_NFT_MINTED, EVENT_TOPIC_TOKENS_STAKED } from './constants';
 
 export const getLogs = async (
   tx: ContractTransaction,
@@ -51,4 +53,20 @@ export const missing_role = (account: string, role: string): string => {
 
 export const keccak256 = (arg: string) => {
   return utils.keccak256(utils.toUtf8Bytes(arg));
+};
+
+export const getTokenIdFromTx = async (tx: ContractTransaction, contractAddress: string): Promise<BigNumber> => {
+  const logs = await getLogs(tx, contractAddress, EVENT_TOPIC_NFT_MINTED);
+  expect(logs).to.have.length(1);
+
+  const investmentNft = await ethers.getContractAt('InvestmentNFT', contractAddress);
+  return investmentNft.interface.parseLog(logs[0]).args.tokenId as BigNumber;
+};
+
+export const getStakeIdFromTx = async (tx: ContractTransaction, contractAddress: string): Promise<number> => {
+  const logs = await getLogs(tx, contractAddress, EVENT_TOPIC_TOKENS_STAKED);
+  expect(logs).to.have.length(1);
+
+  const staking = await ethers.getContractAt('StakingWlth', contractAddress);
+  return (staking.interface.parseLog(logs[0]).args.stakeId as BigNumber).toNumber();
 };

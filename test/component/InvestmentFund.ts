@@ -13,8 +13,8 @@ import {
   IProject__factory,
   PeriodicVesting,
   Project,
+  QuoterMock,
   StakingWlth,
-  TestQuoter,
   UniswapQuoter,
   UniswapSwapper,
   USDC,
@@ -53,7 +53,7 @@ describe('Investment Fund component tests', () => {
     const usdc: USDC = await deploy('USDC', [], deployer);
     const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', ['INFT', 'CWI', owner.address], deployer);
     const wlth: Wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH', owner.address], deployer);
-    const extQuoter: FakeContract<TestQuoter> = await smock.fake('TestQuoter');
+    const extQuoter: FakeContract<QuoterMock> = await smock.fake('QuoterMock');
     const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
     const quoter: UniswapQuoter = await deployProxy('UniswapQuoter', [extQuoter.address, 3000], deployer);
     const defaultProjectName = 'Project 1';
@@ -105,6 +105,7 @@ describe('Investment Fund component tests', () => {
     await usdc.mint(deployer.address, toUsdc('1000000'));
     await usdc.mint(wallet.address, toUsdc('1000000'));
     await usdc.mint(profitProvider.address, toUsdc('1000'));
+    await wlth.connect(deployer).transfer(wallet.address, toUsdc('1000000'));
 
     return {
       investmentFund,
@@ -144,12 +145,12 @@ describe('Investment Fund component tests', () => {
         const initialBalance = await usdc.balanceOf(wallet.address);
 
         await usdc.connect(wallet).approve(investmentFund.address, data.amount);
-        const tx: ContractTransaction = await investmentFund.connect(wallet).invest(data.amount, tokenUri);
+        const tx = await investmentFund.connect(wallet).invest(data.amount, tokenUri);
 
-        const logsMinted: Log[] = await getLogs(tx, investmentNft.address, mintedEventTopic);
+        const logsMinted = await getLogs(tx, investmentNft.address, mintedEventTopic);
         expect(logsMinted).to.have.length(1);
 
-        const tokenId: BigNumber = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId;
+        const tokenId = investmentNft.interface.parseLog(logsMinted[0]).args.tokenId as BigNumber;
 
         expect(await usdc.balanceOf(wallet.address)).to.equal(initialBalance.sub(data.amount));
         expect(await usdc.balanceOf(defaultTreasury)).to.equal(data.fee);
@@ -157,6 +158,33 @@ describe('Investment Fund component tests', () => {
         expect(await investmentNft.tokenValue(tokenId)).to.equal(data.amount);
         expect(await investmentNft.getTotalInvestmentValue()).to.equal(data.amount);
       });
+    });
+
+    it('Should return correct discount if add investment after stake in CRP', async () => {
+      const { investmentFund, usdc, wlth, investmentNft, staking, extQuoter, wallet } = await loadFixture(
+        deployFixture
+      );
+      const stake = { amount: parseUnits('500', 6), period: ONE_YEAR };
+      extQuoter.quoteExactInputSingle.returns([stake.amount, 0, 0, 0]);
+
+      await usdc.connect(wallet).approve(investmentFund.address, toUsdc('2000'));
+      await wlth.connect(wallet).approve(staking.address, stake.amount);
+
+      await investmentFund.connect(wallet).invest(toUsdc('1000'), tokenUri);
+      expect(await investmentNft.getTotalInvestmentValue()).to.equal(toUsdc('1000'));
+
+      const stakeTime = (await time.latest()) + 100;
+      await time.setNextBlockTimestamp(stakeTime);
+      await staking.connect(wallet).stake(investmentFund.address, stake.amount, stake.period);
+      expect(
+        await staking.getDiscountInTimestamp(wallet.address, investmentFund.address, stakeTime + stake.period)
+      ).to.equal(4000);
+
+      await investmentFund.connect(wallet).invest(toUsdc('1000'), tokenUri);
+      expect(await investmentNft.getTotalInvestmentValue()).to.equal(toUsdc('2000'));
+      expect(
+        await staking.getDiscountInTimestamp(wallet.address, investmentFund.address, stakeTime + stake.period)
+      ).to.equal(2000);
     });
 
     it('Should revert investing if allowance is insufficient', async () => {

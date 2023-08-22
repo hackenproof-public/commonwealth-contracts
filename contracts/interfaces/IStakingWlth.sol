@@ -2,19 +2,21 @@
 pragma solidity ^0.8.18;
 
 interface IStakingWlth {
-    struct DiscountDistribution {
-        uint64 start;
-        uint64 end;
-        uint120 value;
-        bool isConstant;
+    struct Period {
+        uint128 start;
+        uint128 duration;
     }
 
-    struct StakingDetails {
+    struct Position {
+        uint256 id;
         address staker;
         address fund;
         uint128 amountInWlth;
         uint128 amountInUsdc;
-        DiscountDistribution discount;
+        uint256 investment;
+        Period period;
+        bool isCRP; // whether staked in Capital Raise Period
+        uint256 unstakedEnded; // unstaked tokens that were realeased due to staking end - have no impact on discount calculations
     }
 
     /**
@@ -25,6 +27,14 @@ interface IStakingWlth {
      * @param amount Amount of staked WLTH
      */
     event TokensStaked(address indexed caller, address indexed fund, uint256 indexed stakeId, uint256 amount);
+
+    /**
+     * @notice Emitted when WLTH tokens are staked
+     * @param caller Address of unstaking account
+     * @param fund Address of investment fund that unstaking concerns
+     * @param amount Amount of unstaked WLTH
+     */
+    event TokensUnstaked(address indexed caller, address indexed fund, uint256 amount);
 
     /**
      * @notice Emitted when fund is registered in staking contract
@@ -50,9 +60,10 @@ interface IStakingWlth {
 
     /**
      * @notice Retrieves tokens from staking
-     * @param stakeId IDs of stake
+     * @param fund Address of investment fund
+     * @param amount Amount of tokens to unstake
      */
-    function unstake(uint256 stakeId) external;
+    function unstake(address fund, uint256 amount) external;
 
     /**
      * @notice Returns all accounts with active stakes in all registered funds
@@ -99,7 +110,6 @@ interface IStakingWlth {
      * @param account Address of wallet for which to return discount
      * @param fund Address of investment fund
      * @param amountInUsdc USDC equivalent of staked amount
-     * @param start Timestamp in which potential staking starts
      * @param period Staking period
      * @param timestamp Timestamp to return discount on
      */
@@ -107,8 +117,43 @@ interface IStakingWlth {
         address account,
         address fund,
         uint256 amountInUsdc,
-        uint256 start,
-        uint256 period,
+        Period calldata period,
         uint256 timestamp
     ) external view returns (uint256);
+
+    /**
+     * @notice Returns number of tokens staked by account in fund
+     * @param account Address of account
+     * @param fund Address of investment fund
+     * @return Number of tokens staked by account in fund
+     */
+    function getStakedTokensInFund(address account, address fund) external view returns (uint256);
+
+    /**
+     * @notice Returns number of tokens staked by account in all funds
+     * @param account Address of account
+     * @return Number of tokens staked by account in all funds
+     */
+    function getStakedTokens(address account) external view returns (uint256);
+
+    /**
+     * @notice Returns number of tokens that can by claimed with no penalty
+     * @param account Address of wallet
+     * @param fund Address of investment fund
+     */
+    function getTotalUnlockedTokens(address account, address fund) external view returns (uint256);
+
+    /**
+     * @notice Returns number of tokens that can be claimed with no penalty due to position end
+     * @param account Address of wallet
+     * @param fund Address of investment fund
+     */
+    function getUnlockedByPositionEnd(address account, address fund) external view returns (uint256);
+
+    /**
+     * @notice Returns number of tokens that can be claimed with no penalty due to investment size decrease
+     * @param account Address of wallet
+     * @param fund Address of investment fund
+     */
+    function getUnlockedByInvestmentChange(address account, address fund) external view returns (uint256);
 }
