@@ -94,7 +94,8 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable {
         IERC20Upgradeable(sourceToken).safeApprove(address(swapper), amount);
         uint256 amountOut = swapper.swap(amount, sourceToken, targetToken);
 
-        IERC20Upgradeable(targetToken).safeTransfer(investmentFund, amountOut);
+        IERC20Upgradeable(targetToken).safeApprove(address(investmentFund), amountOut);
+        IInvestmentFund(investmentFund).provideProfit(amountOut);
     }
 
     function deployFunds(uint256 amount) external {

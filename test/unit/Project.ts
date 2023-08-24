@@ -106,7 +106,7 @@ describe('Periodic vesting project unit tests', () => {
   const SOME_ADDRESS = '0xbd3Afb0bB76683eCb4225F9DBc91f998713C3b01';
 
   describe('#sellVestedToInvestmentFund()', () => {
-    it('Should reject if amount is zero', async () => {
+    it('Should revert if amount is zero', async () => {
       const { project } = await loadFixture(deployProject);
 
       await expect(project.sellVestedToInvestmentFund(0, SOME_ADDRESS)).to.be.revertedWith(
