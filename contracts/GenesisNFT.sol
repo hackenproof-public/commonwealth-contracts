@@ -6,8 +6,17 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
+
+interface ZkSyncGenesisNFTmirror {
+    function moveToken(uint, address) external;
+
+    function destroyToken(uint) external;
+}
 
 /**
  * @title Genesis NFT contract
@@ -24,9 +33,14 @@ contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    uint256 public constant ZK_SYNC_GAS_LIMIT = 2_000_000; // 2x of what we need according to a current network state
+    uint256 public constant ZK_SYNC_GAS_PER_PUBDATA_LIMIT = 800; // from zkSync docs
+
     address private _owner;
     string private _tokenURI;
     uint256 private _series;
+    address public _zkSyncBridge;
+    address public _zkSyncMirror;
 
     /**
      * @notice Emitted when token URI is changed
@@ -133,6 +147,22 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Mints new token(s) to a recipient and notifies zkSync mirror about it. Limited only to minter role
+     * @param recipient tokens recipient
+     * @param amount tokens amount
+     */
+    function mintNotify(address recipient, uint256 amount) external payable onlyRole(MINTER_ROLE) {
+        require(recipient != address(0), "Recipient is zero address");
+        uint256 valuePerToken = msg.value / amount;
+
+        uint256 startId = totalSupply();
+        for (uint256 i = 0; i < amount; i++) {
+            _safeMint(recipient, startId + i);
+            _notifyZkSyncMirrorMove(startId + i, recipient, valuePerToken);
+        }
+    }
+
+    /**
      * @inheritdoc IERC721Mintable
      */
     function mintBatch(address[] memory recipients, uint256[] memory amounts) external onlyRole(MINTER_ROLE) {
@@ -156,6 +186,38 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Burns token with id `tokenId` and notifies zkSync mirror about it. Limited only to admin role
+     * @param tokenId Token ID
+     */
+    function burnNotify(uint256 tokenId) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+        _burn(tokenId);
+        _notifyZkSyncMirrorDestroy(tokenId, msg.value);
+    }
+
+    // TODO: disable this
+    //    /**
+    //     * @dev See {IERC721-transferFrom}.
+    //     */
+    //    function transferFrom(
+    //        address from,
+    //        address to,
+    //        uint256 tokenId
+    //    ) public virtual override(IERC721Upgradeable, ERC721Upgradeable) {
+    //        revert("This was disabled. Use transferFromNotify(address,address,uint256) !");
+    //    }
+
+    /**
+     * @dev See {IERC721-transferFrom}.
+     */
+    function transferFromNotify(address from, address to, uint256 tokenId) public payable {
+        //solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
+
+        _transfer(from, to, tokenId);
+        _notifyZkSyncMirrorMove(tokenId, to, msg.value);
+    }
+
+    /**
      * @notice Returns list of owners balances
      * @param accounts List of addresses for which to return balance
      * @return List of owners balances
@@ -175,6 +237,26 @@ contract GenesisNFT is
     function setTokenURI(string calldata uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _tokenURI = uri;
         emit TokenURIChanged(msg.sender, uri);
+    }
+
+    /**
+     * @notice Sets zkSync bridge address
+     * @param zkSyncBridge New metadata URI
+     */
+    function setZkSyncBridge(address zkSyncBridge) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(zkSyncBridge != address(0), "this address is zero");
+
+        _zkSyncBridge = zkSyncBridge;
+    }
+
+    /**
+     * @notice Sets zkSync mirror address
+     * @param zkSyncMirror New metadata URI
+     */
+    function setZkSyncMirror(address zkSyncMirror) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(zkSyncMirror != address(0), "this address is zero");
+
+        _zkSyncMirror = zkSyncMirror;
     }
 
     /**
@@ -224,5 +306,51 @@ contract GenesisNFT is
         }
     }
 
-    uint256[47] private __gap;
+    function _notifyZkSyncMirrorMove(uint256 tokenId, address recipient, uint256 value) internal {
+        require(
+            value >= ZK_SYNC_GAS_LIMIT,
+            "Not enough ether sent with the invokation! Send at least ZK_SYNC_GAS_LIMIT GWei!"
+        );
+
+        if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
+            bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.moveToken.selector, tokenId, recipient);
+
+            IZkSync zksync = IZkSync(_zkSyncBridge);
+            bytes32 txHash = zksync.requestL2Transaction{value: value}(
+                _zkSyncMirror,
+                0,
+                data,
+                ZK_SYNC_GAS_LIMIT,
+                ZK_SYNC_GAS_PER_PUBDATA_LIMIT,
+                new bytes[](0),
+                msg.sender
+            );
+            emit TokenMoved(tokenId, recipient, txHash);
+        }
+    }
+
+    function _notifyZkSyncMirrorDestroy(uint256 tokenId, uint256 value) internal {
+        require(
+            value >= ZK_SYNC_GAS_LIMIT,
+            "Not enough ether sent with the invokation! Send at least ZK_SYNC_GAS_LIMIT Wei!"
+        );
+
+        if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
+            bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.destroyToken.selector, tokenId);
+
+            IZkSync zksync = IZkSync(_zkSyncBridge);
+            bytes32 txHash = zksync.requestL2Transaction{value: value}(
+                _zkSyncMirror,
+                0,
+                data,
+                ZK_SYNC_GAS_LIMIT,
+                ZK_SYNC_GAS_PER_PUBDATA_LIMIT,
+                new bytes[](0),
+                msg.sender
+            );
+            emit TokenMoved(tokenId, address(0), txHash);
+        }
+    }
+
+    uint256[45] private __gap;
 }
