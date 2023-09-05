@@ -240,7 +240,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
       const stakeId = await getStakeIdFromTx(tx, staking.address);
 
-      expect(await staking.stakingPositions(0)).to.deep.equal([
+      expect(await staking.getPositionDetails(0)).to.deep.equal([
         stakeId,
         user.address,
         fund.address,
@@ -334,7 +334,7 @@ describe('Common Wealth Staking unit tests', () => {
       await time.setNextBlockTimestamp((await time.latest()) + 100);
       const tx = await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
       stake1Id = await getStakeIdFromTx(tx, staking.address);
-      stake1Time = (await staking.stakingPositions(stake1Id)).period.start.toNumber();
+      stake1Time = (await staking.getPositionDetails(stake1Id)).period.start.toNumber();
 
       restorer = await takeSnapshot();
     });
@@ -388,8 +388,8 @@ describe('Common Wealth Staking unit tests', () => {
 
           await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
           await staking.connect(user).unstake(fund.address, item.unstake);
-          expect((await staking.stakingPositions(stake1Id)).amountInWlth).to.equal(item.remaining[0]);
-          expect((await staking.stakingPositions(stake2Id)).amountInWlth).to.equal(item.remaining[1]);
+          expect((await staking.getPositionDetails(stake1Id)).amountInWlth).to.equal(item.remaining[0]);
+          expect((await staking.getPositionDetails(stake2Id)).amountInWlth).to.equal(item.remaining[1]);
         });
       });
     });
@@ -463,7 +463,7 @@ describe('Common Wealth Staking unit tests', () => {
         quoter.quote.returns([stake2.amount, 0, 0, 0]);
         const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
         const stake2Id = getStakeIdFromTx(tx, staking.address);
-        const stake2Time = (await staking.stakingPositions(stake2Id)).period.start.toNumber();
+        const stake2Time = (await staking.getPositionDetails(stake2Id)).period.start.toNumber();
 
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
 
@@ -527,7 +527,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
-      const start = (await staking.stakingPositions(stakeId)).period.start;
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start)).to.equal(4000);
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start.add(ONE_YEAR / 2))).to.equal(4000);
@@ -549,7 +549,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
-      const start = (await staking.stakingPositions(stakeId)).period.start;
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start)).to.equal(0);
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start.add(ONE_YEAR / 2))).to.equal(2000);
@@ -638,7 +638,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
-      const start = (await staking.stakingPositions(stakeId)).period.start;
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start.add(ONE_YEAR))).to.equal(2000);
 
@@ -669,7 +669,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
-      const start = (await staking.stakingPositions(stakeId)).period.start;
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start.add(ONE_YEAR))).to.equal(2000);
 
@@ -692,7 +692,7 @@ describe('Common Wealth Staking unit tests', () => {
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
-      const start = (await staking.stakingPositions(stakeId)).period.start;
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, start.sub(1))).to.equal(0);
     });
@@ -801,6 +801,10 @@ describe('Common Wealth Staking unit tests', () => {
         initializeFakes(investmentSize, stake.amount);
       });
 
+      it("Should return user's staking position", async () => {
+        expect(await staking.getStakingPositionsInFund(user.address, fund.address)).to.deep.equal([0]);
+      });
+
       it('Should return tokens unlocked by position end', async () => {
         await time.increase(stake.duration);
         await mine();
@@ -845,6 +849,10 @@ describe('Common Wealth Staking unit tests', () => {
         initializeFakes(investmentSize);
       });
 
+      it("Should return multiple user's staking positions", async () => {
+        expect(await staking.getStakingPositionsInFund(user.address, fund.address)).to.deep.equal([0, 1]);
+      });
+
       it('Should return tokens unlocked by position end', async () => {
         await time.increase(stake1.duration + 1);
         await mine();
@@ -879,6 +887,10 @@ describe('Common Wealth Staking unit tests', () => {
         expect(await staking.getUnlockedByInvestmentChange(user.address, fund.address)).to.equal(25);
         expect(await staking.getTotalUnlockedTokens(user.address, fund.address)).to.equal(325);
       });
+    });
+
+    it("Should return empty user's staking positions if not staked", async () => {
+      expect(await staking.getStakingPositionsInFund(user.address, fund.address)).to.deep.equal([]);
     });
 
     it('Should revert returning total unlocked tokens if fund not registered', async () => {

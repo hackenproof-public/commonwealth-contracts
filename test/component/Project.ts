@@ -9,12 +9,11 @@ import {
   InvestmentFund,
   InvestmentNFT,
   IPeriodicVesting__factory,
-  IProject__factory,
   IVesting__factory,
   PeriodicVesting,
   Project,
+  QuoterMock,
   StakingWlth,
-  TestQuoter,
   UniswapQuoter,
   UniswapSwapper,
   USDC,
@@ -57,7 +56,7 @@ describe('Project component tests', () => {
     const usdc: USDC = await deploy('USDC', [], deployer);
     const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', ['INFT', 'CWI', owner.address], deployer);
     const wlth: Wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH', owner.address], deployer);
-    const extQuoter: FakeContract<TestQuoter> = await smock.fake('TestQuoter');
+    const extQuoter: FakeContract<QuoterMock> = await smock.fake('QuoterMock');
     const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
     const quoter: UniswapQuoter = await deployProxy('UniswapQuoter', [extQuoter.address, 3000], deployer);
     const defaultProjectName = 'Project1';
@@ -149,9 +148,9 @@ describe('Project component tests', () => {
 
       expect(await investmentFund.name()).to.equal('Investment Fund');
       expect(await project.name()).to.equal('Project1');
-      expect(await usdc.balanceOf(deployer.address)).to.equal(toUsdc('1000000'));
-      expect(await usdc.balanceOf(wallet.address)).to.equal(toUsdc('1000000'));
-      expect(await usdc.balanceOf(profitProvider.address)).to.equal(toUsdc('1000'));
+      expect(await usdc.balanceOf(deployer.address)).to.equal(SOME_USDC_AMOUNT);
+      expect(await usdc.balanceOf(wallet.address)).to.equal(SOME_USDC_AMOUNT);
+      expect(await usdc.balanceOf(profitProvider.address)).to.equal(SOME_USDC_AMOUNT);
     });
   });
 
@@ -169,10 +168,14 @@ describe('Project component tests', () => {
         cliff,
         defaultProjectName,
         IPeriodicVestingId,
-        IVestingId,
+        IVestingId
       } = await loadFixture(deployFixture);
 
-      expect(await project.getDetails()).to.deep.equal([defaultProjectName, formatBytes32String('Added'), vesting.address]);
+      expect(await project.getDetails()).to.deep.equal([
+        defaultProjectName,
+        formatBytes32String('Added'),
+        vesting.address
+      ]);
 
       expect(await vesting.supportsInterface(IPeriodicVestingId)).to.equal(true);
       expect(await vesting.supportsInterface(IVestingId)).to.equal(true);

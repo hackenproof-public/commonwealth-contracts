@@ -35,8 +35,8 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     address public treasury;
     uint256 public maxDiscount;
     IDexQuoter public dexQuoter;
-    mapping(uint256 => Position) public stakingPositions;
-    mapping(address => mapping(address => uint256[])) public stakesPerAccount;
+    mapping(uint256 => Position) private stakingPositions;
+    mapping(address => mapping(address => uint256[])) private stakesPerAccount;
     CountersUpgradeable.Counter public counter;
 
     EnumerableMapUpgradeable.UintToUintMap private durationCoefficients;
@@ -161,6 +161,20 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
      */
     function getStakingAccounts() external view returns (address[] memory) {
         return stakingAccounts.values();
+    }
+
+    /**
+     * @inheritdoc IStakingWlth
+     */
+    function getStakingPositionsInFund(address account, address fund) external view returns (uint256[] memory) {
+        return stakesPerAccount[account][fund];
+    }
+
+    /**
+     * @inheritdoc IStakingWlth
+     */
+    function getPositionDetails(uint256 position) external view returns (Position memory) {
+        return stakingPositions[position];
     }
 
     /**

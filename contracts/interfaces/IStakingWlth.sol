@@ -72,6 +72,21 @@ interface IStakingWlth {
     function getStakingAccounts() external view returns (address[] memory);
 
     /**
+     * @notice Returns staking positions for account in fund
+     * @param account Address of account
+     * @param fund Address of investment fund
+     * @return Staking positions for account in fund
+     */
+    function getStakingPositionsInFund(address account, address fund) external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns staking position details
+     * @param position Index of stakting position
+     * @return Staking position details
+     */
+    function getPositionDetails(uint256 position) external view returns (Position memory);
+
+    /**
      * @notice Registers investment fund in staking contract
      * @dev Staking contract makes external calls only to funds registered by owner to avoid calling possibly harmful entities
      * @param fund Address of investment fund
