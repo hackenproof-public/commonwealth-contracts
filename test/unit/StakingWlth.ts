@@ -917,4 +917,80 @@ describe('Common Wealth Staking unit tests', () => {
       );
     });
   });
+
+  describe('#getTotalStakingPeriod()', () => {
+    let restorer: SnapshotRestorer;
+    const investmentSize = 1200;
+
+    before(async () => {
+      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+
+      initializeFakes(investmentSize);
+      await staking.connect(owner).registerFund(fund.address);
+
+      restorer = await takeSnapshot();
+    });
+
+    afterEach(async () => {
+      await restorer.restore();
+      initializeFakes(investmentSize);
+    });
+
+    it('Should get correct staking period if one position', async () => {
+      const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeTime = Date.now() + 100;
+      quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+      await time.setNextBlockTimestamp(stakeTime);
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      const period = await staking.getTotalStakingPeriod(user.address, fund.address);
+      expect(period.start).to.equal(stakeTime);
+      expect(period.duration).to.equal(ONE_YEAR);
+    });
+
+    it('Should get correct staking period if multiple positions overlaps', async () => {
+      const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeTime = Date.now() + 100;
+      quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+      await time.setNextBlockTimestamp(stakeTime);
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      await time.setNextBlockTimestamp(stakeTime + ONE_YEAR / 2);
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([
+        stakeTime,
+        ONE_YEAR + ONE_YEAR / 2
+      ]);
+    });
+
+    it('Should get correct staking period if multiple positions do not overlap', async () => {
+      const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeTime = Date.now() + 100;
+      quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+      await time.setNextBlockTimestamp(stakeTime);
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      await time.setNextBlockTimestamp(stakeTime + ONE_YEAR + 150);
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([
+        stakeTime,
+        TWO_YEARS + 150
+      ]);
+    });
+
+    it('Should omit empty positions when returning staking duration', async () => {
+      const stake = { amount: 100, duration: ONE_YEAR };
+      quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).unstake(fund.address, stake.amount);
+
+      expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([0, 0]);
+    });
+  });
 });

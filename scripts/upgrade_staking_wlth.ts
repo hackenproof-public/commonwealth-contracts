@@ -18,7 +18,8 @@ async function main() {
     const staking: StakingWlth = await upgradeContract(contractName, contractToUpgrade, deployer);
 
     const implementationAddress = await getImplementationAddress(ethers.provider, staking.address);
-    console.log(`${contractName} upgraded on ${staking.address} with implementation ${implementationAddress}`);
+    console.log(`${contractName} upgraded on ${staking.address}`);
+    console.log(`New implementation: ${implementationAddress}`);
 
     if (await confirm('\nDo you want to verify contract? [y/N] ')) {
       await verifyContract(implementationAddress);

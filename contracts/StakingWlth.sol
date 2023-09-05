@@ -287,6 +287,18 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return _getUnlockedByInvestmentChange(account, fund);
     }
 
+    function getTotalStakingPeriod(address account, address fund) external view returns (Period memory) {
+        uint256 begin = 0;
+        uint256 end = 0;
+        Position[] memory positions = _getFilteredPositions(account, fund, _isPositionNotEmpty);
+        for (uint256 i = 0; i < positions.length; i++) {
+            Period memory period = positions[i].period;
+            begin = begin > 0 ? Math.min(begin, period.start) : period.start;
+            end = Math.max(end, period.start + period.duration);
+        }
+        return Period(uint128(begin), uint128(end - begin));
+    }
+
     function _createStakingPosition(
         address staker,
         address fund,
@@ -648,7 +660,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _isPositionOpen(Position memory position) private view returns (bool) {
-        return position.amountInWlth > 0 && _isPositionActive(position);
+        return _isPositionNotEmpty(position) && _isPositionActive(position);
+    }
+
+    function _isPositionNotEmpty(Position memory position) private pure returns (bool) {
+        return position.amountInWlth > 0;
     }
 
     function _getPositions(address account, address fund) private view returns (Position[] memory) {

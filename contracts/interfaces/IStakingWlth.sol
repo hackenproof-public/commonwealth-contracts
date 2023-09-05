@@ -171,4 +171,12 @@ interface IStakingWlth {
      * @param fund Address of investment fund
      */
     function getUnlockedByInvestmentChange(address account, address fund) external view returns (uint256);
+
+    /**
+     * @notice Returns aggregated period of all staking positions for account in fund
+     * @param account Address of wallet
+     * @param fund Address of investment fund
+     * @return Total staking period
+     */
+    function getTotalStakingPeriod(address account, address fund) external view returns (Period memory);
 }
