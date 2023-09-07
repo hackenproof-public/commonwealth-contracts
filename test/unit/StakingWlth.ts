@@ -350,6 +350,13 @@ describe('Common Wealth Staking unit tests', () => {
         .withArgs(user.address, fund.address, stake1.amount);
     });
 
+    it('Should keep position if all tokens unstaked', async () => {
+      expect(await staking.getStakingPositionsInFund(user.address, fund.address)).to.deep.equal([0]);
+      await staking.connect(user).unstake(fund.address, stake1.amount);
+
+      expect(await staking.getStakingPositionsInFund(user.address, fund.address)).to.deep.equal([0]);
+    });
+
     it('Should revert if unstaking more tokens than available', async () => {
       await expect(staking.connect(user).unstake(fund.address, stake1.amount + 1)).to.be.revertedWith(
         'Amount to unstake exceeds staked value'
@@ -391,6 +398,14 @@ describe('Common Wealth Staking unit tests', () => {
           expect((await staking.getPositionDetails(stake1Id)).amountInWlth).to.equal(item.remaining[0]);
           expect((await staking.getPositionDetails(stake2Id)).amountInWlth).to.equal(item.remaining[1]);
         });
+      });
+
+      it('Should unstake if average number of tokens to unstake is calculated with remainder', async () => {
+        for (const amount of [10, 100, 40, 50]) {
+          quoter.quote.returns([amount, 0, 0, 0]);
+          await staking.connect(user).stake(fund.address, amount, ONE_YEAR);
+        }
+        await staking.connect(user).unstake(fund.address, 100);
       });
     });
 

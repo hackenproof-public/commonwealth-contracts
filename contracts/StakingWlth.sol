@@ -290,7 +290,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     function getTotalStakingPeriod(address account, address fund) external view returns (Period memory) {
         uint256 begin = 0;
         uint256 end = 0;
-        Position[] memory positions = _getFilteredPositions(account, fund, _isPositionNotEmpty);
+        Position[] memory positions = _getNonEmptyPositions(account, fund);
         for (uint256 i = 0; i < positions.length; i++) {
             Period memory period = positions[i].period;
             begin = begin > 0 ? Math.min(begin, period.start) : period.start;
@@ -337,7 +337,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _getUnlockedByInvestmentChange(address account, address fund) private view returns (uint256) {
-        Position[] memory openPositions = _getFilteredPositions(account, fund, _isPositionOpen);
+        Position[] memory openPositions = _getOpenPositions(account, fund);
         uint256 totalTargetDiscount = _getTotalTargetDiscount(account, fund);
         uint256 investmentSize = _getCurrentInvestment(account, fund);
         (uint256 unlocked, , ) = _getUnlockedTokens(openPositions, totalTargetDiscount, investmentSize);
@@ -346,7 +346,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _unstakeFromAllPositions(address account, address fund, uint256 amount) private returns (uint256) {
-        (uint256[] memory ids, uint256[] memory staked) = _getAllStakedTokens(account, fund);
+        (uint256[] memory ids, uint256[] memory staked) = _getStakedTokensFromNonEmptyPositions(account, fund);
         (uint256 totalCount, uint256[] memory amountsToUnstake) = _getTokensToUnstake(amount, ids, staked);
         _unstake(ids, amountsToUnstake);
         return totalCount;
@@ -367,7 +367,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _unstakeUnlocked(address account, address fund, uint256 amount) private returns (uint256) {
-        Position[] memory openPositions = _getFilteredPositions(account, fund, _isPositionOpen);
+        Position[] memory openPositions = _getOpenPositions(account, fund);
         uint256 totalDiscount = _getTotalTargetDiscount(account, fund);
         uint256 investmentSize = _getCurrentInvestment(account, fund);
 
@@ -385,7 +385,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _unstakeLocked(address account, address fund, uint256 amount) private returns (uint256, uint256) {
-        Position[] memory openPositions = _getFilteredPositions(account, fund, _isPositionOpen);
+        Position[] memory openPositions = _getOpenPositions(account, fund);
         (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getStakedTokensFromPositions(
             openPositions
         );
@@ -397,13 +397,13 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return (totalUnstaked, totalPenalty);
     }
 
-    function _getAllStakedTokens(
+    function _getStakedTokensFromNonEmptyPositions(
         address account,
         address fund
     ) private view returns (uint256[] memory, uint256[] memory) {
-        Position[] memory positions = _getPositions(account, fund);
-        (, uint256[] memory ids, uint256[] memory available) = _getStakedTokensFromPositions(positions);
-        return (ids, available);
+        Position[] memory positions = _getNonEmptyPositions(account, fund);
+        (, uint256[] memory ids, uint256[] memory staked) = _getStakedTokensFromPositions(positions);
+        return (ids, staked);
     }
 
     function _getStakedTokensFromPositions(
@@ -426,31 +426,35 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 totalTargetDiscount,
         uint256 investmentSize
     ) private view returns (uint256, uint256[] memory, uint256[] memory) {
-        if (investmentSize == 0) {
+        if (investmentSize > 0) {
+            uint256 totalUnlocked = 0;
+            uint256[] memory ids = new uint256[](openPositions.length);
+            uint256[] memory unlocked = new uint256[](openPositions.length);
+
+            if (totalTargetDiscount > maxDiscount) {
+                uint256 totalDiscountOfOpen = _getTotalTargetDiscountForPositions(openPositions, investmentSize);
+                uint256 totalDiscountOfClosed = totalTargetDiscount - totalDiscountOfOpen;
+                uint256 remainingDiscountToHandle = totalDiscountOfClosed < maxDiscount
+                    ? maxDiscount - totalDiscountOfClosed
+                    : 0;
+
+                for (uint256 i = 0; i < openPositions.length; i++) {
+                    Position memory pos = openPositions[i];
+                    ids[i] = pos.id;
+                    uint256 workingTokens = Math.mulDiv(
+                        pos.amountInWlth,
+                        remainingDiscountToHandle,
+                        totalDiscountOfOpen
+                    );
+                    uint256 unlockedTokens = pos.amountInWlth - workingTokens;
+                    unlocked[i] = unlockedTokens;
+                    totalUnlocked += unlockedTokens;
+                }
+            }
+            return (totalUnlocked, ids, unlocked);
+        } else {
             return _getStakedTokensFromPositions(openPositions);
         }
-
-        uint256 totalUnlocked = 0;
-        uint256[] memory ids = new uint256[](openPositions.length);
-        uint256[] memory unlocked = new uint256[](openPositions.length);
-
-        if (totalTargetDiscount > maxDiscount) {
-            uint256 totalDiscountOfOpen = _getTotalTargetDiscountForPositions(openPositions, investmentSize);
-            uint256 totalDiscountOfClosed = totalTargetDiscount - totalDiscountOfOpen;
-            uint256 remainingDiscountToHandle = totalDiscountOfClosed < maxDiscount
-                ? maxDiscount - totalDiscountOfClosed
-                : 0;
-
-            for (uint256 i = 0; i < openPositions.length; i++) {
-                Position memory pos = openPositions[i];
-                ids[i] = pos.id;
-                uint256 workingTokens = Math.mulDiv(pos.amountInWlth, remainingDiscountToHandle, totalDiscountOfOpen);
-                uint256 unlockedTokens = pos.amountInWlth - workingTokens;
-                unlocked[i] = unlockedTokens;
-                totalUnlocked += unlockedTokens;
-            }
-        }
-        return (totalUnlocked, ids, unlocked);
     }
 
     function _getTokensToUnstake(
@@ -459,16 +463,22 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256[] memory available
     ) private pure returns (uint256, uint256[] memory) {
         uint256[] memory amountsToUnstake = new uint256[](ids.length);
-
         uint256 remainingAmount = amount;
         uint256 totalUnstaked = 0;
         uint256 numberOfPositions = ids.length;
-        uint256 maxIterations = numberOfPositions;
-        for (uint256 iter = 0; remainingAmount > 0 && iter < maxIterations && numberOfPositions > 0; iter++) {
-            uint256 count = numberOfPositions;
-            uint256 average = remainingAmount / count;
+        uint256 nonEmptyPositions = 0;
+        for (uint256 i = 0; i < numberOfPositions; i++) {
+            if (available[i] > 0) {
+                nonEmptyPositions++;
+            }
+        }
+
+        for (uint256 iter = 0; remainingAmount > 0 && iter < numberOfPositions && nonEmptyPositions > 0; iter++) {
+            uint256 average = remainingAmount / nonEmptyPositions;
+            //slither-disable-next-line weak-prng
+            uint256 remainder = remainingAmount % nonEmptyPositions;
             if (average > 0) {
-                for (uint256 i = 0; i < count; i++) {
+                for (uint256 i = 0; i < numberOfPositions; i++) {
                     uint256 toUnstake = Math.min(average, available[i]);
                     if (toUnstake > 0) {
                         remainingAmount -= toUnstake;
@@ -476,7 +486,21 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                         amountsToUnstake[i] += toUnstake;
                         available[i] -= toUnstake;
                         if (available[i] == 0) {
-                            numberOfPositions--;
+                            nonEmptyPositions--;
+                        }
+                    }
+                }
+            } else {
+                for (uint256 i = 0; remainder > 0 && i < numberOfPositions; i++) {
+                    uint256 toUnstake = Math.min(remainder, available[i]);
+                    if (toUnstake > 0) {
+                        remainder -= toUnstake;
+                        remainingAmount -= toUnstake;
+                        totalUnstaked += toUnstake;
+                        amountsToUnstake[i] += toUnstake;
+                        available[i] -= toUnstake;
+                        if (available[i] == 0) {
+                            nonEmptyPositions--;
                         }
                     }
                 }
@@ -660,10 +684,10 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     }
 
     function _isPositionOpen(Position memory position) private view returns (bool) {
-        return _isPositionNotEmpty(position) && _isPositionActive(position);
+        return _isPositionNonEmpty(position) && _isPositionActive(position);
     }
 
-    function _isPositionNotEmpty(Position memory position) private pure returns (bool) {
+    function _isPositionNonEmpty(Position memory position) private pure returns (bool) {
         return position.amountInWlth > 0;
     }
 
@@ -695,6 +719,14 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             result[i] = positions[i];
         }
         return result;
+    }
+
+    function _getNonEmptyPositions(address account, address fund) private view returns (Position[] memory) {
+        return _getFilteredPositions(account, fund, _isPositionNonEmpty);
+    }
+
+    function _getOpenPositions(address account, address fund) private view returns (Position[] memory) {
+        return _getFilteredPositions(account, fund, _isPositionOpen);
     }
 
     uint256[38] private __gap;
