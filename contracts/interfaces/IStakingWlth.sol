@@ -137,6 +137,14 @@ interface IStakingWlth {
     ) external view returns (uint256);
 
     /**
+     * @notice Returns early-unstaking penalty that would be paid after unstaking `amount` tokens
+     * @param account Address of wallet which unstakes tokens
+     * @param fund Address of investment fund
+     * @param amount Amount of tokens to be unstaked
+     */
+    function getPenalty(address account, address fund, uint256 amount) external view returns (uint256);
+
+    /**
      * @notice Returns number of tokens staked by account in fund
      * @param account Address of account
      * @param fund Address of investment fund
@@ -156,21 +164,21 @@ interface IStakingWlth {
      * @param account Address of wallet
      * @param fund Address of investment fund
      */
-    function getTotalUnlockedTokens(address account, address fund) external view returns (uint256);
+    function getReleasedTokens(address account, address fund) external view returns (uint256);
 
     /**
      * @notice Returns number of tokens that can be claimed with no penalty due to position end
      * @param account Address of wallet
      * @param fund Address of investment fund
      */
-    function getUnlockedByPositionEnd(address account, address fund) external view returns (uint256);
+    function getReleasedTokensFromEndedPositions(address account, address fund) external view returns (uint256);
 
     /**
      * @notice Returns number of tokens that can be claimed with no penalty due to investment size decrease
      * @param account Address of wallet
      * @param fund Address of investment fund
      */
-    function getUnlockedByInvestmentChange(address account, address fund) external view returns (uint256);
+    function getReleasedTokensFromOpenPositions(address account, address fund) external view returns (uint256);
 
     /**
      * @notice Returns aggregated period of all staking positions for account in fund

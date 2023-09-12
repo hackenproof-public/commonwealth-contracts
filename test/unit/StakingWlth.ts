@@ -825,7 +825,9 @@ describe('Common Wealth Staking unit tests', () => {
         await mine();
 
         const expectedUnlocked = stake.amount;
-        expect(await staking.getUnlockedByPositionEnd(user.address, fund.address)).to.equal(expectedUnlocked);
+        expect(await staking.getReleasedTokensFromEndedPositions(user.address, fund.address)).to.equal(
+          expectedUnlocked
+        );
       });
 
       it('Should return tokens unlocked by investment change', async () => {
@@ -833,7 +835,7 @@ describe('Common Wealth Staking unit tests', () => {
         nft.getInvestmentValue.returns(investmentSize - sold);
 
         const expectedUnlocked = 150;
-        expect(await staking.getUnlockedByInvestmentChange(user.address, fund.address)).to.equal(expectedUnlocked);
+        expect(await staking.getReleasedTokensFromOpenPositions(user.address, fund.address)).to.equal(expectedUnlocked);
       });
     });
 
@@ -872,7 +874,7 @@ describe('Common Wealth Staking unit tests', () => {
         await time.increase(stake1.duration + 1);
         await mine();
 
-        expect(await staking.getUnlockedByPositionEnd(user.address, fund.address)).to.equal(300);
+        expect(await staking.getReleasedTokensFromEndedPositions(user.address, fund.address)).to.equal(300);
       });
 
       it('Should return tokens unlocked by investment change', async () => {
@@ -888,7 +890,7 @@ describe('Common Wealth Staking unit tests', () => {
          locked: 66,67 -> 66
          unlocked: 75 - 66 = 9
         */
-        expect(await staking.getUnlockedByInvestmentChange(user.address, fund.address)).to.equal(34 + 9);
+        expect(await staking.getReleasedTokensFromOpenPositions(user.address, fund.address)).to.equal(34 + 9);
       });
 
       it('Should return unlocked tokens if position ended and investment size changed', async () => {
@@ -898,9 +900,9 @@ describe('Common Wealth Staking unit tests', () => {
         await time.increase(stake1.duration + 1);
         await mine();
 
-        expect(await staking.getUnlockedByPositionEnd(user.address, fund.address)).to.equal(300);
-        expect(await staking.getUnlockedByInvestmentChange(user.address, fund.address)).to.equal(25);
-        expect(await staking.getTotalUnlockedTokens(user.address, fund.address)).to.equal(325);
+        expect(await staking.getReleasedTokensFromEndedPositions(user.address, fund.address)).to.equal(300);
+        expect(await staking.getReleasedTokensFromOpenPositions(user.address, fund.address)).to.equal(25);
+        expect(await staking.getReleasedTokens(user.address, fund.address)).to.equal(325);
       });
     });
 
@@ -911,15 +913,13 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should revert returning total unlocked tokens if fund not registered', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getTotalUnlockedTokens(user.address, fund.address)).to.be.revertedWith(
-        'Fund is not registered'
-      );
+      await expect(staking.getReleasedTokens(user.address, fund.address)).to.be.revertedWith('Fund is not registered');
     });
 
     it('Should revert returning tokens unlocked by position end', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getUnlockedByPositionEnd(user.address, fund.address)).to.be.revertedWith(
+      await expect(staking.getReleasedTokensFromEndedPositions(user.address, fund.address)).to.be.revertedWith(
         'Fund is not registered'
       );
     });
@@ -927,7 +927,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should revert returning tokens unlocked by investment size decrease', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getUnlockedByInvestmentChange(user.address, fund.address)).to.be.revertedWith(
+      await expect(staking.getReleasedTokensFromOpenPositions(user.address, fund.address)).to.be.revertedWith(
         'Fund is not registered'
       );
     });
@@ -1006,6 +1006,84 @@ describe('Common Wealth Staking unit tests', () => {
       await staking.connect(user).unstake(fund.address, stake.amount);
 
       expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([0, 0]);
+    });
+  });
+
+  describe('#getPenalty()', () => {
+    let restorer: SnapshotRestorer;
+    const investmentSize = 1200;
+
+    before(async () => {
+      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+
+      initializeFakes(investmentSize);
+      await staking.connect(owner).registerFund(fund.address);
+
+      restorer = await takeSnapshot();
+    });
+
+    afterEach(async () => {
+      await restorer.restore();
+      initializeFakes(investmentSize);
+    });
+
+    describe('when fund is in Capital Raise Period', async () => {
+      beforeEach(async () => {
+        fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      });
+
+      it('Should return 0 penalty', async () => {
+        const stake = { amount: 300, duration: ONE_YEAR };
+        quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
+      });
+    });
+
+    describe('when fund is in Capital Deployment Period', async () => {
+      beforeEach(async () => {
+        fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+      });
+
+      it('Should return 0 penalty if fund is in position is finished', async () => {
+        const stake = { amount: 300, duration: ONE_YEAR };
+        quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        await time.increase(stake.duration);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
+      });
+
+      it('Should return correct penalty if position is active and no tokens unlocked', async () => {
+        const stake = { amount: 300, duration: ONE_YEAR };
+        quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+        const stakeTime = Date.now() + 1000;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        await time.increaseTo(stakeTime + stake.duration / 2);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(120);
+      });
+
+      it('Should return correct penalty if position is active and tokens unlocked', async () => {
+        const stake = { amount: 300, duration: ONE_YEAR };
+        quoter.quote.returns([stake.amount, 0, 0, 0]);
+
+        const stakeTime = Date.now() + 1000;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        nft.getInvestmentValue.returns(300);
+
+        const unlocked = stake.amount / 2;
+        await time.increaseTo(stakeTime + stake.duration / 2);
+        expect(await staking.getPenalty(user.address, fund.address, unlocked)).to.equal(0);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(60);
+      });
     });
   });
 });

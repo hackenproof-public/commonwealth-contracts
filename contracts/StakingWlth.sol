@@ -134,7 +134,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         if (_isFundInCRP(fund)) {
             _unstakeFromAllPositions(_msgSender(), fund, amount);
         } else {
-            uint256 unstaked = _unstakeFromEndedPositions(_msgSender(), fund, amount);
+            uint256 unstaked = _unstakeEnded(_msgSender(), fund, amount);
             if (unstaked < amount) {
                 uint256 remainingAmount = amount - unstaked;
 
@@ -235,17 +235,25 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return _getEstimatedDiscount(account, fund, amountInUsdc, period, timestamp);
     }
 
+    function getPenalty(address account, address fund, uint256 amount) external view returns (uint256) {
+        require(registeredFunds.contains(fund), "Fund is not registered");
+
+        if (!_isFundInCRP(fund)) {
+            uint256 totalReleased = _getEndedTokensCount(account, fund) + _getUnlockedTokensCount(account, fund);
+            if (amount > totalReleased) {
+                return _getPenaltyFromLocked(account, fund, amount - totalReleased);
+            }
+        }
+        return 0;
+    }
+
     /**
      * @inheritdoc IStakingWlth
      */
     function getStakedTokensInFund(address account, address fund) public view returns (uint256) {
-        uint256 tokens = 0;
         Position[] memory positions = _getPositions(account, fund);
-        for (uint256 i = 0; i < positions.length; i++) {
-            Position memory pos = positions[i];
-            tokens += (pos.amountInWlth - pos.unstakedEnded);
-        }
-        return tokens;
+        (uint256 totalStaked, , ) = _getStakedTokensFromPositions(positions);
+        return totalStaked;
     }
 
     /**
@@ -263,30 +271,33 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     /**
      * @inheritdoc IStakingWlth
      */
-    function getTotalUnlockedTokens(address account, address fund) external view returns (uint256) {
+    function getReleasedTokens(address account, address fund) external view returns (uint256) {
         require(registeredFunds.contains(fund), "Fund is not registered");
 
-        return _getUnlockedByPositionEnd(account, fund) + _getUnlockedByInvestmentChange(account, fund);
+        return _getEndedTokensCount(account, fund) + _getUnlockedTokensCount(account, fund);
     }
 
     /**
      * @inheritdoc IStakingWlth
      */
-    function getUnlockedByPositionEnd(address account, address fund) public view returns (uint256) {
+    function getReleasedTokensFromEndedPositions(address account, address fund) external view returns (uint256) {
         require(registeredFunds.contains(fund), "Fund is not registered");
 
-        return _getUnlockedByPositionEnd(account, fund);
+        return _getEndedTokensCount(account, fund);
     }
 
     /**
      * @inheritdoc IStakingWlth
      */
-    function getUnlockedByInvestmentChange(address account, address fund) public view returns (uint256) {
+    function getReleasedTokensFromOpenPositions(address account, address fund) external view returns (uint256) {
         require(registeredFunds.contains(fund), "Fund is not registered");
 
-        return _getUnlockedByInvestmentChange(account, fund);
+        return _getUnlockedTokensCount(account, fund);
     }
 
+    /**
+     * @inheritdoc IStakingWlth
+     */
     function getTotalStakingPeriod(address account, address fund) external view returns (Period memory) {
         uint256 begin = 0;
         uint256 end = 0;
@@ -324,24 +335,20 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return id;
     }
 
-    function _getUnlockedByPositionEnd(address account, address fund) private view returns (uint256) {
-        uint256 unlocked = 0;
-        Position[] memory closedPositions = _getFilteredPositions(account, fund, _isPositionEnded);
-        for (uint256 i = 0; i < closedPositions.length; i++) {
-            Position memory pos = closedPositions[i];
+    function _getEndedTokensCount(address account, address fund) private view returns (uint256) {
+        uint256 ended = 0;
+        Position[] memory endedPositions = _getFilteredPositions(account, fund, _isPositionEnded);
+        for (uint256 i = 0; i < endedPositions.length; i++) {
+            Position memory pos = endedPositions[i];
             if (_isPositionEnded(pos)) {
-                unlocked += (pos.amountInWlth - pos.unstakedEnded);
+                ended += (pos.amountInWlth - pos.unstakedEnded);
             }
         }
-        return unlocked;
+        return ended;
     }
 
-    function _getUnlockedByInvestmentChange(address account, address fund) private view returns (uint256) {
-        Position[] memory openPositions = _getOpenPositions(account, fund);
-        uint256 totalTargetDiscount = _getTotalTargetDiscount(account, fund);
-        uint256 investmentSize = _getCurrentInvestment(account, fund);
-        (uint256 unlocked, , ) = _getUnlockedTokens(openPositions, totalTargetDiscount, investmentSize);
-
+    function _getUnlockedTokensCount(address account, address fund) private view returns (uint256) {
+        (uint256 unlocked, , ) = _getUnlockedTokens(account, fund);
         return unlocked;
     }
 
@@ -352,30 +359,20 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return totalCount;
     }
 
-    function _unstakeFromEndedPositions(address account, address fund, uint256 amount) private returns (uint256) {
+    function _unstakeEnded(address account, address fund, uint256 amount) private returns (uint256) {
         uint256 remainingAmount = amount;
-        Position[] memory closedPosistions = _getFilteredPositions(account, fund, _isPositionEnded);
-        for (uint256 i = 0; i < closedPosistions.length && remainingAmount > 0; i++) {
-            Position memory pos = closedPosistions[i];
-            if (_isPositionEnded(pos)) {
-                uint256 toUnstake = Math.min(amount, pos.amountInWlth - pos.unstakedEnded);
-                stakingPositions[pos.id].unstakedEnded += toUnstake;
-                remainingAmount -= toUnstake;
-            }
+        Position[] memory endedPosistions = _getFilteredPositions(account, fund, _isPositionEnded);
+        for (uint256 i = 0; i < endedPosistions.length && remainingAmount > 0; i++) {
+            Position memory pos = endedPosistions[i];
+            uint256 toUnstake = Math.min(amount, pos.amountInWlth - pos.unstakedEnded);
+            stakingPositions[pos.id].unstakedEnded += toUnstake;
+            remainingAmount -= toUnstake;
         }
         return (amount - remainingAmount);
     }
 
     function _unstakeUnlocked(address account, address fund, uint256 amount) private returns (uint256) {
-        Position[] memory openPositions = _getOpenPositions(account, fund);
-        uint256 totalDiscount = _getTotalTargetDiscount(account, fund);
-        uint256 investmentSize = _getCurrentInvestment(account, fund);
-
-        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getUnlockedTokens(
-            openPositions,
-            totalDiscount,
-            investmentSize
-        );
+        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getUnlockedTokens(account, fund);
 
         uint256 toUnstake = Math.min(amount, totalCount);
         (uint256 totalToUnstake, uint256[] memory amountsToUnstake) = _getTokensToUnstake(toUnstake, ids, counts);
@@ -415,17 +412,19 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         for (uint256 i = 0; i < positions.length; i++) {
             Position memory pos = positions[i];
             ids[i] = pos.id;
-            staked[i] = pos.amountInWlth;
-            totalCount += pos.amountInWlth;
+            staked[i] = pos.amountInWlth - pos.unstakedEnded;
+            totalCount += staked[i];
         }
         return (totalCount, ids, staked);
     }
 
     function _getUnlockedTokens(
-        Position[] memory openPositions,
-        uint256 totalTargetDiscount,
-        uint256 investmentSize
+        address account,
+        address fund
     ) private view returns (uint256, uint256[] memory, uint256[] memory) {
+        Position[] memory openPositions = _getOpenPositions(account, fund);
+        uint256 totalTargetDiscount = _getTotalTargetDiscount(account, fund);
+        uint256 investmentSize = _getCurrentInvestment(account, fund);
         if (investmentSize > 0) {
             uint256 totalUnlocked = 0;
             uint256[] memory ids = new uint256[](openPositions.length);
@@ -457,6 +456,21 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         }
     }
 
+    function _getLockedTokens(
+        address account,
+        address fund
+    ) private view returns (uint256, uint256[] memory, uint256[] memory) {
+        uint256 totalLocked = 0;
+        (, uint256[] memory ids, uint256[] memory unlocked) = _getUnlockedTokens(account, fund);
+        uint256[] memory locked = new uint256[](ids.length);
+        Position[] memory positions = _getPositions(account, fund);
+        for (uint256 i = 0; i < unlocked.length; i++) {
+            locked[i] = positions[ids[i]].amountInWlth - unlocked[i];
+            totalLocked += locked[i];
+        }
+        return (totalLocked, ids, locked);
+    }
+
     function _getTokensToUnstake(
         uint256 amount,
         uint256[] memory ids,
@@ -464,7 +478,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     ) private pure returns (uint256, uint256[] memory) {
         uint256[] memory amountsToUnstake = new uint256[](ids.length);
         uint256 remainingAmount = amount;
-        uint256 totalUnstaked = 0;
+        uint256 totalToUnstake = 0;
         uint256 numberOfPositions = ids.length;
         uint256 nonEmptyPositions = 0;
         for (uint256 i = 0; i < numberOfPositions; i++) {
@@ -482,7 +496,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                     uint256 toUnstake = Math.min(average, available[i]);
                     if (toUnstake > 0) {
                         remainingAmount -= toUnstake;
-                        totalUnstaked += toUnstake;
+                        totalToUnstake += toUnstake;
                         amountsToUnstake[i] += toUnstake;
                         available[i] -= toUnstake;
                         if (available[i] == 0) {
@@ -496,7 +510,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                     if (toUnstake > 0) {
                         remainder -= toUnstake;
                         remainingAmount -= toUnstake;
-                        totalUnstaked += toUnstake;
+                        totalToUnstake += toUnstake;
                         amountsToUnstake[i] += toUnstake;
                         available[i] -= toUnstake;
                         if (available[i] == 0) {
@@ -506,9 +520,9 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                 }
             }
         }
-        require(totalUnstaked == amount, "Tokens not available to unstake");
+        require(totalToUnstake == amount, "Tokens not available to unstake");
 
-        return (totalUnstaked, amountsToUnstake);
+        return (totalToUnstake, amountsToUnstake);
     }
 
     function _unstake(uint256[] memory ids, uint256[] memory toUnstake) private {
@@ -536,6 +550,18 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
 
         stakingPositions[id].amountInWlth = uint128(newAmount);
         stakingPositions[id].amountInUsdc = uint128(Math.mulDiv(pos.amountInUsdc, newAmount, pos.amountInWlth));
+    }
+
+    function _getPenaltyFromLocked(address account, address fund, uint256 amount) private view returns (uint256) {
+        uint256 totalPenalty = 0;
+        (, uint256[] memory ids, uint256[] memory locked) = _getLockedTokens(account, fund);
+        (, uint256[] memory amountsToUnstake) = _getTokensToUnstake(amount, ids, locked);
+        Position[] memory positions = _getPositions(account, fund);
+        for (uint256 i = 0; i < amountsToUnstake.length; i++) {
+            (, uint256 penalty) = _getUnstakedAndPenalty(positions[ids[i]], amountsToUnstake[i]);
+            totalPenalty += penalty;
+        }
+        return totalPenalty;
     }
 
     function _getEstimatedDiscount(
