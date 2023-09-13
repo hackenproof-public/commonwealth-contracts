@@ -187,4 +187,18 @@ interface IStakingWlth {
      * @return Total staking period
      */
     function getTotalStakingPeriod(address account, address fund) external view returns (Period memory);
+
+    /**
+     * @notice Returns USDC tokens required to be staked to get maximum discount
+     * @dev Value is returned in USDC and should be converted to WLTH for staking purposes
+     * @param account Address of wallet
+     * @param fund Address of investment fund
+     * @param duration Stake duration
+     * @return USDC required to be staked to get maximum discount
+     */
+    function getRequiredStakeForMaxDiscount(
+        address account,
+        address fund,
+        uint256 duration
+    ) external view returns (uint256);
 }

@@ -97,6 +97,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
      * @inheritdoc IStakingWlth
      */
     function stake(address fund, uint256 amount, uint256 duration) external nonReentrant {
+        //slither-disable-start reentrancy-no-eth
         require(registeredFunds.contains(fund), "Fund is not registered");
         require(amount > 0, "Invalid staking amount");
         require(durationCoefficients.contains(duration), "Invalid staking duration");
@@ -123,6 +124,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             IERC20Upgradeable(token).safeTransferFrom(_msgSender(), treasury, fee);
         }
         IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), amount - fee);
+        //slither-disable-end reentrancy-no-eth
     }
 
     /**
@@ -308,6 +310,27 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             end = Math.max(end, period.start + period.duration);
         }
         return Period(uint128(begin), uint128(end - begin));
+    }
+
+    /**
+     * @inheritdoc IStakingWlth
+     */
+    function getRequiredStakeForMaxDiscount(
+        address account,
+        address fund,
+        uint256 duration
+    ) external view returns (uint256) {
+        uint256 targetDiscount = _getTotalTargetDiscount(account, fund);
+        if (targetDiscount < maxDiscount) {
+            require(registeredFunds.contains(fund), "Fund is not registered");
+
+            uint256 usdcForMaxDiscount = _getStakeForMaxDiscountInUsdc(_getCurrentInvestment(account, fund), duration);
+            require(usdcForMaxDiscount > 0, "Investment value is too low");
+
+            uint256 remainingDiscount = maxDiscount - targetDiscount;
+            return Math.mulDiv(usdcForMaxDiscount, remainingDiscount, maxDiscount);
+        }
+        return 0;
     }
 
     function _createStakingPosition(
@@ -624,12 +647,16 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 period,
         uint256 investment
     ) private view returns (uint256) {
-        uint256 amountForMaxDiscount = Math.mulDiv(investment, durationCoefficients.get(period), BASIS_POINT_DIVISOR);
+        uint256 amountForMaxDiscount = _getStakeForMaxDiscountInUsdc(investment, period);
         if (amountForMaxDiscount > 0) {
             return Math.mulDiv(amountInUsdc, maxDiscount, amountForMaxDiscount);
         } else {
             return uint256(type(uint128).max);
         }
+    }
+
+    function _getStakeForMaxDiscountInUsdc(uint256 investment, uint256 stakeDuration) private view returns (uint256) {
+        return Math.mulDiv(investment, durationCoefficients.get(stakeDuration), BASIS_POINT_DIVISOR);
     }
 
     function _getCurrentInvestment(address account, address fund) private view returns (uint256) {

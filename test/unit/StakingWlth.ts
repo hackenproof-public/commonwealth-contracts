@@ -1086,4 +1086,58 @@ describe('Common Wealth Staking unit tests', () => {
       });
     });
   });
+
+  describe('#getRequiredStakeForMaxDiscount()', () => {
+    let restorer: SnapshotRestorer;
+    const investmentSize = 1200;
+
+    before(async () => {
+      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+
+      initializeFakes(investmentSize);
+      await staking.connect(owner).registerFund(fund.address);
+
+      restorer = await takeSnapshot();
+    });
+
+    afterEach(async () => {
+      await restorer.restore();
+      initializeFakes(investmentSize);
+    });
+
+    it('Should return required stake for max discount if no stake done', async () => {
+      expect(await staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.equal(600);
+    });
+
+    [FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed].forEach((state) => {
+      it(`Should return required stake for max discount if stake is done [state=${state}]`, async () => {
+        const stake = { amount: 150, duration: ONE_YEAR };
+        quoter.quote.returns([150, 0, 0, 0]);
+        fund.currentState.returns(formatBytes32String(state));
+
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        expect(await staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.equal(450);
+      });
+    });
+
+    it('Should return zero required stake for max discount if max stake is done', async () => {
+      const stake = { amount: 600, duration: ONE_YEAR };
+      quoter.quote.returns([600, 0, 0, 0]);
+
+      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+      expect(await staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.equal(0);
+    });
+
+    [0, 1].forEach((value) => {
+      it(`Should revert if investment value is too low [value=${value}]`, async () => {
+        nft.getInvestmentValue.returns(value);
+
+        await expect(staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.be.revertedWith(
+          'Investment value is too low'
+        );
+      });
+    });
+  });
 });

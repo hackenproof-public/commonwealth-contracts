@@ -1,6 +1,6 @@
 {
   "detectors_to_run": "all",
-  "detectors_to_exclude": "incorrect-equality",
+  "detectors_to_exclude": "incorrect-equality,timestamp",
   "exclude_dependencies": true,
   "exclude_optimization": true,
   "exclude_informational": true,
