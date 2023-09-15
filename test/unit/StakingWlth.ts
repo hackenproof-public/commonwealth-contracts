@@ -7,8 +7,9 @@ import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapQuoter, Wlth } from '../../typechain-types';
+import { DEFAULT_TRANSACTION_FEE } from '../constants';
 import { FundState } from '../types';
-import { getStakeIdFromTx } from '../utils';
+import { getStakeIdFromTx, getStakeWithFee } from '../utils';
 
 chai.use(smock.matchers);
 const { expect } = chai;
@@ -19,8 +20,8 @@ describe('Common Wealth Staking unit tests', () => {
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;
   const THREE_YEARS = 3 * SECONDS_IN_YEAR;
   const FOUR_YEARS = 4 * SECONDS_IN_YEAR;
-  const defaultFee = 200;
-  const maxDiscount = 4000; // in basis points
+  const defaultFee = DEFAULT_TRANSACTION_FEE;
+  const maxDiscount = 4000; // percentage points in basis points
   const defaultTreasury = ethers.Wallet.createRandom().address;
   const usdc = ethers.Wallet.createRandom().address;
 
@@ -222,22 +223,24 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should emit event on stake', async () => {
       const stake = { amount: 600, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.period))
+      await expect(staking.connect(user).stake(fund.address, stakeWithFee, stake.period))
         .to.emit(staking, 'TokensStaked')
         .withArgs(user.address, fund.address, 0, stake.amount);
     });
 
     it('Should create staking position', async () => {
       const stake = { amount: 600, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       const equivalentInUsdc = 300;
 
       quoter.quote.returns([equivalentInUsdc, 0, 0, 0]);
 
       const stakeTime = (await time.latest()) + 100;
       await time.setNextBlockTimestamp(stakeTime);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
       const stakeId = await getStakeIdFromTx(tx, staking.address);
 
       expect(await staking.getPositionDetails(0)).to.deep.equal([
@@ -255,40 +258,45 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should revert staking if fund not registered', async () => {
       const stake = { amount: 600, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).unregisterFund(fund.address);
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWith(
+      await expect(staking.connect(user).stake(fund.address, stakeWithFee, stake.duration)).to.be.revertedWith(
         'Fund is not registered'
       );
     });
 
     it('Should revert staking if target discount is equal to zero', async () => {
       const stake = { amount: 600, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([0, 0, 0, 0]); // gives zero discount
 
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWith(
+      await expect(staking.connect(user).stake(fund.address, stakeWithFee, stake.duration)).to.be.revertedWith(
         'Target discount is equal to zero'
       );
     });
 
     it('Should revert staking if target discount exceeds maximum value', async () => {
       const stake = { amount: investmentSize / 2 + 1, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWith(
+      await expect(staking.connect(user).stake(fund.address, stakeWithFee, stake.duration)).to.be.revertedWith(
         'Target discount exceeds maximum value'
       );
     });
 
     it('Should revert staking if total target discount exceeds maximum value', async () => {
       const stake1 = { amount: 600, duration: ONE_YEAR };
+      const stake1WithFee = getStakeWithFee(stake1.amount);
       const stake2 = { amount: 100, duration: ONE_YEAR };
+      const stake2WithFee = getStakeWithFee(stake2.amount);
       quoter.quote.returnsAtCall(0, [stake1.amount, 0, 0, 0]);
       quoter.quote.returnsAtCall(1, [stake2.amount, 0, 0, 0]);
 
-      await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
-      await expect(staking.connect(user).stake(fund.address, stake2.amount, stake2.duration)).to.be.revertedWith(
+      await staking.connect(user).stake(fund.address, stake1WithFee, stake1.duration);
+      await expect(staking.connect(user).stake(fund.address, stake2WithFee, stake2.duration)).to.be.revertedWith(
         'Target discount exceeds maximum value'
       );
     });
@@ -297,7 +305,9 @@ describe('Common Wealth Staking unit tests', () => {
       const fund2 = await smock.fake('InvestmentFund');
       const nft2 = await smock.fake('InvestmentNFT');
       const stake1 = { amount: 600, duration: ONE_YEAR };
+      const stake1WithFee = getStakeWithFee(stake1.amount);
       const stake2 = { amount: 100, duration: ONE_YEAR };
+      const stake2WithFee = getStakeWithFee(stake2.amount);
 
       fund2.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund2.investmentNft.returns(nft2.address);
@@ -306,8 +316,8 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returnsAtCall(1, [stake2.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund2.address);
-      await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
-      await staking.connect(user).stake(fund2.address, stake2.amount, stake2.duration);
+      await staking.connect(user).stake(fund.address, stake1WithFee, stake1.duration);
+      await staking.connect(user).stake(fund2.address, stake2WithFee, stake2.duration);
 
       expect(await staking.getStakingAccounts()).to.deep.equal([user.address]);
       expect(await staking.getStakedTokensInFund(user.address, fund.address)).to.equal(stake1.amount);
@@ -323,6 +333,7 @@ describe('Common Wealth Staking unit tests', () => {
 
     const investmentSize = 1200;
     const stake1 = { amount: 300, period: ONE_YEAR };
+    const stake1WithFee = getStakeWithFee(stake1.amount);
 
     before(async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
@@ -332,14 +343,14 @@ describe('Common Wealth Staking unit tests', () => {
       await staking.connect(owner).registerFund(fund.address);
 
       await time.setNextBlockTimestamp((await time.latest()) + 100);
-      const tx = await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
+      const tx = await staking.connect(user).stake(fund.address, stake1WithFee, stake1.period);
       stake1Id = await getStakeIdFromTx(tx, staking.address);
       stake1Time = (await staking.getPositionDetails(stake1Id)).period.start.toNumber();
 
       restorer = await takeSnapshot();
     });
 
-    beforeEach(async () => {
+    afterEach(async () => {
       await restorer.restore();
       initializeFakes(investmentSize, stake1.amount);
     });
@@ -365,32 +376,39 @@ describe('Common Wealth Staking unit tests', () => {
 
     describe('when unstaked in Capital Raise Period', async () => {
       it('Should not collect early unstaking penalty', async () => {
+        const expectedFee = 3;
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, stake1.amount);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, stake1.amount);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, stake1.amount - expectedFee);
       });
 
       it('Should not collect early unstaking penalty for any position', async () => {
         const stake2 = { amount: 100, period: TWO_YEARS };
+        const stake2WithFee = getStakeWithFee(stake2.amount);
 
         quoter.quote.returns([stake2.amount, 0, 0, 0]);
-        await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+        await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
 
         const toUnstake = 150;
+        const expectedFee = 1;
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, toUnstake);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, toUnstake);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, toUnstake - expectedFee);
       });
 
       [
-        { unstake: 150, remaining: [225, 25] },
-        { unstake: 300, remaining: [100, 0] }
+        { unstake: 150, remaining: [225, 25] }, // average lower than the smallest position
+        { unstake: 300, remaining: [100, 0] }, // average greater than the smallest position
+        { unstake: 149, remaining: [225, 26] } // remainder
       ].forEach((item) => {
         it(`Should subtract average from all positions [unstake=${item.unstake}]`, async () => {
           const stake2 = { amount: 100, period: TWO_YEARS };
+          const stake2WithFee = getStakeWithFee(stake2.amount);
 
           quoter.quote.returns([stake2.amount, 0, 0, 0]);
-          const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+          const tx = await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
           const stake2Id = await getStakeIdFromTx(tx, staking.address);
 
           await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
@@ -399,27 +417,22 @@ describe('Common Wealth Staking unit tests', () => {
           expect((await staking.getPositionDetails(stake2Id)).amountInWlth).to.equal(item.remaining[1]);
         });
       });
-
-      it('Should unstake if average number of tokens to unstake is calculated with remainder', async () => {
-        for (const amount of [10, 100, 40, 50]) {
-          quoter.quote.returns([amount, 0, 0, 0]);
-          await staking.connect(user).stake(fund.address, amount, ONE_YEAR);
-        }
-        await staking.connect(user).unstake(fund.address, 100);
-      });
     });
 
     describe('when unstaked in Capital Deployment Period', async () => {
       it('Should not collect early unstaking penalty if unstaked from closed positions', async () => {
+        const expectedFee = 3;
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
 
         const timestampAfterStakingFinished = stake1.period * 2;
         await time.setNextBlockTimestamp(stake1Time + timestampAfterStakingFinished);
         await staking.connect(user).unstake(fund.address, stake1.amount);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, stake1.amount);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, stake1.amount - expectedFee);
       });
 
       it('Should not collect early unstaking penalty if all NFTs are sold', async () => {
+        const expectedFee = 3;
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
 
         // user sells all NFTs
@@ -427,7 +440,8 @@ describe('Common Wealth Staking unit tests', () => {
 
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, stake1.amount);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, stake1.amount);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, stake1.amount - expectedFee);
       });
 
       it('Should not collect early unstaking penalty if unlocked tokens are available', async () => {
@@ -437,9 +451,11 @@ describe('Common Wealth Staking unit tests', () => {
         nft.getInvestmentValue.returns(300);
 
         const unlocked = 150;
+        const expectedFee = 1;
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, unlocked);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, unlocked);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, unlocked - expectedFee);
       });
 
       it('Should not collect unstaking penalty from multiple stakes if unlocked tokens are available', async () => {
@@ -454,9 +470,11 @@ describe('Common Wealth Staking unit tests', () => {
         nft.getInvestmentValue.returns(300);
 
         const toUnstake = 150;
+        const expectedFee = 1;
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, toUnstake);
-        expect(wlth.transfer).to.have.been.calledWith(user.address, toUnstake);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, expectedFee);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, toUnstake - expectedFee);
       });
 
       it('Should collect early unstaking penalty if unstaked before staking is finished', async () => {
@@ -465,18 +483,22 @@ describe('Common Wealth Staking unit tests', () => {
         await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
         await staking.connect(user).unstake(fund.address, stake1.amount);
 
+        // transfer fee
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, 3);
+
         // burn penalty
         expect(wlth.burn).to.have.been.calledWith(120);
 
         // transfer unstaked tokens to user
-        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(user.address, 180);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, 177);
       });
 
       it('Should collect proper unstaking penalty if positions are finished, unlocked and locked', async () => {
         const stake2 = { amount: 150, period: FOUR_YEARS };
+        const stake2WithFee = getStakeWithFee(stake2.amount);
 
         quoter.quote.returns([stake2.amount, 0, 0, 0]);
-        const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+        const tx = await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
         const stake2Id = getStakeIdFromTx(tx, staking.address);
         const stake2Time = (await staking.getPositionDetails(stake2Id)).period.start.toNumber();
 
@@ -488,28 +510,31 @@ describe('Common Wealth Staking unit tests', () => {
         const timestampAfterStake1Finished = stake1Time + stake1.period + 1;
         await time.setNextBlockTimestamp(timestampAfterStake1Finished);
 
-        // unstake from closed positions
+        // unstake from ended positions
         await staking.connect(user).unstake(fund.address, 300);
-        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(user.address, 300);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, 3);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, 297);
 
         // unstake unlocked tokens
         await staking.connect(user).unstake(fund.address, 50);
-        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, 50);
+        expect(wlth.transfer.atCall(2)).to.have.been.calledWith(user.address, 50);
 
         const timestampAfterTwoYears = stake2Time + stake1.period * 2;
         await time.setNextBlockTimestamp(timestampAfterTwoYears);
 
         // unstake locked with penalty
         await staking.connect(user).unstake(fund.address, 100);
+        expect(wlth.transfer.atCall(3)).to.have.been.calledWith(defaultTreasury, 1);
         expect(wlth.burn).to.have.been.calledWith(40);
-        expect(wlth.transfer.atCall(2)).to.have.been.calledWith(user.address, 60);
+        expect(wlth.transfer.atCall(4)).to.have.been.calledWith(user.address, 59);
       });
 
       it('Should collect no penalty if finished tokens cover maximum discount', async () => {
         const stake2 = { amount: 150, period: FOUR_YEARS };
+        const stake2WithFee = getStakeWithFee(stake2.amount);
 
         quoter.quote.returns([stake2.amount, 0, 0, 0]);
-        await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+        await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
 
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
 
@@ -522,7 +547,8 @@ describe('Common Wealth Staking unit tests', () => {
         const toUnstake = 450;
         await staking.connect(user).unstake(fund.address, toUnstake);
 
-        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(user.address, 450);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultTreasury, 4);
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, 446);
       });
     });
   });
@@ -531,6 +557,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return constant discount if staked in CRP', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 500, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
@@ -539,7 +566,7 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund.address);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
       const start = (await staking.getPositionDetails(stakeId)).period.start;
@@ -553,6 +580,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return linear discount if staked in CDP', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 500, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
@@ -561,7 +589,7 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund.address);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
       const start = (await staking.getPositionDetails(stakeId)).period.start;
@@ -575,7 +603,9 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return correct discount if staked multiple times', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake1 = { amount: 100, period: FOUR_YEARS };
+      const stake1WithFee = getStakeWithFee(stake1.amount);
       const stake2 = { amount: 100, period: ONE_YEAR };
+      const stake2WithFee = getStakeWithFee(stake2.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
@@ -590,10 +620,10 @@ describe('Common Wealth Staking unit tests', () => {
       await staking.connect(owner).registerFund(fund.address);
 
       await time.setNextBlockTimestamp(stake1Time);
-      await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
+      await staking.connect(user).stake(fund.address, stake1WithFee, stake1.period);
 
       await time.setNextBlockTimestamp(stake2Time);
-      await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+      await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
 
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, stake1Time)).to.equal(0);
       expect(await staking.getDiscountInTimestamp(user.address, fund.address, stake1Time + ONE_YEAR)).to.equal(400);
@@ -609,7 +639,9 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return maximum discount if staked multiple times and sold all NFTs', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake1 = { amount: 100, period: FOUR_YEARS };
+      const stake1WithFee = getStakeWithFee(stake1.amount);
       const stake2 = { amount: 100, period: ONE_YEAR };
+      const stake2WithFee = getStakeWithFee(stake2.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
@@ -624,10 +656,10 @@ describe('Common Wealth Staking unit tests', () => {
       await staking.connect(owner).registerFund(fund.address);
 
       await time.setNextBlockTimestamp(stake1Time);
-      await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
+      await staking.connect(user).stake(fund.address, stake1WithFee, stake1.period);
 
       await time.setNextBlockTimestamp(stake2Time);
-      await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+      await staking.connect(user).stake(fund.address, stake2WithFee, stake2.period);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
 
@@ -642,6 +674,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should increase discount up to max value if decreased investment size after stake', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 500, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
@@ -650,7 +683,7 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund.address);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
       const start = (await staking.getPositionDetails(stakeId)).period.start;
@@ -673,6 +706,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should decrease discount if increased investment size after stake', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 500, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
@@ -681,7 +715,7 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund.address);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
       const start = (await staking.getPositionDetails(stakeId)).period.start;
@@ -696,6 +730,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return zero discount if timestamp before stake', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 500, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
@@ -704,7 +739,7 @@ describe('Common Wealth Staking unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).registerFund(fund.address);
-      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const tx = await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
 
       const stakeId = await getStakeIdFromTx(tx, staking.address);
       const start = (await staking.getPositionDetails(stakeId)).period.start;
@@ -767,6 +802,7 @@ describe('Common Wealth Staking unit tests', () => {
     it('Should return correct discount estimation in CDP after stake', async () => {
       const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
       const stake = { amount: 100, period: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
@@ -778,7 +814,7 @@ describe('Common Wealth Staking unit tests', () => {
 
       const stakeTime = (await time.latest()) + 1000;
       await time.setNextBlockTimestamp(stakeTime);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.period);
       const period = { start: stakeTime, duration: ONE_YEAR };
 
       expect(await staking.getEstimatedDiscount(user.address, fund.address, 100, period, stakeTime)).to.equal(0);
@@ -797,6 +833,7 @@ describe('Common Wealth Staking unit tests', () => {
 
     describe('when single staking position', () => {
       const stake = { amount: investmentSize / 2, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
 
       before(async () => {
         ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
@@ -806,7 +843,7 @@ describe('Common Wealth Staking unit tests', () => {
         await staking.connect(owner).registerFund(fund.address);
 
         quoter.quote.returns([stake.amount, 0, 0, 0]);
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         restorer = await takeSnapshot();
       });
@@ -843,7 +880,9 @@ describe('Common Wealth Staking unit tests', () => {
       let restorer: SnapshotRestorer;
 
       const stake1 = { amount: 300, duration: ONE_YEAR };
+      const stake1WithFee = getStakeWithFee(stake1.amount);
       const stake2 = { amount: 75, duration: FOUR_YEARS };
+      const stake2WithFee = getStakeWithFee(stake2.amount);
 
       before(async () => {
         ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
@@ -853,10 +892,10 @@ describe('Common Wealth Staking unit tests', () => {
         await staking.connect(owner).registerFund(fund.address);
 
         quoter.quote.returns([stake1.amount, 0, 0, 0]);
-        await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
+        await staking.connect(user).stake(fund.address, stake1WithFee, stake1.duration);
 
         quoter.quote.returns([stake2.amount, 0, 0, 0]);
-        await staking.connect(user).stake(fund.address, stake2.amount, stake2.duration);
+        await staking.connect(user).stake(fund.address, stake2WithFee, stake2.duration);
 
         restorer = await takeSnapshot();
       });
@@ -953,11 +992,12 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should get correct staking period if one position', async () => {
       const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await time.setNextBlockTimestamp(stakeTime);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       const period = await staking.getTotalStakingPeriod(user.address, fund.address);
       expect(period.start).to.equal(stakeTime);
@@ -966,14 +1006,15 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should get correct staking period if multiple positions overlaps', async () => {
       const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await time.setNextBlockTimestamp(stakeTime);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       await time.setNextBlockTimestamp(stakeTime + ONE_YEAR / 2);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([
         stakeTime,
@@ -983,14 +1024,15 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should get correct staking period if multiple positions do not overlap', async () => {
       const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await time.setNextBlockTimestamp(stakeTime);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       await time.setNextBlockTimestamp(stakeTime + ONE_YEAR + 150);
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([
         stakeTime,
@@ -1000,9 +1042,10 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should omit empty positions when returning staking duration', async () => {
       const stake = { amount: 100, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
       await staking.connect(user).unstake(fund.address, stake.amount);
 
       expect(await staking.getTotalStakingPeriod(user.address, fund.address)).to.deep.equal([0, 0]);
@@ -1034,9 +1077,10 @@ describe('Common Wealth Staking unit tests', () => {
 
       it('Should return 0 penalty', async () => {
         const stake = { amount: 300, duration: ONE_YEAR };
+        const stakeWithFee = getStakeWithFee(stake.amount);
         quoter.quote.returns([stake.amount, 0, 0, 0]);
 
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
       });
@@ -1049,9 +1093,10 @@ describe('Common Wealth Staking unit tests', () => {
 
       it('Should return 0 penalty if fund is in position is finished', async () => {
         const stake = { amount: 300, duration: ONE_YEAR };
+        const stakeWithFee = getStakeWithFee(stake.amount);
         quoter.quote.returns([stake.amount, 0, 0, 0]);
 
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         await time.increase(stake.duration);
         expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
@@ -1059,11 +1104,12 @@ describe('Common Wealth Staking unit tests', () => {
 
       it('Should return correct penalty if position is active and no tokens unlocked', async () => {
         const stake = { amount: 300, duration: ONE_YEAR };
+        const stakeWithFee = getStakeWithFee(stake.amount);
         quoter.quote.returns([stake.amount, 0, 0, 0]);
 
         const stakeTime = Date.now() + 1000;
         await time.setNextBlockTimestamp(stakeTime);
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         await time.increaseTo(stakeTime + stake.duration / 2);
         expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(120);
@@ -1071,11 +1117,12 @@ describe('Common Wealth Staking unit tests', () => {
 
       it('Should return correct penalty if position is active and tokens unlocked', async () => {
         const stake = { amount: 300, duration: ONE_YEAR };
+        const stakeWithFee = getStakeWithFee(stake.amount);
         quoter.quote.returns([stake.amount, 0, 0, 0]);
 
         const stakeTime = Date.now() + 1000;
         await time.setNextBlockTimestamp(stakeTime);
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         nft.getInvestmentValue.returns(300);
 
@@ -1112,10 +1159,11 @@ describe('Common Wealth Staking unit tests', () => {
     [FundState.FundsIn, FundState.CapReached, FundState.FundsDeployed].forEach((state) => {
       it(`Should return required stake for max discount if stake is done [state=${state}]`, async () => {
         const stake = { amount: 150, duration: ONE_YEAR };
+        const stakeWithFee = getStakeWithFee(stake.amount);
         quoter.quote.returns([150, 0, 0, 0]);
         fund.currentState.returns(formatBytes32String(state));
 
-        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+        await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
         expect(await staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.equal(450);
       });
@@ -1123,9 +1171,10 @@ describe('Common Wealth Staking unit tests', () => {
 
     it('Should return zero required stake for max discount if max stake is done', async () => {
       const stake = { amount: 600, duration: ONE_YEAR };
+      const stakeWithFee = getStakeWithFee(stake.amount);
       quoter.quote.returns([600, 0, 0, 0]);
 
-      await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+      await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
 
       expect(await staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.equal(0);
     });

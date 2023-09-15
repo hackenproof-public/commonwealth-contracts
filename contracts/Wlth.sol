@@ -11,6 +11,11 @@ import {IWlth} from "./interfaces/IWlth.sol";
 contract Wlth is ERC20Upgradeable, AccessControlEnumerableUpgradeable, IWlth {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
+    /**
+     * @notice Number of burned tokens
+     */
+    uint256 public burned;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -40,7 +45,8 @@ contract Wlth is ERC20Upgradeable, AccessControlEnumerableUpgradeable, IWlth {
      */
     function burn(uint256 amount) external virtual override onlyRole(BURNER_ROLE) {
         _burn(_msgSender(), amount);
+        burned += amount;
     }
 
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }

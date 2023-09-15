@@ -4,12 +4,11 @@ import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { Wlth } from '../../typechain-types';
-import { keccak256, missing_role, toWlth } from '../utils';
+import { BURNER_ROLE, DEFAULT_ADMIN_ROLE } from '../constants';
+import { missing_role, toWlth } from '../utils';
 
 describe('Common Wealth Token unit tests', () => {
   const initialTokenAmount = toWlth('1000000000');
-  const DEFAULT_ADMIN_ROLE = constants.HashZero;
-  const BURNER_ROLE = keccak256('BURNER_ROLE');
   const name = 'Common Wealth Token';
   const symbol = 'WLTH';
 

@@ -2,7 +2,7 @@ import { Log, TransactionReceipt } from '@ethersproject/providers';
 import { expect } from 'chai';
 import { BigNumber, ContractTransaction, utils } from 'ethers';
 import { ethers } from 'hardhat';
-import { EVENT_TOPIC_NFT_MINTED, EVENT_TOPIC_TOKENS_STAKED } from './constants';
+import { BP_MAX, DEFAULT_TRANSACTION_FEE, EVENT_TOPIC_NFT_MINTED, EVENT_TOPIC_TOKENS_STAKED } from './constants';
 
 export const getLogs = async (
   tx: ContractTransaction,
@@ -69,4 +69,8 @@ export const getStakeIdFromTx = async (tx: ContractTransaction, contractAddress:
 
   const staking = await ethers.getContractAt('StakingWlth', contractAddress);
   return (staking.interface.parseLog(logs[0]).args.stakeId as BigNumber).toNumber();
+};
+
+export const getStakeWithFee = (amount: number, fee: number = DEFAULT_TRANSACTION_FEE): number => {
+  return Math.floor((amount * BP_MAX) / (BP_MAX - fee));
 };

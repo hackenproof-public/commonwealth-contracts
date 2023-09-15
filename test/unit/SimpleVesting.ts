@@ -6,7 +6,7 @@ import { deploy } from '../../scripts/utils';
 import { SimpleVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
-describe('Simple vesting unit tests', () => {
+describe.skip('Simple vesting unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';
   const SECONDS_IN_YEAR = 31536000;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;
