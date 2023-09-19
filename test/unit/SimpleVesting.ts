@@ -6,6 +6,7 @@ import { deploy } from '../../scripts/utils';
 import { SimpleVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
+// TODO: fix timestamp manipulation crashes next tests issue
 describe.skip('Simple vesting unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';
   const SECONDS_IN_YEAR = 31536000;

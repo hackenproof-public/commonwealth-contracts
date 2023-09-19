@@ -87,7 +87,7 @@ abstract contract BaseVesting is ReentrancyGuard, Ownable {
     /**
      * @dev Release the tokens from this contract to the beneficiary
      */
-    function release(uint256 amount, address beneficiary) public {
+    function release(uint256 amount, address beneficiary) public virtual {
         require(accessCheck(), "Unauthorized access!");
         require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
         require(amount <= releaseableAmount(), "Not enough tokens vested!");
