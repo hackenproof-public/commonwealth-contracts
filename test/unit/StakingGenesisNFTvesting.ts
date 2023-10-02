@@ -1,103 +1,131 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { deployProxy } from '../../scripts/utils';
-import { StakingGenesisNFT, StakingGenesisNFTvesting, USDC } from '../../typechain-types';
+import { deploy } from '../../scripts/utils';
+import { StakingGenesisNFT, StakingGenNFTVesting, Wlth } from '../../typechain-types';
+import { toWlth } from '../utils';
 
-describe('StakingGenesisNFTvesting unit tests', () => {
-  let usdc: FakeContract<USDC>;
-  let stakingGenesisNFT: FakeContract<StakingGenesisNFT>;
-  let vesting: StakingGenesisNFTvesting;
+describe('Vesting Staking Genesis NFT unit tests', () => {
+  const TWENTY_FOUR_BILIONS = '24000000';
+  const SECONDS_IN_YEAR = 31536000;
 
-  const STAKING_LARGE_AMOUNT = 200;
-  const STAKING_SMALL_AMOUNT = 100;
-  const HUGE_AMOUNT = 999_999_999_999;
-  const deployStakingGenesisNFTvesting = async () => {
-    const [deployer, claimer] = await ethers.getSigners();
+  const ONE_MONTH = SECONDS_IN_YEAR / 12;
 
-    usdc = await smock.fake('USDC');
-    stakingGenesisNFT = await smock.fake('StakingGenesisNFT');
+  const ONE_TOKEN = toWlth('1');
+  const allocation = toWlth(TWENTY_FOUR_BILIONS);
 
-    vesting = await deployProxy(
-      'StakingGenesisNFTvesting',
-      [deployer.address, usdc.address, stakingGenesisNFT.address, Date.now()],
+  const deployStakingGenesisNftVesting = async () => {
+    const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+    const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+
+    const [deployer, beneficiary, owner] = await ethers.getSigners();
+    const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+    const stakingGenNFT: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+    const stakingGenNftVesting: StakingGenNFTVesting = await deploy(
+      'StakingGenNFTVesting',
+      [owner.address, wlth.address, allocation, vestingStartTimestamp, stakingGenNFT.address],
       deployer
     );
 
-    return { vesting, usdc, owner: deployer, claimer, stakingGenesisNFT };
+    return {
+      owner,
+      stakingGenNftVesting,
+      wlth,
+      deployer,
+      beneficiary,
+      allocation,
+      vestingStartTimestamp,
+      stakingGenNFT
+    };
   };
 
-  const resetFakes = (usdc: FakeContract<USDC>, stakingGenesisNFT: FakeContract<StakingGenesisNFT>) => {
-    usdc.balanceOf.reset();
-    usdc.transfer.reset();
-    stakingGenesisNFT.getRewardLarge.reset();
-    stakingGenesisNFT.getRewardSmall.reset();
-  };
-
-  before(async () => {
-    await deployStakingGenesisNFTvesting();
-  });
-
-  beforeEach(async () => {
-    resetFakes(usdc, stakingGenesisNFT);
-
-    stakingGenesisNFT.getRewardLarge.returns(STAKING_LARGE_AMOUNT);
-    stakingGenesisNFT.getRewardSmall.returns(STAKING_SMALL_AMOUNT);
-
-    usdc.balanceOf.whenCalledWith(vesting.address).returns(HUGE_AMOUNT);
-  });
-
-  describe('#claim()', () => {
-    it('Should fail if no vested currency was provided', async () => {
-      const { vesting, usdc } = await loadFixture(deployStakingGenesisNFTvesting);
-      usdc.balanceOf.whenCalledWith(vesting.address).returns(0);
-
-      await expect(vesting.claim(STAKING_LARGE_AMOUNT)).to.be.revertedWith(
-        'Vesting contract does not have enough currency to process the claim!'
+  describe('Deployment', () => {
+    it('Should return initial parameters', async () => {
+      const { stakingGenNftVesting, wlth, stakingGenNFT, allocation, vestingStartTimestamp, owner } = await loadFixture(
+        deployStakingGenesisNftVesting
       );
+
+      expect(await stakingGenNftVesting.token()).to.equal(wlth.address);
+      expect(await stakingGenNftVesting.owner()).to.equal(owner.address);
+      expect(await stakingGenNftVesting.vestingStartTimestamp()).to.equal(vestingStartTimestamp);
+      expect(await stakingGenNftVesting.allocation()).to.equal(allocation);
+      expect(await stakingGenNftVesting.stakingGenNftAddress()).to.equal(stakingGenNFT.address);
     });
+  });
 
-    it('Should fail if no claimer does not have any tokens to claim', async () => {
-      const { vesting, usdc, owner, stakingGenesisNFT } = await loadFixture(deployStakingGenesisNFTvesting);
-      stakingGenesisNFT.getRewardLarge.returns(0);
-      stakingGenesisNFT.getRewardSmall.returns(0);
+  describe('getReleasableAmount()', () => {
+    describe('release()', () => {
+      it('Should not release tokens before vesting time', async () => {
+        const { stakingGenNftVesting, vestingStartTimestamp, beneficiary, wlth, stakingGenNFT } = await loadFixture(
+          deployStakingGenesisNftVesting
+        );
+        wlth.transfer.returns(true);
+        wlth.balanceOf.returns(allocation);
+        stakingGenNFT.getRewardLarge.returns(27);
+        stakingGenNFT.getRewardSmall.returns(4);
+        await time.increaseTo(vestingStartTimestamp - 100);
 
-      await expect(vesting.claim(STAKING_LARGE_AMOUNT)).to.be.revertedWith("You can't claim that many tokens");
-    });
+        await expect(
+          stakingGenNftVesting.connect(beneficiary).release(toWlth('100'), beneficiary.address)
+        ).to.be.revertedWith('Vesting has not started yet!');
+      });
 
-    it('Should allow to claim deserved amount of tokens in one go', async () => {
-      const { vesting, usdc, owner, claimer, stakingGenesisNFT } = await loadFixture(deployStakingGenesisNFTvesting);
+      it('Should release 3000 tokens after vesting time', async () => {
+        const { stakingGenNftVesting, vestingStartTimestamp, beneficiary, wlth, allocation, stakingGenNFT } =
+          await loadFixture(deployStakingGenesisNftVesting);
+        wlth.transfer.returns(true);
+        wlth.balanceOf.returns(allocation);
+        stakingGenNFT.getRewardLarge.returns(2000);
+        stakingGenNFT.getRewardSmall.returns(1000);
 
-      await expect(vesting.connect(claimer).claim(STAKING_LARGE_AMOUNT + STAKING_SMALL_AMOUNT)).to.not.be.reverted;
-      expect(usdc.transfer).to.have.been.calledWith(claimer.address, STAKING_LARGE_AMOUNT + STAKING_SMALL_AMOUNT);
-    });
+        await time.increaseTo(vestingStartTimestamp);
+        await stakingGenNftVesting.connect(beneficiary).release(toWlth('3000'), beneficiary.address);
+        expect(await stakingGenNftVesting.connect(beneficiary).released()).to.equal(toWlth('3000'));
+      });
 
-    it('Should allow to claim deserved amount of tokens in three goes', async () => {
-      const { vesting, usdc, owner, claimer, stakingGenesisNFT } = await loadFixture(deployStakingGenesisNFTvesting);
+      it('Should revert releasing tokens if wallet does not have any NFTs staked', async () => {
+        const { stakingGenNftVesting, vestingStartTimestamp, beneficiary, wlth, deployer, stakingGenNFT } =
+          await loadFixture(deployStakingGenesisNftVesting);
+        wlth.transfer.returns(true);
+        wlth.balanceOf.returns(allocation);
+        stakingGenNFT.getRewardLarge.returns(0);
+        stakingGenNFT.getRewardSmall.returns(0);
+        await time.increaseTo(vestingStartTimestamp);
 
-      await expect(vesting.connect(claimer).claim(STAKING_SMALL_AMOUNT)).to.not.be.reverted;
-      await expect(vesting.connect(claimer).claim(STAKING_LARGE_AMOUNT - 10)).to.not.be.reverted;
-      await expect(vesting.connect(claimer).claim(10)).to.not.be.reverted;
-      expect(usdc.transfer).to.have.been.calledWith(claimer.address, STAKING_SMALL_AMOUNT);
-      expect(usdc.transfer).to.have.been.calledWith(claimer.address, STAKING_LARGE_AMOUNT - 10);
-      expect(usdc.transfer).to.have.been.calledWith(claimer.address, 10);
-    });
+        await expect(
+          stakingGenNftVesting.connect(deployer).release(toWlth('1'), beneficiary.address)
+        ).to.be.revertedWith('Unauthorized access!');
+      });
 
-    it('Should not allow to exceed claimable tokens', async () => {
-      const { vesting, usdc, owner, claimer, stakingGenesisNFT } = await loadFixture(deployStakingGenesisNFTvesting);
+      it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
+        const { stakingGenNftVesting, vestingStartTimestamp, beneficiary, wlth, stakingGenNFT } = await loadFixture(
+          deployStakingGenesisNftVesting
+        );
+        wlth.balanceOf.returns(0);
+        stakingGenNFT.getRewardLarge.returns(27);
+        stakingGenNFT.getRewardSmall.returns(4);
+        await time.increaseTo(vestingStartTimestamp);
 
-      await expect(vesting.connect(claimer).claim(STAKING_SMALL_AMOUNT)).to.not.be.reverted;
-      await expect(vesting.connect(claimer).claim(STAKING_LARGE_AMOUNT)).to.not.be.reverted;
-      await expect(vesting.connect(claimer).claim(1)).to.be.revertedWith("You can't claim that many tokens");
-      await expect(vesting.connect(owner).claim(STAKING_LARGE_AMOUNT)).to.not.be.reverted;
-    });
+        await expect(
+          stakingGenNftVesting.connect(beneficiary).release(toWlth('1'), beneficiary.address)
+        ).to.be.revertedWith('Not enough tokens to process the release!');
+      });
 
-    it('Should revert claiming if paused', async () => {
-      const { vesting, usdc, owner, claimer, stakingGenesisNFT } = await loadFixture(deployStakingGenesisNFTvesting);
-      await vesting.connect(owner).pause();
+      it('Should revert releasing tokens if transfer fails', async () => {
+        const { stakingGenNftVesting, vestingStartTimestamp, beneficiary, wlth, stakingGenNFT } = await loadFixture(
+          deployStakingGenesisNftVesting
+        );
+        wlth.transfer.returns(false);
+        wlth.balanceOf.returns(toWlth('10'));
+        stakingGenNFT.getRewardLarge.returns(27);
+        stakingGenNFT.getRewardSmall.returns(4);
+        await time.increaseTo(vestingStartTimestamp);
 
-      await expect(vesting.claim(STAKING_LARGE_AMOUNT)).to.be.revertedWith('Pausable: paused');
+        await expect(
+          stakingGenNftVesting.connect(beneficiary).release(toWlth('1'), beneficiary.address)
+        ).to.be.revertedWith('SafeERC20: ERC20 operation did not succeed');
+      });
     });
   });
 });

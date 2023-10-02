@@ -7,20 +7,22 @@ import { SimpleVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
 // TODO: fix timestamp manipulation crashes next tests issue
-describe.skip('Simple vesting unit tests', () => {
+describe('Simple vesting unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';
   const SECONDS_IN_YEAR = 31536000;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;
   const ONE_MONTH = SECONDS_IN_YEAR / 12;
   const ONE_SECOND = 1000;
   const ONE_TOKEN = toWlth('1');
-  const vestingStartTimestamp = Date.now() + ONE_MONTH;
   const allocation = toWlth(TWENTY_FOUR_BILIONS);
   const duration = TWO_YEARS;
   const cadence = ONE_MONTH;
   const allocationGroupId = 1;
 
   const deploySimpleVesting = async () => {
+    const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+    const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+
     const [deployer, beneficiary, owner] = await ethers.getSigners();
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
     const simpleVesting: SimpleVesting = await deploy(
@@ -67,7 +69,9 @@ describe.skip('Simple vesting unit tests', () => {
 
   describe('getReleasableAmount()', () => {
     it('Should return no releaseable tokens if timestamp before vesting start', async () => {
-      const { simpleVesting, wlth, allocation, beneficiary } = await loadFixture(deploySimpleVesting);
+      const { simpleVesting, wlth, allocation, beneficiary, vestingStartTimestamp } = await loadFixture(
+        deploySimpleVesting
+      );
       wlth.balanceOf.returns(allocation);
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 

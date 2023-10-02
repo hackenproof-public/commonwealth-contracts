@@ -3,7 +3,7 @@ import { Alchemy, Network, NftContractOwner } from 'alchemy-sdk';
 import { constants } from 'ethers';
 import { hexZeroPad } from 'ethers/lib/utils';
 import fs from 'fs';
-import hre from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { env } from 'process';
 import { ERC721_TRANSFER_EVENT_TOPIC } from './constants';
 import { confirmYesOrNo } from './utils';

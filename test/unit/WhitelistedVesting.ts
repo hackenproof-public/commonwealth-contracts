@@ -13,13 +13,15 @@ describe('Whitelisted vesting unit tests', () => {
   const ONE_MONTH = Math.floor(SECONDS_IN_YEAR / 12);
   const ONE_SECOND = 1;
   const ONE_TOKEN = toWlth('1');
-  const vestingStartTimestamp = Math.floor(Date.now() / 1000) + ONE_MONTH;
   const allocation = toWlth(TWENTY_FOUR_BILIONS);
   const duration = TWO_YEARS;
   const cadence = ONE_MONTH;
   const allocationGroupId = 1;
 
   const deploySimpleVesting = async () => {
+    const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+    const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+
     const [deployer, beneficiary1, beneficiary2, owner] = await ethers.getSigners();
     const whitelist = [beneficiary1.address];
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
@@ -70,7 +72,9 @@ describe('Whitelisted vesting unit tests', () => {
 
   describe('getReleasableAmount()', () => {
     it('Should return no releaseable tokens if timestamp before vesting start', async () => {
-      const { whitelistedVesting, wlth, allocation, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const { whitelistedVesting, wlth, vestingStartTimestamp, allocation, beneficiary1 } = await loadFixture(
+        deploySimpleVesting
+      );
       wlth.balanceOf.returns(allocation);
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND * 10);
 

@@ -19,9 +19,12 @@ contract StakingGenesisNFTvesting is ClaimableVesting {
         super.initialize(owner_, claimableCurrency_, claimDataSource_, vestingStartTimestamp_);
     }
 
+    // TODO: handle that 1 WLTH = 10e18 tokens, not just 1
     function claimableAmount(address claimer) public view override returns (uint256) {
         return
-            IStakingGenesisNFT(claimDataSource).getRewardSmall(claimer) +
-            IStakingGenesisNFT(claimDataSource).getRewardLarge(claimer);
+            ((
+                (IStakingGenesisNFT(claimDataSource).getRewardSmall(claimer) +
+                    IStakingGenesisNFT(claimDataSource).getRewardLarge(claimer))
+            ) * 10) ^ 18;
     }
 }
