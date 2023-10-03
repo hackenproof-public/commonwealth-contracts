@@ -69,5 +69,11 @@
     "global": "4.4.0",
     "zksync-cli": "0.2.6",
     "zksync-web3": "0.14.3"
+  },
+  "overrides": {
+    "@matterlabs/zksync-contracts": {
+      "@openzeppelin/contracts": "$@openzeppelin/contracts",
+      "@openzeppelin/contracts-upgradeable": "$@openzeppelin/contracts-upgradeable"
+    }
   }
 }
