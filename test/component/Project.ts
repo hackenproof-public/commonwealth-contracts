@@ -60,6 +60,7 @@ describe('Project component tests', () => {
     const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
     const quoter: UniswapQuoter = await deployProxy('UniswapQuoter', [extQuoter.address, 3000], deployer);
     const defaultProjectName = 'Project1';
+    const fundsAllocation = toUsdc('100000');
     const staking: StakingWlth = await deployProxy(
       'StakingWlth',
       [
@@ -92,7 +93,7 @@ describe('Project component tests', () => {
 
     const project: Project = await deployProxy(
       'Project',
-      [defaultProjectName, owner.address, swapper.address],
+      [defaultProjectName, owner.address, usdc.address, swapper.address, investmentFund.address, fundsAllocation],
       deployer
     );
 
@@ -191,30 +192,58 @@ describe('Project component tests', () => {
 
   describe('Provide profit', () => {
     it('Should revert if provides zero profit', async () => {
-      const { project, investmentFund } = await loadFixture(deployFixture);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0, investmentFund.address)).to.be.revertedWith(
+      const { project } = await loadFixture(deployFixture);
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0)).to.be.revertedWith(
         'Amount has to be above zero'
       );
     });
     it('Should revert if project is not a beneficiary', async () => {
-      const { project, investmentFund, vesting1, usdc, duration } = await loadFixture(deployFixture);
+      const { project, vesting1, usdc, duration } = await loadFixture(deployFixture);
 
       await project.connect(owner).setVesting(vesting1.address);
       await usdc.mint(vesting1.address, toUsdc('10'));
       await mine(duration);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(1, investmentFund.address)).to.be.revertedWith(
-        'Unauthorized access'
-      );
+      await expect(project.connect(owner).sellVestedToInvestmentFund(1)).to.be.revertedWith('Unauthorized access');
     });
     it('Should provide profit to Investment Fund', async () => {
-      const { project, investmentFund, usdc, swapper, duration } = await loadFixture(deployFixture);
+      const { project, investmentFund, usdc, vesting, swapper } = await loadFixture(deployFixture);
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await usdc.mint(investmentFund.address, toUsdc('1000000'));
+      await investmentFund.connect(owner).deployFunds();
+      const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
+      //await usdc.mint(vesting.address, toUsdc('10'));
+      await usdc.mint(project.address, toUsdc('10'));
+      await swapper.swap.returns(toUsdc('10'));
+      await project.connect(owner).sellVestedToInvestmentFund(toUsdc('10'));
+      expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.add(toUsdc('10')));
+    });
+  });
+
+  describe('Deploy funds to project from investment fund', () => {
+    it('Should deploy funds to project from investment fund', async () => {
+      const { project, investmentFund, usdc } = await loadFixture(deployFixture);
+      await investmentFund.connect(owner).stopCollectingFunds();
+      const projectBalance = await usdc.balanceOf(project.address);
+      await usdc.mint(investmentFund.address, toUsdc('10'));
+      await investmentFund.connect(owner).deployFundsToProject(project.address, toUsdc('10'));
+      expect(await usdc.balanceOf(project.address)).to.equal(projectBalance.add(toUsdc('10')));
+    });
+    it('Should revert if investment fund does not have enough funds', async () => {
+      const { project, investmentFund } = await loadFixture(deployFixture);
+      await investmentFund.connect(owner).stopCollectingFunds();
+      await expect(
+        investmentFund.connect(owner).deployFundsToProject(project.address, toUsdc('10'))
+      ).to.be.revertedWith('Not enough tokens to process the funds deployment!');
+    });
+    it('Should revert if project is not added to projects list', async () => {
+      const { project, investmentFund, usdc } = await loadFixture(deployFixture);
+      await investmentFund.connect(owner).removeProject(project.address);
       await investmentFund.connect(owner).stopCollectingFunds();
       await investmentFund.connect(owner).deployFunds();
-      await swapper.swap.returns(toUsdc('10'));
-      await mine(duration);
-      const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
-      await project.connect(owner).sellVestedToInvestmentFund(toUsdc('10'), investmentFund.address);
-      expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.add(toUsdc('10')));
+      await usdc.mint(investmentFund.address, toUsdc('10'));
+      await expect(
+        investmentFund.connect(owner).deployFundsToProject(project.address, toUsdc('10'))
+      ).to.be.revertedWith('Project does not exist');
     });
   });
 });

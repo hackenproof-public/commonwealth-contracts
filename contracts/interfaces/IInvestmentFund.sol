@@ -76,6 +76,14 @@ interface IInvestmentFund {
     event ProjectAdded(address indexed caller, address indexed project);
 
     /**
+     * @notice Emitted when tokens are deployed to a project from a investment fund
+     * @param caller Address that deployed funds
+     * @param project Project address
+     * @param amount Amount of tokens deployed to project
+     */
+    event FundsDeployedToProject(address indexed caller, address indexed project, uint256 amount);
+
+    /**
      * @notice Emitted when project is removed from a fund
      * @param caller Address that removed project
      * @param project Project address
@@ -149,6 +157,18 @@ interface IInvestmentFund {
      * @notice Returns number of projects within fund
      */
     function getProjectsCount() external view returns (uint256);
+
+    /**
+     * @notice Deploys funds to project.
+     *
+     * Requirements:
+     * - project must be added to investment fund
+     * - amount must be higher than zero and lower than available funds defined by project contract
+     *
+     * @param project project contract address which will receive funds
+     * @param amount Amount of funds to deploy to project
+     */
+    function deployFundsToProject(address project, uint256 amount) external;
 
     /**
      * @notice Rmoves a projects from fund

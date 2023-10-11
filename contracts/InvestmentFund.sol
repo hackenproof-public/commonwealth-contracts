@@ -8,11 +8,13 @@ import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/util
 import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
+import {IProject} from "./interfaces/IProject.sol";
 import {LibFund} from "./libraries/LibFund.sol";
 import {BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Investment Fund contract
@@ -252,8 +254,34 @@ contract InvestmentFund is
         currentState = LibFund.STATE_CAP_REACHED;
     }
 
+    // TODO: business logic clarification with client
     function deployFunds() external onlyAllowedStates onlyOwner {
+        // for (uint256 i = 0; i < _projects.length(); i++) {
+        //     address project = _projects.at(i);
+        //     uint256 amount = IProject(project).getFundsAllocation();
+        //     require(
+        //         IERC20(currency).balanceOf(address(this)) >= amount,
+        //         "Not enough tokens to process the funds deployment!"
+        //     );
+        //     IERC20(currency).approve(project, amount);
+        //     IProject(project).deployFunds(amount);
+        // }
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
+    }
+
+    // temporary manual deployment of funds to specified project
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function deployFundsToProject(address project, uint256 amount) external onlyOwner {
+        require(_projects.contains(project), "Project does not exist");
+        require(
+            IERC20(currency).balanceOf(address(this)) >= amount,
+            "Not enough tokens to process the funds deployment!"
+        );
+
+        IERC20(currency).approve(project, amount);
+        IProject(project).deployFunds(amount);
     }
 
     /**
@@ -340,6 +368,10 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.stopCollectingFunds.selector);
         allowFunction(LibFund.STATE_CAP_REACHED, this.deployFunds.selector);
+
+        allowFunction(LibFund.STATE_FUNDS_IN, this.deployFundsToProject.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.deployFundsToProject.selector);
+
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.provideProfit.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.withdraw.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);

@@ -26,6 +26,12 @@ interface IProject {
     function setVesting(address vesting_) external;
 
     /**
+     * @notice Deploy funds to project from investment fund
+     * @param amount amount of tokens transferred to project
+     */
+    function deployFunds(uint256 amount) external;
+
+    /**
      * @notice Returns project details
      * @return Project details
      */
@@ -34,7 +40,12 @@ interface IProject {
     /**
      * @notice Sells amount of vested tokens to a given investment fund
      * @param amount amount of vested tokens to be sold
-     * @param investmentFund address of investmentFund to receive the sold tokens
      */
-    function sellVestedToInvestmentFund(uint256 amount, address investmentFund) external;
+    function sellVestedToInvestmentFund(uint256 amount) external;
+
+    /**
+     * @notice Returns funds allocation for this project
+     * @return amount of funds allocated to this project
+     */
+    function getFundsAllocation() external returns (uint256);
 }
