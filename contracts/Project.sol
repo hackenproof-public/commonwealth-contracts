@@ -118,10 +118,10 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
         address sourceToken = vesting.getVestedToken();
         address targetToken = IInvestmentFund(investmentFund).getDetails().currency;
 
-        IERC20Upgradeable(sourceToken).safeApprove(address(swapper), amount);
+        IERC20Upgradeable(sourceToken).safeIncreaseAllowance(address(swapper), amount);
         uint256 amountOut = swapper.swap(amount, sourceToken, targetToken);
 
-        IERC20Upgradeable(targetToken).safeApprove(address(investmentFund), amountOut);
+        IERC20Upgradeable(targetToken).safeIncreaseAllowance(address(investmentFund), amountOut);
         IInvestmentFund(investmentFund).provideProfit(amountOut);
     }
 

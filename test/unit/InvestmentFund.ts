@@ -43,7 +43,7 @@ describe('Investment Fund unit tests', () => {
     managementFee = defaultManagementFee,
     cap = defaultInvestmentCap
   }: InvestmentFundDeploymentParameters = {}) => {
-    const [deployer, owner, user, wallet] = await ethers.getSigners();
+    const [deployer, owner, user, wallet, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -66,13 +66,29 @@ describe('Investment Fund unit tests', () => {
         investmentNft.address,
         staking.address,
         treasuryWallet,
+        genesisNftRevenue.address,
+        lpPool.address,
+        burnAddr.address,
         managementFee,
         cap
       ],
       deployer
     );
 
-    return { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet, owner, project };
+    return {
+      investmentFund,
+      usdc,
+      investmentNft,
+      staking,
+      deployer,
+      treasuryWallet,
+      wallet,
+      owner,
+      project,
+      genesisNftRevenue,
+      lpPool,
+      burnAddr
+    };
   };
 
   const deployFixture = async () => {
@@ -95,8 +111,20 @@ describe('Investment Fund unit tests', () => {
   };
 
   const setup = async () => {
-    const { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet, owner, project } =
-      await loadFixture(deployFixture);
+    const {
+      investmentFund,
+      usdc,
+      investmentNft,
+      staking,
+      deployer,
+      treasuryWallet,
+      wallet,
+      owner,
+      project,
+      genesisNftRevenue,
+      lpPool,
+      burnAddr
+    } = await loadFixture(deployFixture);
 
     resetFakes(usdc, investmentNft, staking);
 
@@ -104,12 +132,25 @@ describe('Investment Fund unit tests', () => {
     investmentNft.supportsInterface.returns(true);
     investmentNft.mint.returns(1);
 
-    return { investmentFund, usdc, investmentNft, staking, deployer, treasuryWallet, wallet, owner, project };
+    return {
+      investmentFund,
+      usdc,
+      investmentNft,
+      staking,
+      deployer,
+      treasuryWallet,
+      wallet,
+      owner,
+      project,
+      genesisNftRevenue,
+      lpPool,
+      burnAddr
+    };
   };
 
   describe('Deployment', () => {
     it('Should return initial parameters', async () => {
-      const { investmentFund, usdc, investmentNft } = await setup();
+      const { investmentFund, usdc, investmentNft, genesisNftRevenue, lpPool, burnAddr } = await setup();
 
       expect(await investmentFund.supportsInterface(IInvestmentFundId)).to.equal(true);
       expect(await investmentFund.name()).to.equal('Investment Fund');
@@ -125,6 +166,9 @@ describe('Investment Fund unit tests', () => {
         usdc.address,
         investmentNft.address,
         defaultTreasury,
+        genesisNftRevenue.address,
+        lpPool.address,
+        burnAddr.address,
         defaultManagementFee,
         defaultInvestmentCap,
         BigNumber.from(0),
@@ -135,7 +179,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid owner', async () => {
-      const [deployer] = await ethers.getSigners();
+      const [deployer, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -150,6 +194,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -159,7 +206,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid currency', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -173,6 +220,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -182,7 +232,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid NFT address', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -196,6 +246,9 @@ describe('Investment Fund unit tests', () => {
             constants.AddressZero,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -205,7 +258,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid staking address', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -219,6 +272,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             constants.AddressZero,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -228,7 +284,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid treasury wallet address', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -243,6 +299,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             constants.AddressZero,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -252,7 +311,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid management fee', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -267,6 +326,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             10000,
             defaultInvestmentCap
           ],
@@ -276,7 +338,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid investment cap', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -291,6 +353,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             0
           ],
@@ -300,7 +365,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if NFT contract does not support proper interface', async () => {
-      const [deployer, owner] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -316,6 +381,9 @@ describe('Investment Fund unit tests', () => {
             investmentNft.address,
             staking.address,
             defaultTreasury,
+            genesisNftRevenue.address,
+            lpPool.address,
+            burnAddr.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],

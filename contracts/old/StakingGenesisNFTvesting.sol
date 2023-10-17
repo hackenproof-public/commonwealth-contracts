@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IStakingGenesisNFT} from "./interfaces/IStakingGenesisNFT.sol";
-import {ClaimableVesting} from "./ClaimableVesting.sol";
+import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
+import {ClaimableVesting} from "../ClaimableVesting.sol";
 
 contract StakingGenesisNFTvesting is ClaimableVesting {
     /// @custom:oz-upgrades-unsafe-allow constructor

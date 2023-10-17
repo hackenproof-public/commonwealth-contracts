@@ -59,6 +59,21 @@ contract InvestmentFund is
     address public treasuryWallet;
 
     /**
+     * @notice Wallet collecting fees
+     */
+    address public genesisNftRevenue;
+
+    /**
+     * @notice Wallet collecting fees
+     */
+    address public lpPoolAddress;
+
+    /**
+     * @notice Wallet collecting fees
+     */
+    address public burnAddress;
+
+    /**
      * @notice Management fee value
      */
     uint16 public managementFee;
@@ -116,6 +131,9 @@ contract InvestmentFund is
         address investmentNft_,
         address stakingWlth_,
         address treasuryWallet_,
+        address genesisNftRevenue_,
+        address lpPoolAddress_,
+        address burnAddress_,
         uint16 managementFee_,
         uint256 cap_
     ) public initializer {
@@ -141,6 +159,9 @@ contract InvestmentFund is
         investmentNft = investmentNft_;
         stakingWlth = IStakingWlth(stakingWlth_);
         treasuryWallet = treasuryWallet_;
+        genesisNftRevenue = genesisNftRevenue_;
+        lpPoolAddress = lpPoolAddress_;
+        burnAddress = burnAddress_;
         managementFee = managementFee_;
         cap = cap_;
 
@@ -320,7 +341,7 @@ contract InvestmentFund is
         emit ProfitProvided(address(this), amount, carryFee, blockData.number);
 
         if (carryFee > 0) {
-            _transferFrom(currency, _msgSender(), treasuryWallet, carryFee);
+            _carryFeeDistribution(carryFee);
         }
         _transferFrom(currency, _msgSender(), address(this), amount - carryFee);
     }
@@ -346,6 +367,9 @@ contract InvestmentFund is
                 currency,
                 investmentNft,
                 treasuryWallet,
+                genesisNftRevenue,
+                lpPoolAddress,
+                burnAddress,
                 managementFee,
                 cap,
                 IInvestmentNFT(investmentNft).getTotalInvestmentValue(),
@@ -504,6 +528,14 @@ contract InvestmentFund is
             carryFee += _calculateCarryFee(wallets[i], blockData.timestamp, userIncome);
         }
         return carryFee;
+    }
+
+    // TODO: ZkSync transactions batching handling?
+    function _carryFeeDistribution(uint256 carryFee) internal {
+        _transferFrom(currency, _msgSender(), treasuryWallet, (carryFee * 68) / 100);
+        _transferFrom(currency, _msgSender(), genesisNftRevenue, (carryFee * 12) / 100);
+        _transferFrom(currency, _msgSender(), lpPoolAddress, carryFee / 10);
+        _transferFrom(currency, _msgSender(), burnAddress, carryFee / 10);
     }
 
     uint256[39] private __gap;

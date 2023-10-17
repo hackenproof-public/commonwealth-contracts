@@ -3,8 +3,8 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
+import { toWlth } from '../../test/utils';
 import { StakingGenesisNFT, StakingGenNFTVesting, Wlth } from '../../typechain-types';
-import { toWlth } from '../utils';
 
 describe('Vesting Staking Genesis NFT unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';

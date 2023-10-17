@@ -19,7 +19,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const owner = '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63';
   const wlth = '0x34ac60166247079687a2D69A526768438F3e66cC';
-  const stakingGenNFT = '0x6f633eD4d3fb3D433BD14Fb776D2c4Ba23308A13';
+  const stakingGenNFT = '0x5A1B235fBAC03870846D36b9D7E0D18531edEDe3';
   const genNFTseries1 = '0x3A029Bf68636f82b56FBAD2670bC7E70e2E547C4';
   const genNFTseries2 = '0x2D1B22DF4dA028A72009ae4f5d73fe25D1F4F845';
 
@@ -31,7 +31,7 @@ async function main() {
     deployer
   );
 
-  console.log(`StakingGenNFTVesting deployed to ${StakingGenNFTVesting.address}`);
+  console.log(`GenesisNFTVesting deployed to ${StakingGenNFTVesting.address}`);
 
   if (await confirm('\nDo you want to verify contract? [y/N] ')) {
     await verifyContract(StakingGenNFTVesting.address, [

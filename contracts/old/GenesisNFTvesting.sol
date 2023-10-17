@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
-import {IStakingGenesisNFT} from "./interfaces/IStakingGenesisNFT.sol";
-import {ClaimableVesting} from "./ClaimableVesting.sol";
-import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
+import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
+import {ClaimableVesting} from "../ClaimableVesting.sol";
+import {IGenesisNFT} from "../interfaces/IGenesisNFT.sol";
 
 contract GenesisNFTvesting is ClaimableVesting {
     uint256 public constant SEC_IN_MONTH = 2_678_400;

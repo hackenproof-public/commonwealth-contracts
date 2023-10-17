@@ -93,24 +93,58 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
     /**
      * @dev Release all available tokens from all Genesis NFTs owned by this wallet
      */
-    function release(
-        uint256 amount,
+    function releaseAllAvailable(
         uint256[] memory series1TokenIds,
         uint256[] memory series2TokenIds,
         address beneficiary
     ) public virtual {
         require(accessCheck(beneficiary), "Unauthorized access!");
         require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        require(
-            releaseableAmount(series1TokenIds, series2TokenIds, block.timestamp, beneficiary) > amount,
-            "Not enough tokens vested!"
+
+        uint256[] memory stakedSeries1Tokens = IStakingGenesisNFT(stakingGenNftContract).getStakedTokensLarge(
+            beneficiary
         );
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
+        uint256[] memory stakedSeries2Tokens = IStakingGenesisNFT(stakingGenNftContract).getStakedTokensSmall(
+            beneficiary
+        );
 
-        released += amount;
-        emit Released(beneficiary, token, amount);
+        if (series1TokenIds.length > 0) {
+            for (uint i = 0; i < series1TokenIds.length; i++) {
+                if (
+                    IERC721Upgradeable(genNftSeries1Contract).ownerOf(series1TokenIds[i]) == beneficiary ||
+                    _contains(stakedSeries1Tokens, series1TokenIds[i])
+                ) {
+                    releasePerNFT(
+                        true,
+                        series1TokenIds[i],
+                        block.timestamp,
+                        releaseableAmountPerNFT(true, series1TokenIds[i], block.timestamp),
+                        beneficiary
+                    );
+                } else {
+                    revert TokenNotOwnedByWallet(1, series1TokenIds[i]);
+                }
+            }
+        }
 
-        IERC20(token).safeTransfer(beneficiary, amount * 1e18);
+        if (series2TokenIds.length > 0) {
+            for (uint i = 0; i < series2TokenIds.length; i++) {
+                if (
+                    IERC721Upgradeable(genNftSeries2Contract).ownerOf(series2TokenIds[i]) == beneficiary ||
+                    _contains(stakedSeries2Tokens, series2TokenIds[i])
+                ) {
+                    releasePerNFT(
+                        false,
+                        series2TokenIds[i],
+                        block.timestamp,
+                        releaseableAmountPerNFT(false, series2TokenIds[i], block.timestamp),
+                        beneficiary
+                    );
+                } else {
+                    revert TokenNotOwnedByWallet(2, series2TokenIds[i]);
+                }
+            }
+        }
     }
 
     /**
@@ -176,13 +210,36 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
             uint256 claimed = amountClaimedBySeries1TokenId[tokenId];
             return
                 Math.min(
-                    44000 + getBonusValue(tokenId) - claimed,
-                    ((cadencesAmount * (44000 + getBonusValue(tokenId)) * cadence) / duration) - claimed
+                    (44000 + getBonusValue(tokenId)) * 1e18 - claimed,
+                    (((cadencesAmount * (44000 + getBonusValue(tokenId)) * cadence) * 1e18) / duration) - claimed
                 );
         } else {
             uint256 claimed = amountClaimedBySeries2TokenId[tokenId];
-            return Math.min(6444 - claimed, ((cadencesAmount * 6444 * cadence) / duration) - claimed);
+            return Math.min(6444 * 1e18 - claimed, (((cadencesAmount * 6444 * cadence) * 1e18) / duration) - claimed);
         }
+    }
+
+    function releasePerNFT(
+        bool isSeries1,
+        uint256 tokenId,
+        uint256 actualTimestamp,
+        uint256 amount,
+        address beneficiary
+    ) public {
+        uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, actualTimestamp);
+        require(accessCheck(beneficiary), "Unauthorized access!");
+        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
+        require(availableAmount > amount, "Not enough tokens vested!");
+        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
+
+        released += amount;
+        if (isSeries1) {
+            amountClaimedBySeries1TokenId[tokenId] += amount;
+        } else {
+            amountClaimedBySeries2TokenId[tokenId] += amount;
+        }
+
+        IERC20(token).safeTransfer(beneficiary, amount);
     }
 
     /**
@@ -218,5 +275,40 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         return
             IERC721Upgradeable(genNftSeries2Contract).balanceOf(beneficiary) +
             IStakingGenesisNFT(stakingGenNftContract).getStakedTokensSmall(beneficiary).length;
+    }
+
+    /**
+     * @dev Gets amount of unvested tokens for given NFT
+     */
+    function getUnvestedAmountPerNft(
+        bool series1,
+        uint256 tokenId,
+        uint256 actualTimestamp
+    ) public view returns (uint256) {
+        if (series1) {
+            return (44000 + getBonusValue(tokenId)) * 1e18 - getVestedAmountPerNft(series1, tokenId, actualTimestamp);
+        } else {
+            return 6444 * 1e18 - getVestedAmountPerNft(series1, tokenId, actualTimestamp);
+        }
+    }
+
+    /**
+     * @dev Gets amount of vested tokens for given NFT
+     */
+    function getVestedAmountPerNft(
+        bool series1,
+        uint256 tokenId,
+        uint256 actualTimestamp
+    ) public view returns (uint256) {
+        uint256 cadencesAmount = (actualTimestamp - vestingStartTimestamp) / cadence;
+        if (series1) {
+            return
+                Math.min(
+                    (44000 + getBonusValue(tokenId)) * 1e18,
+                    (cadencesAmount * (44000 + getBonusValue(tokenId)) * cadence * 1e18) / duration
+                );
+        } else {
+            return Math.min(6444 * 1e18, (cadencesAmount * 6444 * cadence * 1e18) / duration);
+        }
     }
 }

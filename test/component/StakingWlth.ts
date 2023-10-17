@@ -24,7 +24,7 @@ describe('Common Wealth Staking component tests', () => {
   const tokenUri = 'ipfs://token-uri';
 
   const deployStaking = async () => {
-    const [deployer, owner, user] = await ethers.getSigners();
+    const [deployer, owner, user, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
     const treasury = defaultTreasury;
     const wlth = await deployProxy('Wlth', ['Common Wealth Token', 'WLTH', owner.address], deployer);
@@ -55,6 +55,9 @@ describe('Common Wealth Staking component tests', () => {
         nft.address,
         staking.address,
         treasury,
+        genesisNftRevenue.address,
+        lpPool.address,
+        burnAddr.address,
         managementFee,
         defaultInvestmentCap
       ],

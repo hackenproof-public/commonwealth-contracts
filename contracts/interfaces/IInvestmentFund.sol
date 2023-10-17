@@ -10,6 +10,9 @@ interface IInvestmentFund {
         address currency;
         address investmentNft;
         address treasuryWallet;
+        address genesisNftRevenue;
+        address lpPoolAddress;
+        address burnAddress;
         uint16 managementFee;
         uint256 cap;
         uint256 totalInvestment;

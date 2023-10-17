@@ -38,9 +38,12 @@ describe('Project component tests', () => {
   let owner: SignerWithAddress;
   let wallet: SignerWithAddress;
   let profitProvider: SignerWithAddress;
+  let genesisNftRevenue: SignerWithAddress;
+  let lpPool: SignerWithAddress;
+  let burnAddr: SignerWithAddress;
 
   async function deployFixture() {
-    [deployer, owner, wallet, profitProvider] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
     const IPeriodicVestingId = ethers.utils.arrayify(
       getInterfaceIdWithBase([IPeriodicVesting__factory.createInterface(), IVesting__factory.createInterface()])
@@ -85,6 +88,9 @@ describe('Project component tests', () => {
         investmentNft.address,
         staking.address,
         treasury,
+        genesisNftRevenue.address,
+        lpPool.address,
+        burnAddr.address,
         managementFee,
         defaultInvestmentCap
       ],

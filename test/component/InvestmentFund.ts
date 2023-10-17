@@ -43,11 +43,14 @@ describe('Investment Fund component tests', () => {
   let deployer: SignerWithAddress;
   let owner: SignerWithAddress;
   let wallet: SignerWithAddress;
+  let genesisNftRevenue: SignerWithAddress;
+  let lpPool: SignerWithAddress;
+  let burnAddr: SignerWithAddress;
   let profitProvider: SignerWithAddress;
   let restorer: SnapshotRestorer;
 
   async function deployFixture() {
-    [deployer, owner, wallet, profitProvider] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
 
     const treasury = defaultTreasury;
     const usdc: USDC = await deploy('USDC', [], deployer);
@@ -84,6 +87,9 @@ describe('Investment Fund component tests', () => {
         investmentNft.address,
         staking.address,
         treasury,
+        genesisNftRevenue.address,
+        lpPool.address,
+        burnAddr.address,
         managementFee,
         defaultInvestmentCap
       ],
@@ -202,7 +208,9 @@ describe('Investment Fund component tests', () => {
 
   describe('Provide profit', () => {
     it('Should provide profit with no carry fee for multiple investors if not in breakeven', async () => {
-      const { investmentFund, usdc, deployer, wallet, treasury, project, owner, swapper, vesting } = await loadFixture(deployFixture);
+      const { investmentFund, usdc, deployer, wallet, treasury, project, owner, swapper, vesting } = await loadFixture(
+        deployFixture
+      );
 
       await investmentFund.connect(owner).addProject(project.address);
       await usdc.connect(deployer).approve(investmentFund.address, toUsdc('10'));
@@ -224,7 +232,7 @@ describe('Investment Fund component tests', () => {
       expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit);
     });
 
-    it.skip('Should provide profit with carry fee for multiple investors after breakeven', async () => {
+    it('Should provide profit with carry fee for multiple investors after breakeven', async () => {
       const { investmentFund, usdc, deployer, wallet, project, treasury, owner, swapper, vesting } = await loadFixture(
         deployFixture
       );
@@ -244,7 +252,7 @@ describe('Investment Fund component tests', () => {
       const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
       const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
       const expectedFundBalanceAfterProfit0 = fundBalanceBeforeProfit.add(profit0);
-      const expectedCarryFee = toUsdc('45');
+      const expectedCarryFee = toUsdc('45'); // 45*0.68 = 30.06
 
       await vesting.getVestedToken.returns(usdc.address);
       await usdc.mint(project.address, profit0);
@@ -265,9 +273,9 @@ describe('Investment Fund component tests', () => {
     });
 
     [
-      { elapsed: 1, fee: toUsdc('50') },
-      { elapsed: SECONDS_IN_YEAR / 2, fee: toUsdc('30') },
-      { elapsed: SECONDS_IN_YEAR, fee: toUsdc('10') }
+      { elapsed: 1, fee: toUsdc('50'), treasuryShare: toUsdc('34') },
+      { elapsed: SECONDS_IN_YEAR / 2, fee: toUsdc('30'), treasuryShare: toUsdc('20.4') },
+      { elapsed: SECONDS_IN_YEAR, fee: toUsdc('10'), treasuryShare: toUsdc('6.8') }
     ].forEach((data) => {
       it('Should provide profit with decreased carry fee if user staked for discount', async () => {
         const { investmentFund, usdc, staking, extQuoter, wlth, deployer, project, treasury, owner, vesting, swapper } =
@@ -301,21 +309,23 @@ describe('Investment Fund component tests', () => {
         expect(await usdc.balanceOf(investmentFund.address)).to.equal(
           fundBalanceBeforeProfit.add(profit).sub(data.fee)
         );
-        expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(data.fee));
+        expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(data.treasuryShare));
       });
     });
   });
 
-  describe.skip('Withdraw', () => {
+  describe('Withdraw', () => {
     const deployerInvestment = toUsdc('10');
     const walletInvestment = toUsdc('20');
     let deployerTokenId: BigNumber;
     let walletTokenId: BigNumber;
 
     before(async () => {
-      ({ investmentFund, usdc, investmentNft, deployer, wallet, project, profitProvider } = await loadFixture(deployFixture));
+      ({ investmentFund, usdc, investmentNft, deployer, wallet, project, profitProvider } = await loadFixture(
+        deployFixture
+      ));
 
-      await investmentFund.connect(owner).addProject(project.address);
+      await investmentFund.connect(owner).addProject(profitProvider.address);
       await usdc.connect(deployer).approve(investmentFund.address, deployerInvestment);
       let tx: ContractTransaction = await investmentFund.connect(deployer).invest(deployerInvestment, tokenUri);
 
@@ -341,7 +351,6 @@ describe('Investment Fund component tests', () => {
 
     it('Should withdraw profit', async () => {
       const treasuryBalance = await usdc.balanceOf(defaultTreasury);
-      await investmentFund.connect(owner).addProject(profitProvider.address);
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('3'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('3'));
       expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance);
@@ -361,10 +370,10 @@ describe('Investment Fund component tests', () => {
     it('Should withdraw profit if breakeven reached', async () => {
       const treasuryBalance = await usdc.balanceOf(defaultTreasury);
 
-      await usdc.connect(project.address).approve(investmentFund.address, toUsdc('90'));
-      await investmentFund.connect(project.address).provideProfit(toUsdc('90'));
+      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
+      await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
-      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance.add(toUsdc('30')));
+      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance.add(toUsdc('20.4'))); // 30*0.68
 
       const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
       const walletBalance = await usdc.balanceOf(wallet.address);
@@ -385,8 +394,8 @@ describe('Investment Fund component tests', () => {
     });
 
     it('Should withdraw profit if nft owner changed', async () => {
-      await usdc.connect(project.address).approve(investmentFund.address, toUsdc('9'));
-      await investmentFund.connect(project.address).provideProfit(toUsdc('6'));
+      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('9'));
+      await investmentFund.connect(profitProvider).provideProfit(toUsdc('6'));
 
       let investmentFundBalance = await usdc.balanceOf(investmentFund.address);
       const walletBalance = await usdc.balanceOf(wallet.address);
@@ -398,7 +407,7 @@ describe('Investment Fund component tests', () => {
       expect(await usdc.balanceOf(wallet.address)).to.equal(walletBalance.add(toUsdc('1')));
 
       await investmentNft.connect(wallet).transferFrom(wallet.address, deployer.address, walletTokenId);
-      await investmentFund.connect(project.address).provideProfit(toUsdc('3'));
+      await investmentFund.connect(profitProvider).provideProfit(toUsdc('3'));
 
       investmentFundBalance = await usdc.balanceOf(investmentFund.address);
 
@@ -424,9 +433,9 @@ describe('Investment Fund component tests', () => {
 
     it('Should withdraw profit if hundred payouts provided', async () => {
       const numberOfPayouts: number = 100;
-      await usdc.connect(project.address).approve(investmentFund.address, toUsdc('0.000003').mul(numberOfPayouts));
+      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('0.000003').mul(numberOfPayouts));
       for (let i = 0; i < numberOfPayouts; i++) {
-        await investmentFund.connect(project.signer).provideProfit(toUsdc('0.000003'));
+        await investmentFund.connect(profitProvider).provideProfit(toUsdc('0.000003'));
       }
 
       expect(await investmentFund.getPayoutsCount()).to.equal(numberOfPayouts);
@@ -448,8 +457,8 @@ describe('Investment Fund component tests', () => {
 
     it('Should retrieve available profit for account', async () => {
       const profit = toUsdc('6');
-      await usdc.connect(project.address).approve(investmentFund.address, profit);
-      await investmentFund.connect(project.address).provideProfit(profit);
+      await usdc.connect(profitProvider).approve(investmentFund.address, profit);
+      await investmentFund.connect(profitProvider).provideProfit(profit);
 
       expect(await investmentFund.getAvailableFunds(deployer.address)).to.equal(profit.mul(1).div(3));
       expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(profit.mul(2).div(3));
@@ -457,9 +466,9 @@ describe('Investment Fund component tests', () => {
 
     [1, 10].forEach((numberOfPayouts: number) => {
       it('Should retrieve zero profit if it is too low to be divided', async () => {
-        await usdc.connect(project.address).approve(investmentFund.address, toUsdc('0.000001').mul(numberOfPayouts));
+        await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('0.000001').mul(numberOfPayouts));
         for (let i = 0; i < numberOfPayouts; i++) {
-          await investmentFund.connect(project.address).provideProfit(toUsdc('0.000001'));
+          await investmentFund.connect(profitProvider).provideProfit(toUsdc('0.000001'));
         }
         expect(await investmentFund.getPayoutsCount()).to.equal(numberOfPayouts);
         expect(await investmentFund.getAvailableFunds(wallet.address)).to.equal(0);
@@ -467,16 +476,16 @@ describe('Investment Fund component tests', () => {
     });
 
     it('Should retrieve user profit and carry fee for withdrawal', async () => {
-      await usdc.connect(project.address).approve(investmentFund.address, toUsdc('90'));
-      await investmentFund.connect(project.address).provideProfit(toUsdc('90'));
+      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
+      await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
       expect(await investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('20'))).to.equal(toUsdc('0'));
       expect(await investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('30'))).to.equal(toUsdc('5'));
     });
 
     it('Should retrieve user max profit and carry fee for withdrawal if amount exceeds total income', async () => {
-      await usdc.connect(project.address).approve(investmentFund.address, toUsdc('90'));
-      await investmentFund.connect(project.address).provideProfit(toUsdc('90'));
+      await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
+      await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
       await expect(investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('60').add(1))).to.be.revertedWith(
         'Withdrawal amount exceeds available funds'
