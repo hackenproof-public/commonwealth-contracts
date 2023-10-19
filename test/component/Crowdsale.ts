@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy, deployProxy } from '../../scripts/utils';
-import { Crowdsale, GenesisNFT, USDC } from '../../typechain-types';
+import { Crowdsale, GenesisNFTV1, USDC } from '../../typechain-types';
 import { keccak256 } from '../utils';
 
 describe('Crowdsale component tests', () => {
@@ -27,8 +27,8 @@ describe('Crowdsale component tests', () => {
     const [deployer, owner, user] = await ethers.getSigners();
 
     const usdc: USDC = await deploy('USDC', [], deployer);
-    const genesisNft: GenesisNFT = await deployProxy(
-      'GenesisNFT',
+    const genesisNft: GenesisNFTV1 = await deployProxy(
+      'GenesisNFTV1',
       ['Common Wealth Genesis NFT', 'CWOGNFT', 1, owner.address, royaltyWallet, royalty, tokenUri],
       deployer
     );

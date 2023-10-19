@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { Crowdsale, GenesisNFT, USDC } from '../../typechain-types';
+import { Crowdsale, GenesisNFTV1, USDC } from '../../typechain-types';
 import { CrowdsalePhase } from '../types';
 import { toUsdc } from '../utils';
 
@@ -28,7 +28,7 @@ describe('Crowdsale unit tests', () => {
     const [deployer, owner, user, treasury, royaltyWallet] = await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
-    const genesisNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+    const genesisNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
     const crowdsale: Crowdsale = await deployProxy(
       'Crowdsale',
       [
@@ -72,7 +72,7 @@ describe('Crowdsale unit tests', () => {
       const [deployer, owner, treasury] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
-      const genesisNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+      const genesisNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
       const crowdsale: Crowdsale = await deployProxy(
         'Crowdsale',
         [

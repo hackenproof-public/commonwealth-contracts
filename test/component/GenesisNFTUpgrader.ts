@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, GenesisNFTUpgrader, GenNFT, GenNFTV2 } from '../../typechain-types';
+import { GenesisNFTV1, GenesisNFTUpgrader, GenNFT, GenNFTV2 } from '../../typechain-types';
 import { keccak256, missing_role } from '../utils';
 
 describe('GenesisNFTUpgrader component tests', () => {
@@ -31,8 +31,8 @@ describe('GenesisNFTUpgrader component tests', () => {
     const GenNFTV2Factory = await ethers.getContractFactory('GenNFTV2');
     const sourceNft = (await upgrades.upgradeProxy(genNft.address, GenNFTV2Factory)) as GenNFTV2;
 
-    const targetNft: GenesisNFT = await deployProxy(
-      'GenesisNFT',
+    const targetNft: GenesisNFTV1 = await deployProxy(
+      'GenesisNFTV1',
       ['Common Wealth Genesis NFT', 'CWOGNFT', 1, owner.address, royaltyWallet, erc1155Royalty, erc1155TokenURI],
       deployer
     );

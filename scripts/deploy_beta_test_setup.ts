@@ -98,7 +98,7 @@ const getProjectFactory = (owner: Wallet, swapperAddress: string, deployer: Sign
     period: VestingPeriod
   ): Promise<[Project, Token, PeriodicVesting]> => {
     const project: Project = await deployProxyAndVerify('Project', [name, owner.address, swapperAddress], deployer);
-    const token: Token = await deployProxyAndVerify('ProjectToken', [`${name} Token`, symbol], deployer);
+    const token: Token = await deployProxyAndVerify('Token', [`${name} Token`, symbol], deployer);
     const vesting: PeriodicVesting = await deployProxyAndVerify(
       'PeriodicVesting',
       [token.address, project.address, start, [[period.allocation, period.duration, period.cadence, period.cliff]]],

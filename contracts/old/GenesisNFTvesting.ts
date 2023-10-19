@@ -3,7 +3,7 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { GenesisNFT, GenesisNFTVesting, StakingGenesisNFT, Wlth } from '../../typechain-types';
+import { GenesisNFTV1, GenesisNFTV2, GenesisNFTVesting, StakingGenesisNFT, Wlth } from '../../typechain-types';
 
 // TODO: fix timestamp manipulation crashes next tests issue
 describe('Vesting Genesis NFT unit tests', () => {
@@ -18,8 +18,8 @@ describe('Vesting Genesis NFT unit tests', () => {
     const [deployer, owner, beneficiary] = await ethers.getSigners();
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
     const stakingGenNFT: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
-    const genNFTseries1: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
-    const genNFTseries2: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+    const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFT');
+    const genNFTseries2: FakeContract<GenesisNFTV2> = await smock.fake('GenesisNFT');
 
     const genesisNftVesting: GenesisNFTVesting = await deploy(
       'GenesisNFTVesting',

@@ -3,15 +3,15 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
+import { GenesisNFTV2, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
 import { getInterfaceId, keccak256, missing_role } from '../utils';
 
 describe('Common Wealth Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
-  const name = 'Common Wealth Genesis NFT Series 1';
-  const symbol = 'CWOGS1';
+  const name = 'Common Wealth Genesis NFT Series 2';
+  const symbol = 'CWOGS2';
   const series = 1;
   const royalty = 650;
   const defaultTokenURI = 'ipfs://token-uri';
@@ -21,8 +21,8 @@ describe('Common Wealth Genesis NFT unit tests', () => {
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
-    const genesisNft: GenesisNFT = await deployProxy(
-      'GenesisNFT',
+    const genesisNft: GenesisNFTV2 = await deployProxy(
+      'GenesisNFTV2',
       [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI],
       deployer
     );
@@ -65,7 +65,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
 
       await expect(
         deployProxy(
-          'GenesisNFT',
+          'GenesisNFTV2',
           [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI],
           deployer
         )
@@ -77,7 +77,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
 
       await expect(
         deployProxy(
-          'GenesisNFT',
+          'GenesisNFTV2',
           [name, symbol, series, owner.address, constants.AddressZero, royalty, defaultTokenURI],
           deployer
         )
@@ -85,7 +85,7 @@ describe('Common Wealth Genesis NFT unit tests', () => {
 
       await expect(
         deployProxy(
-          'GenesisNFT',
+          'GenesisNFTV2',
           [name, symbol, series, owner.address, royaltyAccount.address, 10001, defaultTokenURI],
           deployer
         )

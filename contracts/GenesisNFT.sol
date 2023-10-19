@@ -21,7 +21,7 @@ interface ZkSyncGenesisNFTmirror {
 /**
  * @title Genesis NFT contract
  */
-contract GenesisNFT is
+abstract contract GenesisNFT is
     ERC721EnumerableUpgradeable,
     PausableUpgradeable,
     AccessControlEnumerableUpgradeable,

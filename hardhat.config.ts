@@ -1,8 +1,10 @@
 import '@nomicfoundation/hardhat-toolbox';
+import '@nomiclabs/hardhat-ethers';
 import '@openzeppelin/hardhat-upgrades';
 import * as dotenv from 'dotenv';
 import 'hardhat-abi-exporter';
 import 'hardhat-contract-sizer';
+import 'hardhat-deploy';
 import 'hardhat-docgen';
 import 'hardhat-tracer';
 import { HardhatUserConfig } from 'hardhat/config';
@@ -50,6 +52,9 @@ const config: HardhatUserConfig = {
       accounts: !!env.SEPOLIA_WALLET_PRIVATE_KEY ? [env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     },
     localhost: {
+      chainId: 31337
+    },
+    hardhat: {
       chainId: 31337
     }
   },

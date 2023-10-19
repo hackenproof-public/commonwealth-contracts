@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, GenesisNFTUpgrader, GenNFTV2 } from '../../typechain-types';
+import { GenesisNFTV1, GenesisNFTUpgrader, GenNFTV2 } from '../../typechain-types';
 
 describe('GenesisNFTUpgrader unit tests', () => {
   let deployer: SignerWithAddress;
@@ -16,7 +16,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
     [deployer, owner, user] = await ethers.getSigners();
 
     const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
-    const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+    const targetNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
     const upgrader: GenesisNFTUpgrader = await deployProxy(
       'GenesisNFTUpgrader',
       [owner.address, sourceNft.address, targetNft.address],
@@ -39,7 +39,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
       [deployer, owner, user] = await ethers.getSigners();
 
       const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
-      const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+      const targetNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
       await expect(
         deployProxy('GenesisNFTUpgrader', [constants.AddressZero, sourceNft.address, targetNft.address], deployer)
       ).to.be.revertedWith('Owner is zero address');
@@ -48,7 +48,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
     it('Should revert deploying if source contract is zero address', async () => {
       [deployer, owner, user] = await ethers.getSigners();
 
-      const targetNft: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
+      const targetNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
       await expect(
         deployProxy('GenesisNFTUpgrader', [owner.address, constants.AddressZero, targetNft.address], deployer)
       ).to.be.revertedWith('Source contract is zero address');

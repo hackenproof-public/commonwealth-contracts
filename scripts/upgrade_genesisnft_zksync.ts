@@ -1,7 +1,7 @@
 import { getImplementationAddress } from '@openzeppelin/upgrades-core';
 import { ethers } from 'hardhat';
 import { Provider } from 'zksync-web3';
-import { GenesisNFT } from '../typechain-types';
+import { GenesisNFTV1 } from '../typechain-types';
 import { confirm, upgradeContract, verifyContract } from './utils';
 
 async function main() {
@@ -13,7 +13,7 @@ async function main() {
   const contractToUpgrade = '0xdeadbeef';
 
   console.log(`Upgrading GenesisNFT on ${contractToUpgrade} using ${deployer.address}`);
-  const genesisNFT: GenesisNFT = await upgradeContract('GenesisNFT', contractToUpgrade, deployer);
+  const genesisNFT: GenesisNFTV1 = await upgradeContract('GenesisNFT', contractToUpgrade, deployer);
   console.log(`GenesisNFT upgraded on ${genesisNFT.address}`);
 
   await genesisNFT.setZkSyncBridge(zkSyncAddress);

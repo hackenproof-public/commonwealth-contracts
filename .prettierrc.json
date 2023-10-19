@@ -11,8 +11,13 @@
       "options": {
         "singleQuote": false
       }
-    }, {
-      "files": ["*.js", "*.json", "*.ts"],
+    },
+    {
+      "files": [
+        "*.js",
+        "*.json",
+        "*.ts"
+      ],
       "options": {
         "tabWidth": 2
       }
