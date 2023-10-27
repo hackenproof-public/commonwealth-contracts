@@ -33,6 +33,9 @@ const configureFunds: DeployFunction = async () => {
     staking,
     deploymentConfig.ownerAccount,
     deploymentConfig.investmentFundTreasuryWallet,
+    deploymentConfig.genesisNftRevenueAddress,
+    deploymentConfig.lpPoolAddress,
+    deploymentConfig.burnAddress,
     deploymentConfig.investmentFundManagementFee,
     '1000000000000',
     fundRegistry,
@@ -63,6 +66,9 @@ const configureFunds: DeployFunction = async () => {
     staking,
     deploymentConfig.ownerAccount,
     deploymentConfig.investmentFundTreasuryWallet,
+    deploymentConfig.genesisNftRevenueAddress,
+    deploymentConfig.lpPoolAddress,
+    deploymentConfig.burnAddress,
     deploymentConfig.investmentFundManagementFee,
     '1000000000000',
     fundRegistry,
@@ -84,6 +90,9 @@ const configureFunds: DeployFunction = async () => {
     staking,
     deploymentConfig.ownerAccount,
     deploymentConfig.investmentFundTreasuryWallet,
+    deploymentConfig.genesisNftRevenueAddress,
+    deploymentConfig.lpPoolAddress,
+    deploymentConfig.burnAddress,
     deploymentConfig.investmentFundManagementFee,
     '1000000000000',
     fundRegistry,
@@ -105,6 +114,9 @@ const configureFunds: DeployFunction = async () => {
     staking,
     deploymentConfig.ownerAccount,
     deploymentConfig.investmentFundTreasuryWallet,
+    deploymentConfig.genesisNftRevenueAddress,
+    deploymentConfig.lpPoolAddress,
+    deploymentConfig.burnAddress,
     deploymentConfig.investmentFundManagementFee,
     '1000000000000',
     fundRegistry,
@@ -126,6 +138,9 @@ const configureFunds: DeployFunction = async () => {
     staking,
     deploymentConfig.ownerAccount,
     deploymentConfig.investmentFundTreasuryWallet,
+    deploymentConfig.genesisNftRevenueAddress,
+    deploymentConfig.lpPoolAddress,
+    deploymentConfig.burnAddress,
     deploymentConfig.investmentFundManagementFee,
     '1000000000000',
     fundRegistry,
@@ -143,7 +158,7 @@ const configureFunds: DeployFunction = async () => {
 };
 
 export default configureFunds;
-configureFunds.tags = ['mockFunds', 'beta', 'all'];
+configureFunds.tags = ['mockFunds', 'beta'];
 
 async function createFund(
   fundName: string,
@@ -151,17 +166,21 @@ async function createFund(
   staking: StakingWlth,
   owner: string,
   investmentFundTreasuryWallet: string,
+  genesisNftRevenueAddress: string,
+  lpPoolAddress: string,
+  burnAddress: string,
   investmentFundManagementFee: number,
   cap: string,
   fundRegistry: InvestmentFundRegistry,
   nftSymbol: string
 ): Promise<InvestmentFund> {
+  const nftName = `${fundName} NFT`;
   const nftParameters = [
-    { name: 'name', value: `${fundName} Fund NFT` },
+    { name: 'name', value: nftName },
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: owner }
   ];
-  const nft = (await deploy('InvestmentNFT', nftParameters, true, false)) as InvestmentNFT;
+  const nft = (await deploy('InvestmentNFT', nftParameters, true, true, nftName.replace(/\s/g, ''))) as InvestmentNFT;
 
   const fundParameters = [
     { name: 'owner', value: owner },
@@ -170,11 +189,20 @@ async function createFund(
     { name: 'investmentNft', value: nft.address },
     { name: 'stakingWlth', value: staking.address },
     { name: 'treasuryWallet', value: investmentFundTreasuryWallet },
+    { name: 'genesisNftRevenueAddress', value: genesisNftRevenueAddress },
+    { name: 'lpPoolAddress', value: lpPoolAddress },
+    { name: 'burnAddress', value: burnAddress },
     { name: 'managementFee', value: investmentFundManagementFee },
     { name: 'cap', value: cap }
   ];
 
-  const investmentFund = (await deploy('InvestmentFund', fundParameters, true, false)) as InvestmentFund;
+  const investmentFund = (await deploy(
+    'InvestmentFund',
+    fundParameters,
+    true,
+    true,
+    fundName.replace(/\s/g, '')
+  )) as InvestmentFund;
   await nft.addMinter(investmentFund.address);
   await fundRegistry.addFund(investmentFund.address);
   await staking.registerFund(investmentFund.address);
@@ -200,7 +228,7 @@ async function configureProjectForFund(
     { name: 'fundsAllocation', value: fundsAllocation }
   ];
 
-  const project = (await deploy('Project', projectParameters, true, false)) as Project;
+  const project = (await deploy('Project', projectParameters, true, true, projectName.replace(/\s/g, ''))) as Project;
 
   const beneficiary = owner;
   const tokenAllocation = ethers.utils.parseUnits('259200', 6);

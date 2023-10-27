@@ -34,6 +34,13 @@ export interface networkConfigItem {
   stakingNFTRewardPerios: number;
   investmentFundTreasuryWallet: string;
   investmentFundManagementFee: number;
+  nftVestingDuration: number;
+  nftVestingCadence: number;
+  nftVestingStartTimestamp: number;
+  genesisNftRevenueAddress: string;
+  lpPoolAddress: string;
+  burnAddress: string;
+  genesisNftStakingAllocation: number
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -68,7 +75,14 @@ const localConfig: networkConfigItem = {
   coefficients: [5000, 3750, 3125, 2500],
   stakingNFTRewardPerios: 86400,
   investmentFundTreasuryWallet: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  investmentFundManagementFee: 1000
+  investmentFundManagementFee: 1000,
+  nftVestingDuration: 1,
+  nftVestingCadence: 1,
+  nftVestingStartTimestamp: 1,
+  genesisNftRevenueAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  lpPoolAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  burnAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  genesisNftStakingAllocation: 24000000
 };
 
 const goerliConfig: networkConfigItem = {
@@ -76,7 +90,7 @@ const goerliConfig: networkConfigItem = {
   genesisNFTSymbol: 'CWOGNFT',
   genesisNftV1Series: 1,
   genesisNftV2Series: 2,
-  ownerAccount: '', //TODO define the address
+  ownerAccount: '0x', //TODO define the address
   genesisNftRoyalty: 1000,
   genesisNftRoyaltyAccount: '', //TODO define the address
   genesisNftV1TokenUri: 'ipfs://Qmc1EkoCMy3mzNqeLVddCwPw9CYmwfr2KQxkyWnDdVCRYk',
@@ -87,13 +101,20 @@ const goerliConfig: networkConfigItem = {
   uniswapSwapRouterV2Address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   zeroPointThreeFeeTier: '3000',
   stakingTransactionFee: 200,
-  stakingTreasuryWallet: '', //TODO define the address
+  stakingTreasuryWallet: '0x', //TODO define the address
   maxDiscount: 4000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
   stakingNFTRewardPerios: 86400,
-  investmentFundTreasuryWallet: '', //TODO define the address
-  investmentFundManagementFee: 1000
+  investmentFundTreasuryWallet: '0x', //TODO define the address
+  investmentFundManagementFee: 1000,
+  nftVestingDuration: 1,
+  nftVestingCadence: 1,
+  nftVestingStartTimestamp: 1,
+  genesisNftRevenueAddress: "0x",
+  lpPoolAddress: "0x",
+  burnAddress: "0x",
+  genesisNftStakingAllocation: 24000000
 };
 
 const devConfig: networkConfigItem = {

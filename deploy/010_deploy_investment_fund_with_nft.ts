@@ -41,6 +41,9 @@ const deployInvestmentFund: DeployFunction = async ({ network, deployments }) =>
     { name: 'investmentNft', value: nft.address },
     { name: 'stakingWlth', value: stakingWlth },
     { name: 'treasuryWallet', value: deploymentCofing.investmentFundTreasuryWallet },
+    { name: 'genesisNftRevenueAddress', value: deploymentCofing.genesisNftRevenueAddress },
+    { name: 'lpPoolAddress', value: deploymentCofing.lpPoolAddress },
+    { name: 'burnAddress', value: deploymentCofing.burnAddress },
     { name: 'managementFee', value: deploymentCofing.investmentFundManagementFee },
     { name: 'cap', value: cap }
   ];

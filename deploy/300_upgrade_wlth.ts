@@ -9,7 +9,7 @@ const deployWlth: DeployFunction = async ({}) => {
 
   const parameters = [
     { name: 'name', value: deploymentCofing.wlthName },
-    { name: 'symbol', value: 'WLTHV2' },
+    { name: 'symbol', value: deploymentCofing.wlthSymbol },
     { name: 'owner', value: deploymentCofing.ownerAccount }
   ];
 
@@ -19,4 +19,4 @@ const deployWlth: DeployFunction = async ({}) => {
 };
 
 export default deployWlth;
-deployWlth.tags = ['upgrade', 'upgrade', 'upgradeWlth', 'all'];
+deployWlth.tags = ['upgrade', 'upgrade', 'upgradeWlth'];
