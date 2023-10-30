@@ -6,6 +6,7 @@ const TWO_YEARS = 2 * SECONDS_IN_YEAR;
 const THREE_YEARS = 3 * SECONDS_IN_YEAR;
 const FOUR_YEARS = 4 * SECONDS_IN_YEAR;
 
+export const zkNetworksIds = [280, 324];
 export const environments = ['dev', 'stage', 'beta'] as const;
 export type environmentType = (typeof environments)[number];
 
@@ -139,5 +140,8 @@ export const networkConfig: networkConfigInfo = {
     dev: { ...devConfig },
     stage: { ...stageConfig },
     beta: { ...betaConfig }
+  },
+  280: {
+    ...localConfig
   }
 };

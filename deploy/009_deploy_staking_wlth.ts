@@ -1,9 +1,11 @@
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployStakingWlth: DeployFunction = async ({ network, deployments }) => {
+const deployStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const { network } = hre;
   const deploymentCofing = getDeploymentConfig();
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
@@ -22,7 +24,7 @@ const deployStakingWlth: DeployFunction = async ({ network, deployments }) => {
     { name: 'coefficients', value: deploymentCofing.coefficients }
   ];
 
-  await deploy('StakingWlth', parameters, true);
+  await deploy(hre, 'StakingWlth', parameters, true);
 };
 
 export default deployStakingWlth;

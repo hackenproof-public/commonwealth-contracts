@@ -1,5 +1,6 @@
 import { ethers, network } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import {
   InvestmentFund,
   InvestmentFundRegistry,
@@ -13,7 +14,7 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const configureFunds: DeployFunction = async () => {
+const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentConfig = getDeploymentConfig();
   const chainId = network.config.chainId!;
   const fundRegistryAddress = await getContractAddress(chainId, 'InvestmentFundRegistry');
@@ -28,6 +29,7 @@ const configureFunds: DeployFunction = async () => {
   const staking = (await ethers.getContractAt('StakingWlth', stakingAddress)) as StakingWlth;
 
   const metaverseFund = await createFund(
+    hre,
     'Metaverse Fund',
     usdcAddress,
     staking,
@@ -42,6 +44,7 @@ const configureFunds: DeployFunction = async () => {
     'MTF'
   );
   configureProjectForFund(
+    hre,
     'Illuvium',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -51,6 +54,7 @@ const configureFunds: DeployFunction = async () => {
     'ILV'
   );
   configureProjectForFund(
+    hre,
     'Star Atlas',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -61,6 +65,7 @@ const configureFunds: DeployFunction = async () => {
   );
 
   const evergreenFund = await createFund(
+    hre,
     'Evergreen Fund',
     usdcAddress,
     staking,
@@ -75,6 +80,7 @@ const configureFunds: DeployFunction = async () => {
     'EGF'
   );
   configureProjectForFund(
+    hre,
     'Arbitrum',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -85,6 +91,7 @@ const configureFunds: DeployFunction = async () => {
   );
 
   const zeroKnowledgeFund = await createFund(
+    hre,
     'Zero Knowledge Fund',
     usdcAddress,
     staking,
@@ -99,6 +106,7 @@ const configureFunds: DeployFunction = async () => {
     'ZKF'
   );
   configureProjectForFund(
+    hre,
     'Starkware',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -109,6 +117,7 @@ const configureFunds: DeployFunction = async () => {
   );
 
   const arbitrumEcosystemFund = await createFund(
+    hre,
     'Arbitrum Ecosystem Fund',
     usdcAddress,
     staking,
@@ -123,6 +132,7 @@ const configureFunds: DeployFunction = async () => {
     'AEF'
   );
   configureProjectForFund(
+    hre,
     'Radiant',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -133,6 +143,7 @@ const configureFunds: DeployFunction = async () => {
   );
 
   const zkSyncFund = await createFund(
+    hre,
     'ZK Sync Fund',
     usdcAddress,
     staking,
@@ -147,6 +158,7 @@ const configureFunds: DeployFunction = async () => {
     'ZKSF'
   );
   configureProjectForFund(
+    hre,
     'Woo Network',
     deploymentConfig.ownerAccount,
     usdcAddress,
@@ -161,6 +173,7 @@ export default configureFunds;
 configureFunds.tags = ['mockFunds', 'beta'];
 
 async function createFund(
+  hre: HardhatRuntimeEnvironment,
   fundName: string,
   usdc: string,
   staking: StakingWlth,
@@ -180,8 +193,8 @@ async function createFund(
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: owner }
   ];
-  const nft = (await deploy('InvestmentNFT', nftParameters, true, true, nftName.replace(/\s/g, ''))) as InvestmentNFT;
 
+  const nft = (await deploy(hre, 'InvestmentNFT', nftParameters, true, false)) as InvestmentNFT;
   const fundParameters = [
     { name: 'owner', value: owner },
     { name: 'name', value: fundName },
@@ -196,13 +209,7 @@ async function createFund(
     { name: 'cap', value: cap }
   ];
 
-  const investmentFund = (await deploy(
-    'InvestmentFund',
-    fundParameters,
-    true,
-    true,
-    fundName.replace(/\s/g, '')
-  )) as InvestmentFund;
+  const investmentFund = (await deploy(hre, 'InvestmentFund', fundParameters, true, false)) as InvestmentFund;
   await nft.addMinter(investmentFund.address);
   await fundRegistry.addFund(investmentFund.address);
   await staking.registerFund(investmentFund.address);
@@ -211,6 +218,7 @@ async function createFund(
 }
 
 async function configureProjectForFund(
+  hre: HardhatRuntimeEnvironment,
   projectName: string,
   owner: string,
   usdcAddress: string,
@@ -228,8 +236,8 @@ async function configureProjectForFund(
     { name: 'fundsAllocation', value: fundsAllocation }
   ];
 
-  const project = (await deploy('Project', projectParameters, true, true, projectName.replace(/\s/g, ''))) as Project;
-
+  const project = (await deploy(hre, 'Project', projectParameters, true, false)) as Project;
+  
   const beneficiary = owner;
   const tokenAllocation = ethers.utils.parseUnits('259200', 6);
   const durationInSeconds = 15552000; // 180 days
@@ -243,7 +251,7 @@ async function configureProjectForFund(
     { name: 'symbol', value: tokenSymbol }
   ];
 
-  const token = (await deploy('Token', tokenParameters, true, false)) as Token;
+  const token = (await deploy(hre, 'Token', tokenParameters, true, false)) as Token;
 
   const vestingParameters = [
     { name: 'token', value: token.address },
@@ -252,7 +260,7 @@ async function configureProjectForFund(
     { name: 'periods', value: [[tokenAllocation, durationInBlocks, cadence, cliff]] }
   ];
 
-  const vesting = (await deploy('PeriodicVesting', vestingParameters, true, false)) as PeriodicVesting;
+  const vesting = (await deploy(hre, 'PeriodicVesting', vestingParameters, true, false)) as PeriodicVesting;
 
   await project.setVesting(vesting.address);
   await fund.addProject(project.address);

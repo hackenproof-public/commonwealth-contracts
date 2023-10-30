@@ -1,8 +1,9 @@
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployGenesisNftV2: DeployFunction = async () => {
+const deployGenesisNftV2: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
@@ -15,7 +16,7 @@ const deployGenesisNftV2: DeployFunction = async () => {
     { name: 'tokenUri', value: deploymentCofing.genesisNftV2TokenUri }
   ];
 
-  await deploy('GenesisNFTV2', parameters, true);
+  await deploy(hre, 'GenesisNFTV2', parameters, true);
 };
 
 export default deployGenesisNftV2;

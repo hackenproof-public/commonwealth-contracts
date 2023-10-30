@@ -1,8 +1,9 @@
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployWlth: DeployFunction = async ({}) => {
+const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
@@ -11,7 +12,7 @@ const deployWlth: DeployFunction = async ({}) => {
     { name: 'owner', value: deploymentCofing.ownerAccount }
   ];
 
-  await deploy('Wlth', parameters, true);
+  await deploy(hre, 'Wlth', parameters, true);
 };
 
 export default deployWlth;

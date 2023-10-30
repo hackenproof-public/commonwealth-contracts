@@ -1,3 +1,7 @@
+import '@matterlabs/hardhat-zksync-deploy';
+import '@matterlabs/hardhat-zksync-solc';
+import '@matterlabs/hardhat-zksync-verify';
+import '@matterlabs/hardhat-zksync-upgradable';
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
 import '@openzeppelin/hardhat-upgrades';
@@ -9,7 +13,6 @@ import 'hardhat-docgen';
 import 'hardhat-tracer';
 import { HardhatUserConfig } from 'hardhat/config';
 import { env } from 'process';
-import 'solidity-coverage';
 
 dotenv.config();
 
@@ -51,6 +54,17 @@ const config: HardhatUserConfig = {
       chainId: 11155111,
       accounts: !!env.SEPOLIA_WALLET_PRIVATE_KEY ? [env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     },
+
+    zkTestnet: {
+      url: 'https://zksync-era-testnet.blockpi.network/v1/rpc/public',
+      ethNetwork: 'goerli',
+      zksync: true,
+      chainId: 280,
+      accounts: !!env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY ? [env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY] : [],
+      verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification'
+    
+    },
+
     localhost: {
       chainId: 31337
     },
@@ -80,6 +94,10 @@ const config: HardhatUserConfig = {
         }
       }
     }
+  },
+  zksolc: {
+    version: '1.3.15',
+    settings: {}
   },
   mocha: {
     timeout: 100000000

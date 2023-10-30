@@ -1,11 +1,13 @@
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { InvestmentNFT } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployInvestmentFund: DeployFunction = async ({ network, deployments }) => {
+const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const { network } = hre;
   const deploymentCofing = getDeploymentConfig();
 
   //Needs to be configure for every Fund deployment
@@ -28,7 +30,7 @@ const deployInvestmentFund: DeployFunction = async ({ network, deployments }) =>
     { name: 'owner', value: deploymentCofing.ownerAccount }
   ];
 
-  const nft = await deploy('InvestmentNFT', nftParameters, true, false);
+  const nft = await deploy(hre, 'InvestmentNFT', nftParameters, true, false);
 
   if (!nft) {
     throw Error('InvestmentNFT deployment failed');
@@ -48,7 +50,7 @@ const deployInvestmentFund: DeployFunction = async ({ network, deployments }) =>
     { name: 'cap', value: cap }
   ];
 
-  const investmentFund = await deploy('InvestmentFund', fundParameters, true, false);
+  const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
 
   if (investmentFund) {
     await registerMinter(nft.address, investmentFund.address);

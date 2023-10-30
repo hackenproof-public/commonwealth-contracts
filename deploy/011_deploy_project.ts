@@ -4,8 +4,10 @@ import { InvestmentFund } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const deployProject: DeployFunction = async ({ network }) => {
+const deployProject: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const { network } = hre;
   const deploymentConfig = getDeploymentConfig();
 
   const projectName = undefined;
@@ -32,7 +34,7 @@ const deployProject: DeployFunction = async ({ network }) => {
     { name: 'fundsAllocation', value: fundsAllocation }
   ];
 
-  const project = await deploy('Project', projectParameters, true, false);
+  const project = await deploy(hre, 'Project', projectParameters, true, false);
 
   if (!project) {
     throw Error('Project deployment failed');
@@ -52,7 +54,7 @@ const deployProject: DeployFunction = async ({ network }) => {
     { name: 'symbol', value: tokenSymbol }
   ];
 
-  const token = await deploy('Token', tokenParameters, true, false);
+  const token = await deploy(hre, 'Token', tokenParameters, true, false);
 
   if (!token) {
     throw Error('Token deployment failed');
@@ -65,7 +67,7 @@ const deployProject: DeployFunction = async ({ network }) => {
     { name: 'periods', value: [[tokenAllocation, durationInBlocks, cadence, cliff]] }
   ];
 
-  const vesting = await deploy('PeriodicVesting', vestingParameters, true, false);
+  const vesting = await deploy(hre, 'PeriodicVesting', vestingParameters, true, false);
 
   if (!vesting) {
     throw Error('Vesting deployment failed');

@@ -1,8 +1,9 @@
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
-const deploySwapper: DeployFunction = async () => {
+const deploySwapper: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
@@ -11,7 +12,7 @@ const deploySwapper: DeployFunction = async () => {
     { name: 'feeTier', value: deploymentCofing.zeroPointThreeFeeTier }
   ];
 
-  await deploy('UniswapSwapper', parameters, true);
+  await deploy(hre, 'UniswapSwapper', parameters, true);
 };
 
 export default deploySwapper;

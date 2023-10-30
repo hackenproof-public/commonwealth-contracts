@@ -13,6 +13,10 @@ import {
   DEFAULT_MAX_PRIORITY_FEE_PER_GAS_MULTIPLIER
 } from './constants';
 
+import { Deployer } from '@matterlabs/hardhat-zksync-deploy';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { Wallet } from 'zksync-web3';
+import { zkNetworksIds } from '../helper-hardhat-config';
 import { updateAddress } from './addresses';
 import verify from './verify';
 
@@ -28,6 +32,7 @@ export type ProviderParams = {
 };
 
 export async function deploy<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
   contractName: string,
   deploymentParams: DeploymentParam[],
   proxy: boolean = false,
@@ -42,8 +47,44 @@ export async function deploy<Type extends Contract>(
 
   const chainId = network.config.chainId!;
 
+  if (zkNetworksIds.includes(chainId)) {
+    return deployZkSync(
+      hre,
+      chainId,
+      contractName,
+      deploymentParams,
+      proxy,
+      updateAddressesFile,
+      adressesFileContractName,
+      opts
+    );
+  } else {
+    return deployEvm(
+      chainId,
+      contractName,
+      deploymentParams,
+      proxy,
+      updateAddressesFile,
+      adressesFileContractName,
+      providerParams,
+      opts
+    );
+  }
+}
+
+export async function deployEvm<Type extends Contract>(
+  chainId: number,
+  contractName: string,
+  deploymentParams: DeploymentParam[],
+  proxy: boolean = false,
+  updateAddressesFile = true,
+  adressesFileContractName?: string,
+  providerParams?: ProviderParams,
+  opts?: DeployProxyOptions
+): Promise<Type | undefined> {
   const provider = getProvider(providerParams);
-  const deployer = await getDeployer(provider);
+  const deployer = await getEvmDeployer(provider);
+
   const contractParams = extractDeploymentParams(deploymentParams);
 
   if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
@@ -68,6 +109,42 @@ export async function deploy<Type extends Contract>(
   }
 }
 
+export async function deployZkSync<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
+  chainId: number,
+  contractName: string,
+  deploymentParams: DeploymentParam[],
+  proxy: boolean = false,
+  updateAddressesFile = true,
+  adressesFileContractName?: string,
+  opts?: DeployProxyOptions
+): Promise<Type | undefined> {
+  const deployer = await getZkDeployer(hre);
+
+  const contractParams = extractDeploymentParams(deploymentParams);
+
+  if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
+    console.log(`Deploying ${contractName} contract...`);
+
+    let contract;
+    if (proxy) {
+      contract = await deployZkProxy(hre, contractName, contractParams, deployer, opts);
+    } else {
+      contract = await deployZkContract(contractName, contractParams, deployer);
+    }
+
+    console.log(`${contractName} deployed to ${contract.address}`);
+
+    if (updateAddressesFile) {
+      await updateAddress(chainId, adressesFileContractName || contractName, contract.address);
+    }
+
+    await verifyContract(chainId, contract, contractParams, proxy);
+
+    return <Type>contract;
+  }
+}
+
 async function deployContract<Type extends Contract>(
   contractName: string,
   parameters: any[],
@@ -75,6 +152,17 @@ async function deployContract<Type extends Contract>(
 ): Promise<Type> {
   const contract = await ethers.deployContract(contractName, parameters, signer);
   await contract.deployed();
+  return <Type>contract;
+}
+
+async function deployZkContract<Type extends Contract>(
+  contractName: string,
+  parameters: any[],
+  deployer: Deployer
+): Promise<Type> {
+  console.log('Deploy nie prosxy');
+  const artifact = await deployer.loadArtifact(contractName);
+  const contract = await deployer.deploy(artifact, parameters);
   return <Type>contract;
 }
 
@@ -92,6 +180,20 @@ async function deployProxy<Type extends Contract>(
   return <Type>contract;
 }
 
+async function deployZkProxy<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  parameters: any[],
+  deployer: Deployer,
+  opts?: DeployProxyOptions
+): Promise<Type> {
+  const artifact = await deployer.loadArtifact(contractName);
+  const contract = await hre.zkUpgrades.deployProxy(deployer.zkWallet, artifact, parameters, {
+    initializer: 'initialize'
+  });
+  return <Type>contract;
+}
+
 export async function upgradeContract<Type extends Contract>(
   contractName: string,
   proxyAddress: string,
@@ -102,7 +204,7 @@ export async function upgradeContract<Type extends Contract>(
   const chainId = network.config.chainId!;
 
   const provider = getProvider(providerParams);
-  const deployer = await getDeployer(provider);
+  const deployer = await getEvmDeployer(provider);
 
   if (chainId === 31337 || (await confirmYesOrNo('Do you want to upgrade contract? [y/N] '))) {
     console.log(`Upgrading ${contractName} contract...`);
@@ -144,7 +246,7 @@ function getProvider(
   return provider;
 }
 
-async function getDeployer(provider: Provider): Promise<Signer> {
+async function getEvmDeployer(provider: Provider): Promise<Signer> {
   let deployer: Signer;
   if (network.config.chainId === 31337) {
     deployer = ethers.provider.getSigner();
@@ -160,6 +262,23 @@ async function getDeployer(provider: Provider): Promise<Signer> {
   console.log('\nDeployer');
   console.log(` address: ${await deployer.getAddress()}`);
   console.log(` balance: ${formatEther(await provider.getBalance(await deployer.getAddress()))} ETH`);
+
+  return deployer;
+}
+
+async function getZkDeployer(hre: HardhatRuntimeEnvironment): Promise<Deployer> {
+  const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name);
+  console.log(network.name);
+  if (deployerPrivateKey === undefined || deployerPrivateKey === '') {
+    throw Error('Invalid private key');
+  }
+
+  const wallet = new Wallet(deployerPrivateKey);
+  const deployer = new Deployer(hre, wallet);
+
+  console.log('\nDeployer');
+  console.log(` address: ${await deployer.zkWallet.getAddress()}`);
+  console.log(` balance: ${formatEther(await deployer.zkWallet.getBalance())} ETH`);
 
   return deployer;
 }

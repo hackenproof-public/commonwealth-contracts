@@ -1,10 +1,12 @@
 import { constants } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployStakingGenesisNft: DeployFunction = async ({ network, deployments }) => {
+const deployStakingGenesisNft: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const { network } = hre;
   const deploymentCofing = getDeploymentConfig();
 
   const genesisNFTV1 = await getContractAddress(network.config.chainId!, 'GenesisNFTV1');
@@ -19,8 +21,8 @@ const deployStakingGenesisNft: DeployFunction = async ({ network, deployments })
   ];
 
   const params = [];
-  await deploy('StakingGenesisNFT', parameters, true);
+  await deploy(hre, 'StakingGenesisNFT', parameters, true);
 };
 
 export default deployStakingGenesisNft;
-deployStakingGenesisNft.tags = ['genesisNftStaking', 'genesisNft', 'all', 'beta'];
+deployStakingGenesisNft.tags = ['genesisNftStaking', 'genesisNFT', 'all', 'beta'];
