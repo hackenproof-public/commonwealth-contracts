@@ -26,6 +26,7 @@ export interface networkConfigItem {
   zeroPointThreeFeeTier: string;
   wlth?: string;
   usdc?: string;
+  usdt?: string;
   stakingTransactionFee: number;
   stakingTreasuryWallet: string;
   maxDiscount: number;

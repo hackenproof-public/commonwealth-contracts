@@ -33,6 +33,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     address public usdc;
     uint256 public transactionFee;
     address public treasury;
+    address public communityFund;
     uint256 public maxDiscount;
     IDexQuoter public dexQuoter;
     CountersUpgradeable.Counter public counter;
@@ -67,6 +68,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address dexQuoter_,
         uint256 fee_,
         address treasuryWallet,
+        address communityFund_,
         uint256 maxDiscount_,
         uint256[] memory durations,
         uint256[] memory coefficients
@@ -86,6 +88,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         dexQuoter = IDexQuoter(dexQuoter_);
         transactionFee = fee_;
         treasury = treasuryWallet;
+        communityFund = communityFund_;
         maxDiscount = maxDiscount_;
 
         for (uint256 i = 0; i < durations.length; i++) {
@@ -123,7 +126,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         emit TokensStaked(_msgSender(), fund, stakeId, amount);
 
         if (fee > 0) {
-            IERC20Upgradeable(token).safeTransferFrom(_msgSender(), treasury, fee);
+            IERC20Upgradeable(token).safeTransferFrom(_msgSender(), communityFund, fee);
         }
         IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), amount);
         //slither-disable-end reentrancy-no-eth
@@ -136,7 +139,6 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         _validateUnstake(_msgSender(), fund, amount);
 
         uint256 penalty = 0;
-        uint256 fee = Math.mulDiv(amount, transactionFee, BASIS_POINT_DIVISOR);
         uint256 amountToUnstake = amount;
 
         if (_isFundInCRP(fund)) {
@@ -155,12 +157,17 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             }
         }
 
-        if (fee > 0) {
-            IERC20Upgradeable(token).safeTransfer(treasury, fee);
-        }
+        uint256 fee = Math.mulDiv(amount - penalty, transactionFee, BASIS_POINT_DIVISOR);
+
         if (penalty > 0) {
-            IWlth(token).burn(penalty);
+            IWlth(token).burn((penalty * 99) / 100);
+            IERC20Upgradeable(token).safeTransfer(communityFund, penalty / 100);
         }
+
+        if (fee > 0) {
+            IERC20Upgradeable(token).safeTransfer(communityFund, fee);
+        }
+
         IERC20Upgradeable(token).safeTransfer(_msgSender(), amount - fee - penalty);
 
         emit TokensUnstaked(_msgSender(), fund, amount);

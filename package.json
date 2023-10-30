@@ -10,7 +10,7 @@
     "docgen": "hardhat docgen",
     "lint": "solhint \"contracts/**/*.sol\"",
     "size-contracts": "hardhat size-contracts",
-    "slither": "slither --solc-args \"--base-path . --include-path node_modules/\" contracts/",
+    "slither": "slither --solc-args \"--base-path . --include-path node_modules/ --optimize --optimize-yul\" contracts/",
     "export-abi": "hardhat export-abi",
     "prettier:fix": "prettier --write \"**/*.ts\" \"contracts/**/*.sol\"",
     "prettier:check": "prettier --check \"**/*.ts\" \"contracts/**/*.sol\"",
@@ -56,7 +56,6 @@
     "prettier-plugin-solidity": "1.1.3",
     "solhint": "3.4.1",
     "solhint-plugin-prettier": "0.0.5",
-    "solidity-coverage": "0.8.2",
     "ts-node": "10.9.1",
     "typechain": "8.2.0",
     "typescript": "4.9.4"

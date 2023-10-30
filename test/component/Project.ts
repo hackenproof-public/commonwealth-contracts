@@ -41,9 +41,11 @@ describe('Project component tests', () => {
   let genesisNftRevenue: SignerWithAddress;
   let lpPool: SignerWithAddress;
   let burnAddr: SignerWithAddress;
+  let communityFund: SignerWithAddress;
 
   async function deployFixture() {
-    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr, communityFund] =
+      await ethers.getSigners();
 
     const IPeriodicVestingId = ethers.utils.arrayify(
       getInterfaceIdWithBase([IPeriodicVesting__factory.createInterface(), IVesting__factory.createInterface()])
@@ -73,6 +75,7 @@ describe('Project component tests', () => {
         quoter.address,
         defaultFee,
         treasury,
+        communityFund.address,
         maxStakingDiscount,
         [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
         coeffecients
@@ -91,6 +94,7 @@ describe('Project component tests', () => {
         genesisNftRevenue.address,
         lpPool.address,
         burnAddr.address,
+        communityFund.address,
         managementFee,
         defaultInvestmentCap
       ],
@@ -145,7 +149,8 @@ describe('Project component tests', () => {
       IPeriodicVestingId,
       IVestingId,
       vesting1,
-      swapper
+      swapper,
+      communityFund
     };
   }
 

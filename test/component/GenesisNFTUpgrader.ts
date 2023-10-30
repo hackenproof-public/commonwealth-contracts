@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFTV1, GenesisNFTUpgrader, GenNFT, GenNFTV2 } from '../../typechain-types';
+import { GenesisNFTUpgrader, GenesisNFTV1, GenNFT, GenNFTV2 } from '../../typechain-types';
 import { keccak256, missing_role } from '../utils';
 
 describe('GenesisNFTUpgrader component tests', () => {

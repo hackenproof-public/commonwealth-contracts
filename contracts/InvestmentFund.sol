@@ -78,6 +78,8 @@ contract InvestmentFund is
      */
     uint16 public managementFee;
 
+    address public communityFund;
+
     /**
      * @notice Fund capacity above which collecting funds is stopped
      */
@@ -134,6 +136,7 @@ contract InvestmentFund is
         address genesisNftRevenue_,
         address lpPoolAddress_,
         address burnAddress_,
+        address communityFund_,
         uint16 managementFee_,
         uint256 cap_
     ) public initializer {
@@ -162,6 +165,7 @@ contract InvestmentFund is
         genesisNftRevenue = genesisNftRevenue_;
         lpPoolAddress = lpPoolAddress_;
         burnAddress = burnAddress_;
+        communityFund = communityFund_;
         managementFee = managementFee_;
         cap = cap_;
 
@@ -370,6 +374,7 @@ contract InvestmentFund is
                 genesisNftRevenue,
                 lpPoolAddress,
                 burnAddress,
+                communityFund,
                 managementFee,
                 cap,
                 IInvestmentNFT(investmentNft).getTotalInvestmentValue(),
@@ -498,7 +503,11 @@ contract InvestmentFund is
      * @dev Returns carry fee in basis points for account in timestamp
      */
     function _getCarryFeeSize(address account, uint256 timestamp) private view returns (uint256) {
-        return LibFund.DEFAULT_CARRY_FEE - stakingWlth.getDiscountInTimestamp(account, address(this), timestamp);
+        return
+            MathUpgradeable.max(
+                LibFund.DEFAULT_CARRY_FEE - stakingWlth.getDiscountInTimestamp(account, address(this), timestamp),
+                1000
+            );
     }
 
     /**
@@ -534,8 +543,9 @@ contract InvestmentFund is
     function _carryFeeDistribution(uint256 carryFee) internal {
         _transferFrom(currency, _msgSender(), treasuryWallet, (carryFee * 68) / 100);
         _transferFrom(currency, _msgSender(), genesisNftRevenue, (carryFee * 12) / 100);
-        _transferFrom(currency, _msgSender(), lpPoolAddress, carryFee / 10);
-        _transferFrom(currency, _msgSender(), burnAddress, carryFee / 10);
+        _transferFrom(currency, _msgSender(), lpPoolAddress, (carryFee * 99) / 1000);
+        _transferFrom(currency, _msgSender(), burnAddress, (carryFee * 99) / 1000);
+        _transferFrom(currency, _msgSender(), communityFund, (carryFee * 2) / 1000);
     }
 
     uint256[39] private __gap;

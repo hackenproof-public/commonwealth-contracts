@@ -48,9 +48,11 @@ describe('Investment Fund component tests', () => {
   let burnAddr: SignerWithAddress;
   let profitProvider: SignerWithAddress;
   let restorer: SnapshotRestorer;
+  let communityFund: SignerWithAddress;
 
   async function deployFixture() {
-    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+    [deployer, owner, wallet, profitProvider, genesisNftRevenue, lpPool, burnAddr, communityFund] =
+      await ethers.getSigners();
 
     const treasury = defaultTreasury;
     const usdc: USDC = await deploy('USDC', [], deployer);
@@ -72,6 +74,7 @@ describe('Investment Fund component tests', () => {
         quoter.address,
         defaultFee,
         treasury,
+        communityFund.address,
         maxStakingDiscount,
         [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
         [5000, 3750, 3125, 2500]
@@ -90,6 +93,7 @@ describe('Investment Fund component tests', () => {
         genesisNftRevenue.address,
         lpPool.address,
         burnAddr.address,
+        communityFund.address,
         managementFee,
         defaultInvestmentCap
       ],
@@ -252,7 +256,8 @@ describe('Investment Fund component tests', () => {
       const fundBalanceBeforeProfit = await usdc.balanceOf(investmentFund.address);
       const treasuryBalanceBeforeProfit = await usdc.balanceOf(treasury);
       const expectedFundBalanceAfterProfit0 = fundBalanceBeforeProfit.add(profit0);
-      const expectedCarryFee = toUsdc('45'); // 45*0.68 = 30.06
+      const expectedCarryFee = toUsdc('36');
+      const carryFeeTreasuryShare = toUsdc('24.48'); // 36*0.68 = 30.6
 
       await vesting.getVestedToken.returns(usdc.address);
       await usdc.mint(project.address, profit0);
@@ -269,12 +274,12 @@ describe('Investment Fund component tests', () => {
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(
         expectedFundBalanceAfterProfit0.add(profit1).sub(expectedCarryFee)
       );
-      expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(expectedCarryFee));
+      expect(await usdc.balanceOf(treasury)).to.equal(treasuryBalanceBeforeProfit.add(carryFeeTreasuryShare));
     });
 
     [
-      { elapsed: 1, fee: toUsdc('50'), treasuryShare: toUsdc('34') },
-      { elapsed: SECONDS_IN_YEAR / 2, fee: toUsdc('30'), treasuryShare: toUsdc('20.4') },
+      { elapsed: 1, fee: toUsdc('40'), treasuryShare: toUsdc('27.2') },
+      { elapsed: SECONDS_IN_YEAR / 2, fee: toUsdc('20'), treasuryShare: toUsdc('13.6') },
       { elapsed: SECONDS_IN_YEAR, fee: toUsdc('10'), treasuryShare: toUsdc('6.8') }
     ].forEach((data) => {
       it('Should provide profit with decreased carry fee if user staked for discount', async () => {
@@ -373,18 +378,22 @@ describe('Investment Fund component tests', () => {
       await usdc.connect(profitProvider).approve(investmentFund.address, toUsdc('90'));
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
-      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance.add(toUsdc('20.4'))); // 30*0.68
+      /*
+        calculation: Profit 90, where 30 is before breakeven and 60 is after
+        60 after breakeven means 24 total carry fee
+      */
 
+      expect(await usdc.balanceOf(defaultTreasury)).to.equal(treasuryBalance.add(toUsdc('16.32'))); // 24*0.68
       const investmentFundBalance = await usdc.balanceOf(investmentFund.address);
       const walletBalance = await usdc.balanceOf(wallet.address);
 
       await investmentFund.connect(wallet).withdraw(toUsdc('30'));
-      const actualFundWithdrawal1 = toUsdc('25'); // 20 USDC below breakeven + 5 USDC above breakeven (5 USDC taken previously as carry fee excluded)
+      const actualFundWithdrawal1 = toUsdc('26'); // 20 USDC below breakeven + 6 USDC above breakeven (4 USDC taken previously as carry fee excluded)
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(investmentFundBalance.sub(actualFundWithdrawal1));
       expect(await usdc.balanceOf(wallet.address)).to.equal(walletBalance.add(actualFundWithdrawal1));
 
       await investmentFund.connect(wallet).withdraw(toUsdc('30'));
-      const actualFundWithdrawal2 = toUsdc('15'); // 15 USDC above breakeven (15 USDC taken previously as carry fee excluded)
+      const actualFundWithdrawal2 = toUsdc('18'); // 18 USDC above breakeven (12 USDC taken previously as carry fee excluded)
       expect(await usdc.balanceOf(investmentFund.address)).to.equal(
         investmentFundBalance.sub(actualFundWithdrawal1).sub(actualFundWithdrawal2)
       );
@@ -480,7 +489,7 @@ describe('Investment Fund component tests', () => {
       await investmentFund.connect(profitProvider).provideProfit(toUsdc('90'));
 
       expect(await investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('20'))).to.equal(toUsdc('0'));
-      expect(await investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('30'))).to.equal(toUsdc('5'));
+      expect(await investmentFund.getWithdrawalCarryFee(wallet.address, toUsdc('30'))).to.equal(toUsdc('4')); // 1% tx fee deducted
     });
 
     it('Should retrieve user max profit and carry fee for withdrawal if amount exceeds total income', async () => {

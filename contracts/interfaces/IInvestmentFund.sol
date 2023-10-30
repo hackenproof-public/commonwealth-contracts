@@ -13,6 +13,7 @@ interface IInvestmentFund {
         address genesisNftRevenue;
         address lpPoolAddress;
         address burnAddress;
+        address communityFund;
         uint16 managementFee;
         uint256 cap;
         uint256 totalInvestment;

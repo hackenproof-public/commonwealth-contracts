@@ -33,10 +33,7 @@ abstract contract ClaimableVesting is OwnablePausable, ReentrancyGuardUpgradeabl
     }
 
     function claim(uint256 amount) external nonReentrant whenNotPaused returns (bool) {
-        require(
-            claimableCurrency.balanceOf(address(this)) >= amount,
-            "Vesting contract does not have enough currency to process the claim!"
-        );
+        require(claimableCurrency.balanceOf(address(this)) >= amount, "Not enough currency to process the claim!");
         require(
             claimableAmount(_msgSender()) - claimedAmounts[_msgSender()] >= amount,
             "You can't claim that many tokens"

@@ -68,8 +68,12 @@ const config: HardhatUserConfig = {
     version: '0.8.18',
     settings: {
       optimizer: {
-        enabled: true
+        enabled: true,
+        details: {
+          yul: true
+        }
       },
+      viaIR: false,
       outputSelection: {
         '*': {
           '*': ['storageLayout']

@@ -5,12 +5,12 @@ import { ethers } from 'hardhat';
 import { deploy, deployProxy } from '../../scripts/utils';
 import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapQuoter } from '../../typechain-types';
 import { BURNER_ROLE } from '../constants';
-import { getStakeWithFee, getTokenIdFromTx, toUsdc } from '../utils';
+import { getTokenIdFromTx, toUsdc, toWlth } from '../utils';
 
 chai.use(smock.matchers);
 const { expect } = chai;
 
-describe('Common Wealth Staking component tests', () => {
+describe('Staking WLTH component tests', () => {
   const SECONDS_IN_YEAR = 31536000;
   const ONE_YEAR = 1 * SECONDS_IN_YEAR;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;
@@ -21,6 +21,7 @@ describe('Common Wealth Staking component tests', () => {
   const defaultInvestmentCap = toUsdc('1000000');
   const maxDiscount = 4000; // in basis points
   const defaultTreasury = ethers.Wallet.createRandom().address;
+  const defaultCommunityFund = ethers.Wallet.createRandom().address;
   const tokenUri = 'ipfs://token-uri';
 
   const deployStaking = async () => {
@@ -39,6 +40,7 @@ describe('Common Wealth Staking component tests', () => {
         quoter.address,
         defaultFee,
         treasury,
+        defaultCommunityFund,
         maxDiscount,
         [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
         [5000, 3750, 3125, 2500]
@@ -58,6 +60,7 @@ describe('Common Wealth Staking component tests', () => {
         genesisNftRevenue.address,
         lpPool.address,
         burnAddr.address,
+        defaultCommunityFund,
         managementFee,
         defaultInvestmentCap
       ],
@@ -69,7 +72,7 @@ describe('Common Wealth Staking component tests', () => {
     await usdc.mint(deployer.address, toUsdc('1000000'));
     await usdc.mint(owner.address, toUsdc('1000000'));
     await usdc.mint(user.address, toUsdc('1000000'));
-    await wlth.connect(deployer).transfer(user.address, toUsdc('1000000'));
+    await wlth.connect(deployer).transfer(user.address, toWlth('1000000'));
     await wlth.connect(owner).grantRole(BURNER_ROLE, staking.address);
 
     return { staking, wlth, usdc, fund, nft, quoter, deployer, owner, user, treasury };
@@ -201,27 +204,28 @@ describe('Common Wealth Staking component tests', () => {
 
   it('Should collect fee on staking and unstaking when fund in CDP', async () => {
     const { staking, wlth, usdc, quoter, fund, user, owner, treasury } = await setup();
-    const investment = 1200;
-    const stake = { amount: 600, duration: ONE_YEAR };
-    const stakeWithFee = getStakeWithFee(stake.amount);
+    const investment = toUsdc('1200');
+    const stake = { amount: toWlth('600'), duration: ONE_YEAR };
+    // const stakeWithFee = getStakeWithFee(stake.amount);
+    const stakeTxFee = stake.amount.div(100);
 
-    quoter.quote.returns([stake.amount, 0, 0, 0]);
+    quoter.quote.returns([toUsdc('600'), 0, 0, 0]);
 
     // CRP
     await usdc.connect(user).approve(fund.address, investment);
     await fund.connect(user).invest(investment, tokenUri);
 
-    await wlth.connect(user).approve(staking.address, stakeWithFee);
+    await wlth.connect(user).approve(staking.address, stake.amount);
 
     const stakeTime = (await time.latest()) + 100;
     await time.setNextBlockTimestamp(stakeTime);
-    await staking.connect(user).stake(fund.address, stakeWithFee, stake.duration);
+    await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 
     const userBalance = await wlth.balanceOf(user.address);
     const stakingBalance = await wlth.balanceOf(staking.address);
-    const treasuryBalance = await wlth.balanceOf(treasury);
-    expect(stakingBalance).to.equal(stake.amount);
-    expect(treasuryBalance).to.equal(stakeWithFee - stake.amount);
+    const communityFundBalance = await wlth.balanceOf(defaultCommunityFund);
+    expect(stakingBalance).to.equal(stake.amount.sub(stakeTxFee));
+    expect(communityFundBalance).to.equal(stakeTxFee);
 
     await fund.connect(owner).stopCollectingFunds();
     await fund.connect(owner).deployFunds();
@@ -229,20 +233,24 @@ describe('Common Wealth Staking component tests', () => {
     // CDP
     const timestampAfterHalfYear = stakeTime + ONE_YEAR / 2;
     await time.setNextBlockTimestamp(timestampAfterHalfYear);
-    await staking.connect(user).unstake(fund.address, stake.amount);
+    await staking.connect(user).unstake(fund.address, stake.amount.sub(stakeTxFee));
 
     /* Calculations
-      unstake: 600
-      transaction fee (1%): 600 * 1% = 6
-      early-unstaking penalty (40%): 600 * 40% = 240
-      user: 600 - 6 - 240 = 354
+      unstake: 594
+      early-unstaking penalty (40%): 594 * 40% = 237.6
+      penalty burning transaction fee: 237.6 * 1% = 2.376
+      burning transfer: 237.6 - penalty burning transaction fee = 235.224
+      user transaction fee: (594 - 237.6) * 1% = 3.564
+      total transaction fee (1%):  penalty burning transaction fee + user transaction fee = 5.94
+      user transfer: (594 - 237.6) - user transaction fee = 352.836
     */
-    const expectedFee = 6;
-    const expectedPenalty = 240;
-    const expectedBackToUser = 354;
-    expect(await wlth.balanceOf(treasury)).to.equal(treasuryBalance.add(expectedFee));
-    expect(await wlth.burned()).to.equal(expectedPenalty);
+    console.log();
+    const expectedFee = toWlth('5.94'); //ethers.BigNumber.from(ethers.utils.parseEther('5.94'));
+    const expectedPenaltyBurned = ethers.BigNumber.from(ethers.utils.parseEther('235.224'));
+    const expectedBackToUser = ethers.BigNumber.from(ethers.utils.parseEther('352.836'));
+    expect(await wlth.balanceOf(defaultCommunityFund)).to.equal(stakeTxFee.add(expectedFee));
+    expect(await wlth.burned()).to.equal(expectedPenaltyBurned);
     expect(await wlth.balanceOf(user.address)).to.equal(userBalance.add(expectedBackToUser));
-    expect(await wlth.balanceOf(staking.address)).to.equal(stakingBalance.sub(stake.amount));
+    expect(await wlth.balanceOf(staking.address)).to.equal(stakingBalance.sub(stake.amount.sub(stakeTxFee)));
   });
 });

@@ -36,6 +36,7 @@ describe('Investment Fund unit tests', () => {
   let deployer: SignerWithAddress;
   let wallet: SignerWithAddress;
   let owner: SignerWithAddress;
+  let communityFund: SignerWithAddress;
 
   const deployInvestmentFund = async ({
     fundName = 'Investment Fund',
@@ -43,7 +44,8 @@ describe('Investment Fund unit tests', () => {
     managementFee = defaultManagementFee,
     cap = defaultInvestmentCap
   }: InvestmentFundDeploymentParameters = {}) => {
-    const [deployer, owner, user, wallet, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+    const [deployer, owner, user, wallet, genesisNftRevenue, lpPool, burnAddr, communityFund] =
+      await ethers.getSigners();
 
     const usdc: FakeContract<USDC> = await smock.fake('USDC');
     const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -69,6 +71,7 @@ describe('Investment Fund unit tests', () => {
         genesisNftRevenue.address,
         lpPool.address,
         burnAddr.address,
+        communityFund.address,
         managementFee,
         cap
       ],
@@ -87,7 +90,8 @@ describe('Investment Fund unit tests', () => {
       project,
       genesisNftRevenue,
       lpPool,
-      burnAddr
+      burnAddr,
+      communityFund
     };
   };
 
@@ -123,7 +127,8 @@ describe('Investment Fund unit tests', () => {
       project,
       genesisNftRevenue,
       lpPool,
-      burnAddr
+      burnAddr,
+      communityFund
     } = await loadFixture(deployFixture);
 
     resetFakes(usdc, investmentNft, staking);
@@ -144,13 +149,14 @@ describe('Investment Fund unit tests', () => {
       project,
       genesisNftRevenue,
       lpPool,
-      burnAddr
+      burnAddr,
+      communityFund
     };
   };
 
   describe('Deployment', () => {
     it('Should return initial parameters', async () => {
-      const { investmentFund, usdc, investmentNft, genesisNftRevenue, lpPool, burnAddr } = await setup();
+      const { investmentFund, usdc, investmentNft, genesisNftRevenue, lpPool, burnAddr, communityFund } = await setup();
 
       expect(await investmentFund.supportsInterface(IInvestmentFundId)).to.equal(true);
       expect(await investmentFund.name()).to.equal('Investment Fund');
@@ -169,6 +175,7 @@ describe('Investment Fund unit tests', () => {
         genesisNftRevenue.address,
         lpPool.address,
         burnAddr.address,
+        communityFund.address,
         defaultManagementFee,
         defaultInvestmentCap,
         BigNumber.from(0),
@@ -179,7 +186,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid owner', async () => {
-      const [deployer, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -197,6 +204,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -206,7 +214,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid currency', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -223,6 +231,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -232,7 +241,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid NFT address', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -249,6 +258,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -258,7 +268,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid staking address', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -275,6 +285,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -284,7 +295,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid treasury wallet address', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -302,6 +313,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -311,7 +323,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid management fee', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -329,6 +341,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             10000,
             defaultInvestmentCap
           ],
@@ -338,7 +351,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if invalid investment cap', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -356,6 +369,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             0
           ],
@@ -365,7 +379,7 @@ describe('Investment Fund unit tests', () => {
     });
 
     it('Should revert deployment if NFT contract does not support proper interface', async () => {
-      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
+      const [deployer, owner, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
 
       const usdc: FakeContract<USDC> = await smock.fake('USDC');
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -384,6 +398,7 @@ describe('Investment Fund unit tests', () => {
             genesisNftRevenue.address,
             lpPool.address,
             burnAddr.address,
+            communityFund.address,
             defaultManagementFee,
             defaultInvestmentCap
           ],
@@ -654,7 +669,7 @@ describe('Investment Fund unit tests', () => {
 
     [
       { amount: investmentValue.add(1), profit: investmentValue.add(1), fee: 0 },
-      { amount: toUsdc('20'), profit: toUsdc('15'), fee: toUsdc('5') }
+      { amount: toUsdc('20'), profit: toUsdc('15'), fee: toUsdc('4') }
     ].forEach(async (data) => {
       it('Should retrieve carry fee for payouts after breakeven', async () => {
         usdc.transferFrom.returns(true);
@@ -666,8 +681,8 @@ describe('Investment Fund unit tests', () => {
     });
 
     [
-      { amount: toUsdc('20'), discount: 0, fee: toUsdc('5') },
-      { amount: toUsdc('20'), discount: 1, fee: toUsdc('4.999') },
+      { amount: toUsdc('20'), discount: 0, fee: toUsdc('4') },
+      { amount: toUsdc('20'), discount: 1, fee: toUsdc('3.999') },
       { amount: toUsdc('20'), discount: maxStakingDiscount, fee: toUsdc('1') }
     ].forEach((data) => {
       it('Should retrieve carry fee for payouts after breakeven if user staked for discount', async () => {
@@ -825,7 +840,7 @@ describe('Investment Fund unit tests', () => {
         const profitBlock = (await time.latestBlock()) + 10;
         await mineUpTo(profitBlock - 1);
 
-        const fee = value.sub(investmentValue).div(2);
+        const fee = value.sub(investmentValue).mul(4).div(10);
         await expect(investmentFund.connect(project.wallet).provideProfit(value))
           .to.emit(investmentFund, 'ProfitProvided')
           .withArgs(investmentFund.address, value, fee, profitBlock)
@@ -865,7 +880,7 @@ describe('Investment Fund unit tests', () => {
       expect((await investmentFund.payouts(0)).value).to.equal(profit1);
       expect((await investmentFund.payouts(0)).fee).to.equal(0);
       expect((await investmentFund.payouts(1)).value).to.equal(profit2);
-      expect((await investmentFund.payouts(1)).fee).to.equal(toUsdc('15'));
+      expect((await investmentFund.payouts(1)).fee).to.equal(toUsdc('12'));
     });
 
     it('Should revert providing zero profit', async () => {

@@ -307,10 +307,7 @@ abstract contract GenesisNFT is
     }
 
     function _notifyZkSyncMirrorMove(uint256 tokenId, address recipient, uint256 value) internal {
-        require(
-            value >= ZK_SYNC_GAS_LIMIT,
-            "Not enough ether sent with the invokation! Send at least ZK_SYNC_GAS_LIMIT GWei!"
-        );
+        require(value >= ZK_SYNC_GAS_LIMIT, "Send at least ZK_SYNC_GAS_LIMIT GWei with invocation!");
 
         if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
             bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.moveToken.selector, tokenId, recipient);
@@ -330,10 +327,7 @@ abstract contract GenesisNFT is
     }
 
     function _notifyZkSyncMirrorDestroy(uint256 tokenId, uint256 value) internal {
-        require(
-            value >= ZK_SYNC_GAS_LIMIT,
-            "Not enough ether sent with the invokation! Send at least ZK_SYNC_GAS_LIMIT Wei!"
-        );
+        require(value >= ZK_SYNC_GAS_LIMIT, "Send at least ZK_SYNC_GAS_LIMIT GWei with invocation!");
 
         if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
             bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.destroyToken.selector, tokenId);
