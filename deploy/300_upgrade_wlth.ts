@@ -1,9 +1,9 @@
 import { network } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { upgradeContract } from '../utils/deployment';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();

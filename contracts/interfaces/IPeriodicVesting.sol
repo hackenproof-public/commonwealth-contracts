@@ -9,15 +9,15 @@ import {IVesting} from "./IVesting.sol";
 interface IPeriodicVesting is IVesting {
     struct VestingPeriod {
         uint256 allocation; // total number of tokens to be vested
-        uint256 duration; // duration in blocks
-        uint256 cadence; // frequency of token vesting in blocks
-        uint256 cliff; // cliff in blocks
+        uint256 duration; // duration
+        uint256 cadence; // frequency of token vesting
+        uint256 cliff; // cliff
     }
 
     struct VestingDetails {
         address vestedToken; // address of vested token
         address beneficiary; // the address that can release vested tokens
-        uint256 startBlock; // vesting start block
+        uint256 startTimestamp; // vesting start timestamp
         VestingPeriod[] periods; // vesting periods
     }
 

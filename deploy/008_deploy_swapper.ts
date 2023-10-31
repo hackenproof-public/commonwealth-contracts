@@ -1,7 +1,7 @@
 import { DeployFunction } from 'hardhat-deploy/dist/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const deploySwapper: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();

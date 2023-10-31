@@ -42,7 +42,7 @@ export interface networkConfigItem {
   genesisNftRevenueAddress: string;
   lpPoolAddress: string;
   burnAddress: string;
-  genesisNftStakingAllocation: number
+  genesisNftStakingAllocation: number;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -81,9 +81,9 @@ const localConfig: networkConfigItem = {
   nftVestingDuration: 1,
   nftVestingCadence: 1,
   nftVestingStartTimestamp: 1,
-  genesisNftRevenueAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  lpPoolAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  burnAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  genesisNftRevenueAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  lpPoolAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  burnAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   genesisNftStakingAllocation: 24000000
 };
 
@@ -113,9 +113,9 @@ const goerliConfig: networkConfigItem = {
   nftVestingDuration: 1,
   nftVestingCadence: 1,
   nftVestingStartTimestamp: 1,
-  genesisNftRevenueAddress: "0x",
-  lpPoolAddress: "0x",
-  burnAddress: "0x",
+  genesisNftRevenueAddress: '0x',
+  lpPoolAddress: '0x',
+  burnAddress: '0x',
   genesisNftStakingAllocation: 24000000
 };
 

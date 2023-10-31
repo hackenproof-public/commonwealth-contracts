@@ -237,7 +237,7 @@ async function configureProjectForFund(
   ];
 
   const project = (await deploy(hre, 'Project', projectParameters, true, false)) as Project;
-  
+
   const beneficiary = owner;
   const tokenAllocation = ethers.utils.parseUnits('259200', 6);
   const durationInSeconds = 15552000; // 180 days

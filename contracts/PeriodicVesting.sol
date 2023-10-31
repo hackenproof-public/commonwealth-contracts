@@ -22,9 +22,9 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
     address public beneficiary;
 
     /**
-     * @notice Vesting start block
+     * @notice Vesting start timestamp
      */
-    uint256 public startBlock;
+    uint256 public startTimestamp;
 
     /**
      * @notice Vesting periods
@@ -37,7 +37,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
     uint256 public totalAllocation;
 
     /**
-     * @notice Total vesting duration in blocks
+     * @notice Total vesting duration in seconds
      */
     uint256 public totalDuration;
 
@@ -55,13 +55,13 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
      * @notice Initializes the contract
      * @param token_ Vested token implementing IERC20 interface
      * @param beneficiary_ Address that can release vested tokens
-     * @param startBlock_ Vesting start block
+     * @param startTimestamp_ Vesting start timestamp
      * @param periods_ Vesting periods
      */
     function initialize(
         address token_,
         address beneficiary_,
-        uint256 startBlock_,
+        uint256 startTimestamp_,
         IPeriodicVesting.VestingPeriod[] memory periods_
     ) public initializer {
         require(token_ != address(0), "Token is zero address");
@@ -70,7 +70,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
 
         token = token_;
         beneficiary = beneficiary_;
-        startBlock = startBlock_;
+        startTimestamp = startTimestamp_;
 
         uint256 allocation = 0;
         uint256 duration = 0;
@@ -101,27 +101,27 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
      * @inheritdoc IVesting
      */
     function getReleasableAmount() public view virtual returns (uint256) {
-        return getVestedAmount(block.number) - released;
+        return getVestedAmount(block.timestamp) - released;
     }
 
     /**
      * @inheritdoc IVesting
      */
-    function getVestedAmount(uint256 blockNumber) public view virtual returns (uint256) {
-        if (blockNumber < startBlock) {
+    function getVestedAmount(uint256 timestamp) public view virtual returns (uint256) {
+        if (timestamp < startTimestamp) {
             return 0;
-        } else if (blockNumber >= startBlock + totalDuration) {
+        } else if (timestamp >= startTimestamp + totalDuration) {
             return totalAllocation;
         } else {
             IPeriodicVesting.VestingPeriod[] memory _periods = periods;
             uint256 vested = 0;
-            uint256 periodStart = startBlock;
+            uint256 periodStart = startTimestamp;
 
             for (uint256 i = 0; i < _periods.length; i++) {
-                vested += _getVestedAmountInPeriod(blockNumber, periodStart, _periods[i]);
+                vested += _getVestedAmountInPeriod(timestamp, periodStart, _periods[i]);
 
                 uint256 nextPeriodStart = periodStart + _periods[i].duration;
-                if (blockNumber < nextPeriodStart) {
+                if (timestamp < nextPeriodStart) {
                     break;
                 } else {
                     periodStart = nextPeriodStart;
@@ -136,7 +136,7 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
      * @inheritdoc IPeriodicVesting
      */
     function getDetails() external view returns (IPeriodicVesting.VestingDetails memory) {
-        return IPeriodicVesting.VestingDetails(token, beneficiary, startBlock, periods);
+        return IPeriodicVesting.VestingDetails(token, beneficiary, startTimestamp, periods);
     }
 
     /**
@@ -168,20 +168,20 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
     }
 
     function _getVestedAmountInPeriod(
-        uint256 blockNumber,
+        uint256 timestamp,
         uint256 periodStart,
         IPeriodicVesting.VestingPeriod memory period
     ) private pure returns (uint256) {
-        if (blockNumber < periodStart + period.cliff) {
+        if (timestamp < periodStart + period.cliff) {
             return 0;
-        } else if (blockNumber >= periodStart + period.duration) {
+        } else if (timestamp >= periodStart + period.duration) {
             return period.allocation;
         } else {
-            uint256 elapsedBlocks = blockNumber - periodStart;
-            uint256 vestedCadences = elapsedBlocks / period.cadence;
-            uint256 vestedBlocks = vestedCadences * period.cadence;
+            uint256 elapsedTime = timestamp - periodStart;
+            uint256 vestedCadences = elapsedTime / period.cadence;
+            uint256 vestedTime = vestedCadences * period.cadence;
 
-            return (period.allocation * vestedBlocks) / period.duration;
+            return (period.allocation * vestedTime) / period.duration;
         }
     }
 
