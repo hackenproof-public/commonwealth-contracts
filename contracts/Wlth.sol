@@ -10,7 +10,6 @@ import {IWlth} from "./interfaces/IWlth.sol";
  */
 contract Wlth is ERC20Upgradeable, AccessControlEnumerableUpgradeable, IWlth {
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-    uint public value;
     /**
      * @notice Number of burned tokens
      */
