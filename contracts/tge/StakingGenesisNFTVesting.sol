@@ -39,6 +39,11 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
     address public stakingGenNftAddress;
 
     /**
+     * @notice check for vested WLTH tokens by given beneficiary
+     */
+    mapping(address => uint256) public amountClaimedByWallet;
+
+    /**
      * @notice Emitted when token released from vesting contract
      * @param beneficiary Wallet that released tokens
      * @param token Token address
@@ -70,6 +75,7 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
         require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
 
         released += amount;
+        amountClaimedByWallet[beneficiary] += amount;
         emit Released(beneficiary, token, amount);
 
         IERC20(token).safeTransfer(beneficiary, amount);
@@ -79,8 +85,14 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
      * @dev Returns amount of tokens available to release for actual block timestamp
      */
     function releaseableAmount(address beneficiary) public view returns (uint256) {
-        return ((IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) +
-            IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) * 1e18);
+        return
+            Math.min(
+                0,
+                (IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) +
+                    IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) *
+                    1e18 -
+                    amountClaimedByWallet[beneficiary]
+            );
     }
 
     /**

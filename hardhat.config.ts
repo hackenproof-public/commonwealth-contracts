@@ -1,7 +1,7 @@
 import '@matterlabs/hardhat-zksync-deploy';
 import '@matterlabs/hardhat-zksync-solc';
-import '@matterlabs/hardhat-zksync-upgradable';
 import '@matterlabs/hardhat-zksync-verify';
+import '@matterlabs/hardhat-zksync-upgradable';
 import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-ethers';
 import '@openzeppelin/hardhat-upgrades';
@@ -60,6 +60,7 @@ const config: HardhatUserConfig = {
       ethNetwork: 'goerli',
       zksync: true,
       chainId: 280,
+      gas: 21000000,
       accounts: !!env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY ? [env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY] : [],
       verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification'
     },
@@ -95,7 +96,7 @@ const config: HardhatUserConfig = {
     }
   },
   zksolc: {
-    version: '1.3.15',
+    version: '1.3.16',
     settings: {}
   },
   mocha: {

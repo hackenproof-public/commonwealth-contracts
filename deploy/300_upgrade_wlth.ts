@@ -3,7 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
-import { upgradeContract } from '../utils/deployment';
+import { upgrade } from '../utils/deployment';
 
 const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
@@ -16,7 +16,7 @@ const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
 
-  await upgradeContract('Wlth', wlth);
+  await upgrade(hre, 'Wlth', wlth);
 };
 
 export default deployWlth;

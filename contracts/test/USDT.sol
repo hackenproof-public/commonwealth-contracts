@@ -4,7 +4,7 @@ pragma solidity ^0.8.18;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract USDT is ERC20 {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
+    constructor() ERC20("USDT Coin", "USDT") {
         // _mint(msg.sender, 10 ** 9 * 10 ** 6); // 1 billion USDC
     }
 

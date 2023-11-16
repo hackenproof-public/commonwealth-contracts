@@ -19,6 +19,7 @@ const deployStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     { name: 'dexQuoter', value: quoter },
     { name: 'fee', value: deploymentCofing.stakingTransactionFee },
     { name: 'treasuryWallet', value: deploymentCofing.stakingTreasuryWallet },
+    { name: 'communityFund', value: deploymentCofing.communityFundWallet },
     { name: 'maxDiscount', value: deploymentCofing.maxDiscount },
     { name: 'periods', value: deploymentCofing.periods },
     { name: 'coefficients', value: deploymentCofing.coefficients }

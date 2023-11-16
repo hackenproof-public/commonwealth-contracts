@@ -105,9 +105,6 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         require(amount > 0, "Invalid staking amount");
         require(durationCoefficients.contains(duration), "Invalid staking duration");
 
-        uint256 fee = Math.mulDiv(amount, transactionFee, BASIS_POINT_DIVISOR);
-        amount -= fee;
-
         uint256 investment = _getCurrentInvestment(_msgSender(), fund);
         uint256 totalTargetDiscount = _getTotalTargetDiscount(_msgSender(), fund);
 
@@ -124,6 +121,9 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         stakingAccounts.add(_msgSender());
 
         emit TokensStaked(_msgSender(), fund, stakeId, amount);
+
+        uint256 fee = Math.mulDiv(amount, transactionFee, BASIS_POINT_DIVISOR);
+        amount -= fee;
 
         if (fee > 0) {
             IERC20Upgradeable(token).safeTransferFrom(_msgSender(), communityFund, fee);
@@ -157,20 +157,20 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             }
         }
 
-        uint256 fee = Math.mulDiv(amount - penalty, transactionFee, BASIS_POINT_DIVISOR);
+        uint256 fee = Math.mulDiv(((amount - penalty) * 99) / 100, transactionFee, BASIS_POINT_DIVISOR);
 
         if (penalty > 0) {
-            IWlth(token).burn((penalty * 99) / 100);
-            IERC20Upgradeable(token).safeTransfer(communityFund, penalty / 100);
+            IWlth(token).burn((((penalty * 99) / 100) * 99) / 100);
+            IERC20Upgradeable(token).safeTransfer(communityFund, ((penalty * 99) / 100) / 100);
         }
 
         if (fee > 0) {
             IERC20Upgradeable(token).safeTransfer(communityFund, fee);
         }
 
-        IERC20Upgradeable(token).safeTransfer(_msgSender(), amount - fee - penalty);
-
         emit TokensUnstaked(_msgSender(), fund, amount);
+
+        IERC20Upgradeable(token).safeTransfer(_msgSender(), (amount * 99) / 100 - fee - (penalty * 99) / 100);
     }
 
     /**

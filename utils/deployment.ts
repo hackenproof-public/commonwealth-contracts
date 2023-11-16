@@ -92,9 +92,9 @@ export async function deployEvm<Type extends Contract>(
 
     let contract;
     if (proxy) {
-      contract = await deployProxy(contractName, contractParams, deployer, opts);
+      contract = await deployEvmProxy(contractName, contractParams, deployer, opts);
     } else {
-      contract = await deployContract(contractName, contractParams, deployer);
+      contract = await deployEvmContract(contractName, contractParams, deployer);
     }
 
     console.log(`${contractName} deployed to ${contract.address}`);
@@ -145,7 +145,7 @@ export async function deployZkSync<Type extends Contract>(
   }
 }
 
-async function deployContract<Type extends Contract>(
+async function deployEvmContract<Type extends Contract>(
   contractName: string,
   parameters: any[],
   signer: Signer
@@ -160,13 +160,12 @@ async function deployZkContract<Type extends Contract>(
   parameters: any[],
   deployer: Deployer
 ): Promise<Type> {
-  console.log('Deploy nie prosxy');
   const artifact = await deployer.loadArtifact(contractName);
   const contract = await deployer.deploy(artifact, parameters);
   return <Type>contract;
 }
 
-async function deployProxy<Type extends Contract>(
+async function deployEvmProxy<Type extends Contract>(
   contractName: string,
   parameters: any[],
   signer: Signer,
@@ -194,12 +193,29 @@ async function deployZkProxy<Type extends Contract>(
   return <Type>contract;
 }
 
-export async function upgradeContract<Type extends Contract>(
+export async function upgrade<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
   contractName: string,
   proxyAddress: string,
   providerParams?: ProviderParams,
   options?: UpgradeProxyOptions
-) {
+): Promise<Type | undefined> {
+  console.log(`Running ${contractName} upgrade script on network ${network.name} (chainId: ${network.config.chainId})`);
+  const chainId = network.config.chainId!;
+
+  if (zkNetworksIds.includes(chainId)) {
+    return upgradeZkSyncProxy(hre, contractName, proxyAddress, options);
+  } else {
+    return upgradeEvmProxy(contractName, proxyAddress, providerParams, options);
+  }
+}
+
+async function upgradeEvmProxy<Type extends Contract>(
+  contractName: string,
+  proxyAddress: string,
+  providerParams?: ProviderParams,
+  options?: UpgradeProxyOptions
+): Promise<Type | undefined> {
   console.log(`Running ${contractName} upgrade script on network ${network.name} (chainId: ${network.config.chainId})`);
   const chainId = network.config.chainId!;
 
@@ -209,15 +225,41 @@ export async function upgradeContract<Type extends Contract>(
   if (chainId === 31337 || (await confirmYesOrNo('Do you want to upgrade contract? [y/N] '))) {
     console.log(`Upgrading ${contractName} contract...`);
 
-    const contract = await upgradeProxy(contractName, proxyAddress, deployer, options);
+    const contract = await upgradeEvmContract(contractName, proxyAddress, deployer, options);
 
     console.log(`${contractName} upgraded at ${contract.address}`);
 
     await verifyContract(chainId, contract, [], true);
+
+    return <Type>contract;
   }
 }
 
-async function upgradeProxy<Type extends Contract>(
+async function upgradeZkSyncProxy<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  proxyAddress: string,
+  options?: UpgradeProxyOptions
+): Promise<Type | undefined> {
+  console.log(`Running ${contractName} upgrade script on network ${network.name} (chainId: ${network.config.chainId})`);
+  const chainId = network.config.chainId!;
+
+  const deployer = await getZkDeployer(hre);
+
+  if (chainId === 31337 || (await confirmYesOrNo('Do you want to upgrade contract? [y/N] '))) {
+    console.log(`Upgrading ${contractName} contract...`);
+
+    const contract = await upgradeZkSyncContract(hre, contractName, proxyAddress, deployer, options);
+
+    console.log(`${contractName} upgraded at ${contract.address}`);
+
+    await verifyContract(chainId, contract, [], true);
+
+    return <Type>contract;
+  }
+}
+
+async function upgradeEvmContract<Type extends Contract>(
   contractName: string,
   proxyAddress: string,
   signer: Signer,
@@ -228,6 +270,22 @@ async function upgradeProxy<Type extends Contract>(
   await upgrades.validateUpgrade(proxyAddress, contractFactory);
 
   const contract = await upgrades.upgradeProxy(proxyAddress, contractFactory);
+  await contract.deployed();
+
+  return <Type>contract;
+}
+
+async function upgradeZkSyncContract<Type extends Contract>(
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  proxyAddress: string,
+  deployer: Deployer,
+  options?: UpgradeProxyOptions
+): Promise<Type> {
+  const upgradedImplementation = await deployer.loadArtifact(contractName);
+
+  const contract = await hre.zkUpgrades.upgradeProxy(deployer.zkWallet, proxyAddress, upgradedImplementation);
+
   await contract.deployed();
 
   return <Type>contract;

@@ -35,4 +35,11 @@ contract SimpleVesting is BaseVesting {
     function accessCheck() public view override returns (bool) {
         return _msgSender() == beneficiary;
     }
+
+    /**
+     * @dev Beneficiary setter
+     */
+    function setBeneficiary(address beneficiary_) public onlyOwner {
+        beneficiary = beneficiary_;
+    }
 }

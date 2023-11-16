@@ -233,21 +233,20 @@ describe('Staking WLTH component tests', () => {
     // CDP
     const timestampAfterHalfYear = stakeTime + ONE_YEAR / 2;
     await time.setNextBlockTimestamp(timestampAfterHalfYear);
-    await staking.connect(user).unstake(fund.address, stake.amount.sub(stakeTxFee));
+    await staking.connect(user).unstake(fund.address, stake.amount);
 
     /* Calculations
       unstake: 594
       early-unstaking penalty (40%): 594 * 40% = 237.6
       penalty burning transaction fee: 237.6 * 1% = 2.376
-      burning transfer: 237.6 - penalty burning transaction fee = 235.224
-      user transaction fee: (594 - 237.6) * 1% = 3.564
+      burning transfer: 237.6 * 99% = 235.224
+      user transaction fee: 594 *60% * 1% = 3.564
       total transaction fee (1%):  penalty burning transaction fee + user transaction fee = 5.94
       user transfer: (594 - 237.6) - user transaction fee = 352.836
     */
-    console.log();
-    const expectedFee = toWlth('5.94'); //ethers.BigNumber.from(ethers.utils.parseEther('5.94'));
-    const expectedPenaltyBurned = ethers.BigNumber.from(ethers.utils.parseEther('235.224'));
-    const expectedBackToUser = ethers.BigNumber.from(ethers.utils.parseEther('352.836'));
+    const expectedFee = toWlth('5.94');
+    const expectedPenaltyBurned = toWlth('235.224');
+    const expectedBackToUser = toWlth('352.836');
     expect(await wlth.balanceOf(defaultCommunityFund)).to.equal(stakeTxFee.add(expectedFee));
     expect(await wlth.burned()).to.equal(expectedPenaltyBurned);
     expect(await wlth.balanceOf(user.address)).to.equal(userBalance.add(expectedBackToUser));

@@ -5,7 +5,7 @@ import {MathUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/math/Ma
 import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
 import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
-import {ClaimableVesting} from "../ClaimableVesting.sol";
+import {ClaimableVesting} from "./ClaimableVesting.sol";
 import {IGenesisNFT} from "../interfaces/IGenesisNFT.sol";
 
 contract GenesisNFTvesting is ClaimableVesting {

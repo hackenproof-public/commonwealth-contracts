@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {OwnablePausable} from "../OwnablePausable.sol";
 
 abstract contract ClaimableVesting is OwnablePausable, ReentrancyGuardUpgradeable {
     IERC20Upgradeable public claimableCurrency;
