@@ -25,6 +25,8 @@ contract InvestmentNFT is
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
+    uint256 private constant SPLIT_LIMIT = 10;
+
     /**
      * @notice Investment value assigned to token
      */
@@ -208,6 +210,7 @@ contract InvestmentNFT is
 
     function _validateSplit(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) private view {
         require(_msgSender() == ownerOf(tokenId), "Caller is not a token owner");
+        require(values.length <= SPLIT_LIMIT, "Split limit exceeded");
         require(values.length == tokenUris.length, "Values and tokens URIs length mismatch");
         uint256 valuesSum = 0;
         for (uint256 i = 0; i < values.length; i++) {

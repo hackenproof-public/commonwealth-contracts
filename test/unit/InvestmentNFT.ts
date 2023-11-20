@@ -156,6 +156,30 @@ describe('Investment NFT unit tests', () => {
           'Pausable: paused'
         );
       });
+
+      it('Should revert splitting NFT if limit for splitting is reached', async () => {
+        await expect(
+          investmentNft
+            .connect(user)
+            .split(
+              tokenId,
+              [333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333],
+              [
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri,
+                tokenUri
+              ]
+            )
+        ).to.be.revertedWith('Split limit exceeded');
+      });
     });
   });
 
