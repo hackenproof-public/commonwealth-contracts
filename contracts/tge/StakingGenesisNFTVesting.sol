@@ -86,13 +86,10 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
      */
     function releaseableAmount(address beneficiary) public view returns (uint256) {
         return
-            Math.min(
-                0,
-                (IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) +
-                    IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) *
-                    1e18 -
-                    amountClaimedByWallet[beneficiary]
-            );
+            (IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) +
+                IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) *
+            1e18 -
+            amountClaimedByWallet[beneficiary];
     }
 
     /**

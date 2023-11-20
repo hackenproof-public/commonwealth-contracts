@@ -216,7 +216,6 @@ async function upgradeEvmProxy<Type extends Contract>(
   providerParams?: ProviderParams,
   options?: UpgradeProxyOptions
 ): Promise<Type | undefined> {
-  console.log(`Running ${contractName} upgrade script on network ${network.name} (chainId: ${network.config.chainId})`);
   const chainId = network.config.chainId!;
 
   const provider = getProvider(providerParams);
@@ -241,7 +240,6 @@ async function upgradeZkSyncProxy<Type extends Contract>(
   proxyAddress: string,
   options?: UpgradeProxyOptions
 ): Promise<Type | undefined> {
-  console.log(`Running ${contractName} upgrade script on network ${network.name} (chainId: ${network.config.chainId})`);
   const chainId = network.config.chainId!;
 
   const deployer = await getZkDeployer(hre);

@@ -152,7 +152,7 @@ const zkSyncTestnet: networkConfigItem = {
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
-  maxDiscount: 4000,
+  maxDiscount: 3000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
   stakingNFTRewardPerios: 86400,

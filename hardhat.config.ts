@@ -56,7 +56,7 @@ const config: HardhatUserConfig = {
     },
 
     zkTestnet: {
-      url: 'https://zksync-era-testnet.blockpi.network/v1/rpc/public',
+      url: 'https://nd-105-631-085.p2pify.com/b1700d8005deaec26cf3547a83c89cce',
       ethNetwork: 'goerli',
       zksync: true,
       chainId: 280,
