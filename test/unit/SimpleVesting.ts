@@ -65,6 +65,11 @@ describe('Simple vesting unit tests', () => {
       expect(await simpleVesting.duration()).to.equal(duration);
       expect(await simpleVesting.cadence()).to.equal(cadence);
     });
+
+    it('Should set new beneficiary', async () => {
+      const { simpleVesting, owner } = await loadFixture(deploySimpleVesting);
+      expect(await simpleVesting.connect(owner).setBeneficiary(owner.address));
+    });
   });
 
   describe('getReleasableAmount()', () => {

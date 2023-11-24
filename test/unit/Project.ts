@@ -33,7 +33,7 @@ describe('Project unit tests', () => {
     const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
     await project.connect(owner).setVesting(vesting.address);
 
-    return { project, vesting, deployer, wallet, owner, investmentFund, usdc };
+    return { project, vesting, deployer, wallet, owner, investmentFund, usdc, fundsAllocation };
   };
 
   describe('Deployment', () => {
@@ -82,6 +82,11 @@ describe('Project unit tests', () => {
         formatBytes32String('Added'),
         vesting.address
       ]);
+    });
+    it('Should return funds allocation', async () => {
+      const { project } = await loadFixture(deployProject);
+
+      expect(await project.getFundsAllocation()).to.equal(toUsdc('100000'));
     });
   });
 

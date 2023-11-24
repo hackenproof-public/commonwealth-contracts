@@ -205,6 +205,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         uint256 tokenId,
         uint256 actualTimestamp
     ) public view returns (uint256) {
+        require(actualTimestamp >= vestingStartTimestamp, "Vesting has not started yet!");
         uint256 cadencesAmount = (actualTimestamp - vestingStartTimestamp) / cadence;
         if (series1) {
             uint256 claimed = amountClaimedBySeries1TokenId[tokenId];
@@ -226,10 +227,16 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         uint256 amount,
         address beneficiary
     ) public {
-        uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, actualTimestamp);
+        require(
+            isSeries1
+                ? IERC721Upgradeable(genNftSeries1Contract).ownerOf(tokenId) == msg.sender
+                : IERC721Upgradeable(genNftSeries2Contract).ownerOf(tokenId) == msg.sender,
+            "You are not owner of given Genesis NFT!"
+        );
         require(accessCheck(beneficiary), "Unauthorized access!");
         require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        require(availableAmount > amount, "Not enough tokens vested!");
+        uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, actualTimestamp);
+        require(availableAmount >= amount, "Not enough tokens vested!");
         require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
 
         released += amount;
