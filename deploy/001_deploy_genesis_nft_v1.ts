@@ -5,10 +5,9 @@ import { deploy } from '../utils/deployment';
 
 const deployGenesisNftV1: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
-  console.log(hre.network.config.chainId);
-  console.log(deploymentCofing);
+
   const parameters = [
-    { name: 'name', value: deploymentCofing.genesisNFTSymbol },
+    { name: 'name', value: deploymentCofing.genesisNftName },
     { name: 'symbol', value: deploymentCofing.genesisNFTSymbol },
     { name: 'series', value: deploymentCofing.genesisNftV1Series },
     { name: 'owner', value: deploymentCofing.ownerAccount },

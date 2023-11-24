@@ -7,7 +7,7 @@ const deployGenesisNftV2: DeployFunction = async (hre: HardhatRuntimeEnvironment
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
-    { name: 'name', value: deploymentCofing.genesisNFTSymbol },
+    { name: 'name', value: deploymentCofing.genesisNftName },
     { name: 'symbol', value: deploymentCofing.genesisNFTSymbol },
     { name: 'series', value: deploymentCofing.genesisNftV2Series },
     { name: 'owner', value: deploymentCofing.ownerAccount },

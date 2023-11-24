@@ -33,7 +33,6 @@ abstract contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    uint256 public constant ZK_SYNC_GAS_LIMIT = 2_000_000; // 2x of what we need according to a current network state
     uint256 public constant ZK_SYNC_GAS_PER_PUBDATA_LIMIT = 800; // from zkSync docs
 
     address private _owner;
@@ -48,6 +47,11 @@ abstract contract GenesisNFT is
      * @param uri New token URI
      */
     event TokenURIChanged(address indexed caller, string uri);
+
+    modifier enoughGas(uint256 _value, uint256 _gasLimit) {
+        require(_value >= _gasLimit, "Not enough gas");
+        _;
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -147,18 +151,19 @@ abstract contract GenesisNFT is
     }
 
     /**
-     * @notice Mints new token(s) to a recipient and notifies zkSync mirror about it. Limited only to minter role
-     * @param recipient tokens recipient
-     * @param amount tokens amount
+     * @notice Mint NFTs and notify zkSync mirror about it. Limited only to admin role
+     * @param recipient Recipient address
+     * @param amount Amount of NFTs to mint
+     * @param gasLimit Gas limit for zkSync transaction
      */
-    function mintNotify(address recipient, uint256 amount) external payable onlyRole(MINTER_ROLE) {
+    function mintNotify(address recipient, uint256 amount, uint256 gasLimit) external payable onlyRole(MINTER_ROLE) {
         require(recipient != address(0), "Recipient is zero address");
         uint256 valuePerToken = msg.value / amount;
 
         uint256 startId = totalSupply();
         for (uint256 i = 0; i < amount; i++) {
             _safeMint(recipient, startId + i);
-            _notifyZkSyncMirrorMove(startId + i, recipient, valuePerToken);
+            _notifyZkSyncMirrorMove(startId + i, recipient, valuePerToken, gasLimit);
         }
     }
 
@@ -186,12 +191,13 @@ abstract contract GenesisNFT is
     }
 
     /**
-     * @notice Burns token with id `tokenId` and notifies zkSync mirror about it. Limited only to admin role
+     * @notice Burns token with id `tokenId` and notify zkSync mirror about it. Limited only to admin role
      * @param tokenId Token ID
+     * @param gasLimit Gas limit for zkSync transaction
      */
-    function burnNotify(uint256 tokenId) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+    function burnNotify(uint256 tokenId, uint256 gasLimit) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
         _burn(tokenId);
-        _notifyZkSyncMirrorDestroy(tokenId, msg.value);
+        _notifyZkSyncMirrorDestroy(tokenId, msg.value, gasLimit);
     }
 
     // TODO: disable this
@@ -207,14 +213,17 @@ abstract contract GenesisNFT is
     //    }
 
     /**
-     * @dev See {IERC721-transferFrom}.
+     * @notice Transfers token with id `tokenId` from `from` to `to` address. Limited only to admin role
+     * @param from Source address
+     * @param to Destination address
+     * @param tokenId Token ID
      */
-    function transferFromNotify(address from, address to, uint256 tokenId) public payable {
+    function transferFromNotify(address from, address to, uint256 tokenId, uint256 gasLimit) public payable {
         //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
 
         _transfer(from, to, tokenId);
-        _notifyZkSyncMirrorMove(tokenId, to, msg.value);
+        _notifyZkSyncMirrorMove(tokenId, to, msg.value, gasLimit);
     }
 
     /**
@@ -306,9 +315,12 @@ abstract contract GenesisNFT is
         }
     }
 
-    function _notifyZkSyncMirrorMove(uint256 tokenId, address recipient, uint256 value) internal {
-        require(value >= ZK_SYNC_GAS_LIMIT, "Send at least ZK_SYNC_GAS_LIMIT GWei with invocation!");
-
+    function _notifyZkSyncMirrorMove(
+        uint256 tokenId,
+        address recipient,
+        uint256 value,
+        uint256 gasLimit
+    ) internal enoughGas(value, gasLimit) {
         if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
             bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.moveToken.selector, tokenId, recipient);
 
@@ -317,7 +329,7 @@ abstract contract GenesisNFT is
                 _zkSyncMirror,
                 0,
                 data,
-                ZK_SYNC_GAS_LIMIT,
+                gasLimit,
                 ZK_SYNC_GAS_PER_PUBDATA_LIMIT,
                 new bytes[](0),
                 msg.sender
@@ -326,9 +338,11 @@ abstract contract GenesisNFT is
         }
     }
 
-    function _notifyZkSyncMirrorDestroy(uint256 tokenId, uint256 value) internal {
-        require(value >= ZK_SYNC_GAS_LIMIT, "Send at least ZK_SYNC_GAS_LIMIT GWei with invocation!");
-
+    function _notifyZkSyncMirrorDestroy(
+        uint256 tokenId,
+        uint256 value,
+        uint256 gasLimit
+    ) internal enoughGas(value, gasLimit) {
         if (_zkSyncMirror != address(0) && _zkSyncBridge != address(0)) {
             bytes memory data = abi.encodeWithSelector(ZkSyncGenesisNFTmirror.destroyToken.selector, tokenId);
 
@@ -337,7 +351,7 @@ abstract contract GenesisNFT is
                 _zkSyncMirror,
                 0,
                 data,
-                ZK_SYNC_GAS_LIMIT,
+                gasLimit,
                 ZK_SYNC_GAS_PER_PUBDATA_LIMIT,
                 new bytes[](0),
                 msg.sender
