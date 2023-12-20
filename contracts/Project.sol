@@ -79,6 +79,9 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
         address investmentFund_,
         uint256 fundsAllocation_
     ) public initializer {
+        require(token_ != address(0), "Token is zero address");
+        require(investmentFund_ != address(0), "Investment is zero address");
+        require(swapper_ != address(0), "Swapper is zero address");
         __Context_init();
         __OwnablePausable_init(owner_);
         __ReentrancyGuard_init();
