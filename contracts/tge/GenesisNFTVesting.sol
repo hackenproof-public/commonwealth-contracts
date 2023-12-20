@@ -218,12 +218,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         }
     }
 
-    function releasePerNFT(
-        bool isSeries1,
-        uint256 tokenId,
-        uint256 amount,
-        address beneficiary
-    ) public {
+    function releasePerNFT(bool isSeries1, uint256 tokenId, uint256 amount, address beneficiary) public {
         require(
             isSeries1
                 ? IERC721Upgradeable(genNftSeries1Contract).ownerOf(tokenId) == msg.sender

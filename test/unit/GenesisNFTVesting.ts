@@ -184,7 +184,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       ).to.be.revertedWith('Unauthorized access!');
     });
 
-    it.only('Should revert if vesting has not started yet', async () => {
+    it('Should revert if vesting has not started yet', async () => {
       const { genesisNFTVesting, owner, vestingStartTimestamp, genNFTseries1 } = await loadFixture(deployFixture);
 
       genNFTseries1.balanceOf.returns(BigNumber.from(1));
