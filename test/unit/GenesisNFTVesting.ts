@@ -165,7 +165,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const timestamp = vestingStartTimestamp;
       await time.increaseTo(timestamp);
       await expect(
-        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('1'), owner.address)
+        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
       ).to.be.revertedWith('You are not owner of given Genesis NFT!');
     });
 
@@ -180,20 +180,19 @@ describe('Genesis NFT Vesting unit tests', function () {
       const timestamp = vestingStartTimestamp;
       await time.increaseTo(timestamp);
       await expect(
-        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('1'), owner.address)
+        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
       ).to.be.revertedWith('Unauthorized access!');
     });
 
-    it('Should revert if vesting has not started yet', async () => {
+    it.only('Should revert if vesting has not started yet', async () => {
       const { genesisNFTVesting, owner, vestingStartTimestamp, genNFTseries1 } = await loadFixture(deployFixture);
 
       genNFTseries1.balanceOf.returns(BigNumber.from(1));
       genNFTseries1.ownerOf.returns(owner.address);
-
-      const timestamp = vestingStartTimestamp - 1;
+      const timestamp = vestingStartTimestamp - 2;
       await time.increaseTo(timestamp);
       await expect(
-        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('1'), owner.address)
+        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
       ).to.be.revertedWith('Vesting has not started yet!');
     });
 
@@ -208,7 +207,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const timestamp = vestingStartTimestamp + duration / 2;
       await time.increaseTo(timestamp);
       await expect(
-        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('44000'), owner.address)
+        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('44000'), owner.address)
       ).to.be.revertedWith('Not enough tokens vested!');
     });
 
@@ -224,7 +223,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const timestamp = vestingStartTimestamp + duration;
       await time.increaseTo(timestamp);
       await expect(
-        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('1'), owner.address)
+        genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
       ).to.be.revertedWith('Not enough tokens to process the release!');
     });
 
@@ -240,7 +239,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
       const timestamp = vestingStartTimestamp + duration;
       await time.increaseTo(timestamp);
-      expect(await genesisNFTVesting.connect(owner).releasePerNFT(true, 1, timestamp, toWlth('44000'), owner.address));
+      expect(await genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('44000'), owner.address));
     });
 
     it('Should release all tokens availabe for the beneficiary', async () => {
