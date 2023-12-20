@@ -117,7 +117,6 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                     releasePerNFT(
                         true,
                         series1TokenIds[i],
-                        block.timestamp,
                         releaseableAmountPerNFT(true, series1TokenIds[i], block.timestamp),
                         beneficiary
                     );
@@ -136,7 +135,6 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                     releasePerNFT(
                         false,
                         series2TokenIds[i],
-                        block.timestamp,
                         releaseableAmountPerNFT(false, series2TokenIds[i], block.timestamp),
                         beneficiary
                     );
@@ -223,7 +221,6 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
     function releasePerNFT(
         bool isSeries1,
         uint256 tokenId,
-        uint256 actualTimestamp,
         uint256 amount,
         address beneficiary
     ) public {
@@ -235,7 +232,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         );
         require(accessCheck(beneficiary), "Unauthorized access!");
         require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, actualTimestamp);
+        uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, block.timestamp);
         require(availableAmount >= amount, "Not enough tokens vested!");
         require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
 
