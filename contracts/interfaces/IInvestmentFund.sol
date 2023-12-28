@@ -10,7 +10,7 @@ interface IInvestmentFund {
         address currency;
         address investmentNft;
         address treasuryWallet;
-        address genesisNftRevenue;
+        address nesisNftRevenue;
         address lpPoolAddress;
         address burnAddress;
         address communityFund;
@@ -29,9 +29,9 @@ interface IInvestmentFund {
 
     struct Payout {
         uint256 value;
-        uint256 fee;
         Block blockData;
         bool inProfit;
+        bool locked;
     }
 
     /**
@@ -73,6 +73,13 @@ interface IInvestmentFund {
     event ProfitWithdrawn(address indexed recipient, address indexed currency, uint256 amount);
 
     /**
+     * @notice Emitted when payouts are unlocked
+     * @param from Index of first payout unlocked
+     * @param to Index of last payout unlocked
+     */
+    event PayoutsUnlocked(uint256 from, uint256 to);
+
+    /**
      * @notice Emitted when project is added to a fund
      * @param caller Address that added project
      * @param project Project address
@@ -109,13 +116,24 @@ interface IInvestmentFund {
     function invest(uint240 amount, string calldata tokenUri) external;
 
     /**
-     * @notice Withdraws 'amount' number of USD Coin tokens using investment NFT.
+     * @notice Unlocks payouts to given index.
+     *
+     * Requirements:
+     * - 'to' must be lower or equal than number of payouts.
+     *
+     * Emits a {PayoutsUnlocked} event.
+     *
+     * @param index Index of last payout to unlock
+     */
+    function unlockPayoutsTo(uint256 index) external;
+
+    /**
+     * @notice Withdraws all avaiable profits in USD Coin tokens using investment NFT.
      *
      * Emits a {Withdrawn} event.
      *
-     * @param amount Amount of tokens to be withdrawn
      */
-    function withdraw(uint256 amount) external;
+    function withdraw() external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
@@ -123,22 +141,13 @@ interface IInvestmentFund {
     function getPayoutsCount() external view returns (uint256);
 
     /**
-     * @notice Returns funds available for account to be withdrawn.
+     * @notice Returns funds available for account to be withdrawn, connected carry fee and last used payout index.
      *
-     * @param account Wallet address for which to check available funds
+     * @param _account Wallet address for which to check available funds details
      */
-    function getAvailableFunds(address account) external view returns (uint256);
-
-    /**
-     * @notice Returns carry fee for requested withdrawal amount. Raises exception if amount is higher than available funds.
-     *
-     * Requirements:
-     * - 'amount' must be lower or equal to withdrawal available funds returned from 'getAvailableFunds' method.
-     *
-     * @param account Wallet address for which to retrieve withdrawal details
-     * @param amount Amount of funds requested to withdraw
-     */
-    function getWithdrawalCarryFee(address account, uint256 amount) external view returns (uint256);
+    function getAvailableFundsDetails(
+        address _account
+    ) external view returns (uint256 amount, uint256 carryFee, uint256 lastPayoutIndex);
 
     /**
      * @notice Adds project to investment fund. Throws if project already exists in fund.

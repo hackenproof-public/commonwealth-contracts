@@ -10,11 +10,19 @@ import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
 import {IProject} from "./interfaces/IProject.sol";
 import {LibFund} from "./libraries/LibFund.sol";
-import {BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
+import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE} from "./libraries/Constants.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+error InvestmentFund__NotRegisteredProject(address project);
+error InvestmentFund__ZeroProfitProvided();
+error InvestmentFund__NoFundsAvailable(address investor);
+error InvestmentFund__NotTheUnlocker(address account);
+error InvestmentFund__NoPayoutToUnclock();
+error InvestmentFund__PayoutIndexTooHigh();
+error InvestmentFund__PayoutIndexTooLow();
 
 /**
  * @title Investment Fund contract
@@ -32,6 +40,19 @@ contract InvestmentFund is
         uint256 index;
         uint256 withdrawn;
     }
+
+    struct FeeDistributionAddresses {
+        address treasuryWallet;
+        address lpPool;
+        address burn;
+        address communityFund;
+        address genesisNftRevenue;
+    }
+
+    /**
+     * @notice Address of payout un
+     */
+    address public unlocker;
 
     /**
      * @notice Fund name
@@ -78,6 +99,9 @@ contract InvestmentFund is
      */
     uint16 public managementFee;
 
+    /**
+     * @notice The address of the community fund
+     */
     address public communityFund;
 
     /**
@@ -91,6 +115,11 @@ contract InvestmentFund is
     uint256 public totalIncome;
 
     /**
+     * @notice The index of the next payout to unlock
+     */
+    uint256 public nextPayoutToUnlock;
+
+    /**
      * @notice List of payouts (incomes from tokens sale)
      */
     Payout[] public payouts;
@@ -101,9 +130,9 @@ contract InvestmentFund is
     mapping(address => uint256) public userTotalWithdrawal;
 
     /**
-     * @dev Payout recently used for withdrawal per user
+     * @dev The index of the next user payout
      */
-    mapping(address => PayoutPtr) private _currentPayout;
+    mapping(address => uint256) private userNextPayout;
 
     /**
      * @dev List of projects
@@ -118,38 +147,43 @@ contract InvestmentFund is
     /**
      * @dev Initializes the contract
      * @param owner_ Contract owner
+     * @param unlocker_ Address of payout unlocker
      * @param name_ Investment fund name
      * @param currency_ Address of currency for investments
      * @param investmentNft_ Address of investment NFT contract
      * @param stakingWlth_ Address of contract for staking WLTH
-     * @param treasuryWallet_ Address of treasury wallet
-     * @param managementFee_ Management fee in basis points
+     * @param feeDistributionAddresses_ Addresses of fee distribution wallets
+     * @param managementFee_ Management fee value
      * @param cap_ Cap value
      */
     function initialize(
         address owner_,
+        address unlocker_,
         string memory name_,
         address currency_,
         address investmentNft_,
         address stakingWlth_,
-        address treasuryWallet_,
-        address genesisNftRevenue_,
-        address lpPoolAddress_,
-        address burnAddress_,
-        address communityFund_,
+        FeeDistributionAddresses memory feeDistributionAddresses_,
         uint16 managementFee_,
         uint256 cap_
     ) public initializer {
         __Context_init();
-        __OwnablePausable_init(owner_);
+        {
+            __OwnablePausable_init(owner_);
+        }
         __StateMachine_init(LibFund.STATE_FUNDS_IN);
         __ReentrancyGuard_init();
         __ERC165_init();
 
+        require(unlocker_ != address(0), "Invalid unlocker address");
         require(currency_ != address(0), "Invalid currency address");
         require(investmentNft_ != address(0), "Invalid NFT address");
         require(stakingWlth_ != address(0), "Invalid staking contract address");
-        require(treasuryWallet_ != address(0), "Invalid treasury wallet address");
+        require(feeDistributionAddresses_.treasuryWallet != address(0), "Invalid treasury wallet address");
+        require(feeDistributionAddresses_.lpPool != address(0), "Invalid lp pool address");
+        require(feeDistributionAddresses_.burn != address(0), "Invalid burn address");
+        require(feeDistributionAddresses_.communityFund != address(0), "Invalid community fund address");
+        require(feeDistributionAddresses_.genesisNftRevenue != address(0), "Invalid genesis nft revenue address");
         require(managementFee_ < 10000, "Invalid management fee");
         require(cap_ > 0, "Invalid investment cap");
         require(
@@ -157,15 +191,16 @@ contract InvestmentFund is
             "Required interface not supported"
         );
 
+        unlocker = unlocker_;
         name = name_;
         currency = currency_;
         investmentNft = investmentNft_;
         stakingWlth = IStakingWlth(stakingWlth_);
-        treasuryWallet = treasuryWallet_;
-        genesisNftRevenue = genesisNftRevenue_;
-        lpPoolAddress = lpPoolAddress_;
-        burnAddress = burnAddress_;
-        communityFund = communityFund_;
+        treasuryWallet = feeDistributionAddresses_.treasuryWallet;
+        genesisNftRevenue = feeDistributionAddresses_.genesisNftRevenue;
+        lpPoolAddress = feeDistributionAddresses_.lpPool;
+        burnAddress = feeDistributionAddresses_.burn;
+        communityFund = feeDistributionAddresses_.communityFund;
         managementFee = managementFee_;
         cap = cap_;
 
@@ -192,22 +227,87 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function withdraw(uint256 amount) external onlyAllowedStates nonReentrant {
-        require(amount > 0, "Attempt to withdraw zero tokens");
 
-        (uint256 actualAmount, uint256 carryFee, PayoutPtr memory currentPayout) = _getWithdrawalDetails(
-            _msgSender(),
-            amount
-        );
+    function unlockPayoutsTo(uint256 index) external onlyAllowedStates {
+        if (_msgSender() != unlocker) {
+            revert InvestmentFund__NotTheUnlocker(_msgSender());
+        }
+        uint payoutsCount = payouts.length;
+        uint256 nextPayout = nextPayoutToUnlock;
 
-        require(actualAmount == amount, "Withdrawal amount exceeds available funds");
+        if (nextPayoutToUnlock >= payoutsCount) {
+            revert InvestmentFund__NoPayoutToUnclock();
+        }
+        if (index < nextPayoutToUnlock) {
+            revert InvestmentFund__PayoutIndexTooLow();
+        }
+        if (index >= payoutsCount) {
+            revert InvestmentFund__PayoutIndexTooHigh();
+        }
+
+        for (uint256 i = nextPayout; i <= index; i++) {
+            payouts[i].locked = false;
+        }
+
+        nextPayoutToUnlock = index + 1;
+        emit PayoutsUnlocked(nextPayout, index);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function withdraw() external onlyAllowedStates nonReentrant {
+        (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) = getAvailableFundsDetails(_msgSender());
 
         userTotalWithdrawal[_msgSender()] += amount;
-        _currentPayout[_msgSender()] = currentPayout;
+        userNextPayout[_msgSender()] = nextUserPayoutIndex;
+
+        if (amount == 0) {
+            revert InvestmentFund__NoFundsAvailable(_msgSender());
+        }
+
+        if (carryFee > 0) {
+            _carryFeeDistribution(carryFee);
+        }
+
+        _transfer(currency, _msgSender(), amount);
 
         emit ProfitWithdrawn(_msgSender(), currency, amount);
+    }
 
-        _transfer(currency, _msgSender(), amount - carryFee);
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function getAvailableFundsDetails(
+        address account
+    ) public view returns (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) {
+        nextUserPayoutIndex = userNextPayout[account];
+        uint256 nextPayoutIndex = nextPayoutToUnlock;
+
+        if (nextUserPayoutIndex >= nextPayoutIndex) {
+            return (0, 0, nextUserPayoutIndex);
+        }
+
+        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; i++) {
+            Payout memory payout = payouts[i];
+            if (payouts[i].inProfit) {
+                uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
+
+                uint256 carryFeeSize = _getCarryFeeSize(account, block.timestamp);
+
+                amount +=
+                    userIncomeBeforeCarryFee -
+                    MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
+
+                if (carryFeeSize > LOWEST_CARRY_FEE) {
+                    carryFeeSize -= LOWEST_CARRY_FEE;
+                }
+                carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
+            } else {
+                amount += _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
+            }
+        }
+        return (amount, carryFee, nextPayoutIndex);
     }
 
     /**
@@ -215,30 +315,6 @@ contract InvestmentFund is
      */
     function getPayoutsCount() external view returns (uint256) {
         return payouts.length;
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function getAvailableFunds(address account) public view returns (uint256) {
-        uint256 availableFunds = 0;
-        if (payouts.length > 0) {
-            availableFunds = _getRemainingUserIncomeFromCurrentPayout(account);
-            for (uint256 i = _currentPayout[account].index + 1; i < payouts.length; i++) {
-                availableFunds += _getUserIncomeFromPayout(account, i);
-            }
-        }
-        return availableFunds;
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function getWithdrawalCarryFee(address account, uint256 amount) external view returns (uint256) {
-        require(amount <= getAvailableFunds(account), "Withdrawal amount exceeds available funds");
-
-        (, uint256 carryFee, ) = _getWithdrawalDetails(account, amount);
-        return carryFee;
     }
 
     /**
@@ -313,41 +389,48 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function provideProfit(uint256 amount) external onlyAllowedStates nonReentrant {
-        require(_projects.contains(_msgSender()), "Access Denied");
-        require(amount > 0, "Zero profit provided");
+        if (!_projects.contains(_msgSender())) {
+            revert InvestmentFund__NotRegisteredProject(_msgSender());
+        }
+        if (amount == 0) {
+            revert InvestmentFund__ZeroProfitProvided();
+        }
 
         Block memory blockData = Block(uint128(block.number), uint128(block.timestamp));
-        uint256 carryFee = 0;
+
         uint256 newTotalIncome = totalIncome + amount;
         uint256 totalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue();
-
+        uint256 initialCarryFee = 0;
         if (totalIncome >= totalInvestment) {
-            carryFee = _calculateTotalCarryFeeInBlock(amount, blockData);
-            payouts.push(Payout(amount, carryFee, blockData, true));
+            initialCarryFee = MathUpgradeable.mulDiv(amount, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
+            payouts.push(Payout(amount, blockData, true, true));
         } else {
             if (newTotalIncome > totalInvestment) {
                 uint256 profitAboveBreakeven = newTotalIncome - totalInvestment;
-                carryFee = _calculateTotalCarryFeeInBlock(profitAboveBreakeven, blockData);
+                initialCarryFee = MathUpgradeable.mulDiv(profitAboveBreakeven, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
 
-                payouts.push(Payout(amount - profitAboveBreakeven, 0, blockData, false));
-                payouts.push(Payout(profitAboveBreakeven, carryFee, blockData, true));
+                payouts.push(Payout(amount - profitAboveBreakeven, blockData, false, true));
+                payouts.push(Payout(profitAboveBreakeven, blockData, true, true));
 
                 emit BreakevenReached(totalInvestment);
             } else {
-                payouts.push(Payout(amount, 0, blockData, false));
+                payouts.push(Payout(amount, blockData, false, true));
+
                 if (newTotalIncome == totalInvestment) {
                     emit BreakevenReached(totalInvestment);
                 }
             }
         }
+
         totalIncome = newTotalIncome;
 
-        emit ProfitProvided(address(this), amount, carryFee, blockData.number);
+        _transferFrom(currency, _msgSender(), address(this), amount);
 
-        if (carryFee > 0) {
-            _carryFeeDistribution(carryFee);
+        if (initialCarryFee > 0) {
+            _carryFeeDistribution(initialCarryFee);
         }
-        _transferFrom(currency, _msgSender(), address(this), amount - carryFee);
+
+        emit ProfitProvided(address(this), amount, initialCarryFee, blockData.number);
     }
 
     function closeFund() external onlyAllowedStates onlyOwner {
@@ -402,6 +485,7 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.deployFundsToProject.selector);
 
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.provideProfit.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.unlockPayoutsTo.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.withdraw.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
     }
@@ -414,58 +498,6 @@ contract InvestmentFund is
         _transferFrom(currency, investor, treasuryWallet, fee);
         _transferFrom(currency, investor, address(this), amount - fee);
         IInvestmentNFT(investmentNft).mint(investor, amount, tokenUri);
-    }
-
-    /**
-     * @dev Returns actual withdrawal amount, carry fee and new current user payout for requested withdrawal amount.
-     * @dev If actual amount is lower than the requested one it means that the latter is not available.
-     *
-     * @param account Wallet address for which to retrieve withdrawal details
-     * @param requestedAmount Amount of funds requested to withdraw
-     *
-     * @return actualAmount Actual amount to withdraw - requested one if available or the maximum available otherwise
-     * @return carryFee Carry fee taken on withdraw
-     * @return newCurrentPayout Payout index with withdrawn amount after actual amount is withdrawn
-     */
-    function _getWithdrawalDetails(
-        address account,
-        uint256 requestedAmount
-    ) private view returns (uint256 actualAmount, uint256 carryFee, PayoutPtr memory newCurrentPayout) {
-        uint256 payoutIndex = _currentPayout[account].index;
-
-        uint256 fundsFromPayout = _getRemainingUserIncomeFromCurrentPayout(account);
-        if (requestedAmount <= fundsFromPayout) {
-            return (
-                requestedAmount,
-                _calculateCarryFeeFromPayout(account, payoutIndex, requestedAmount),
-                PayoutPtr(payoutIndex, _currentPayout[account].withdrawn + requestedAmount)
-            );
-        } else {
-            actualAmount = fundsFromPayout;
-
-            while (++payoutIndex < payouts.length) {
-                fundsFromPayout = _getUserIncomeFromPayout(account, payoutIndex);
-
-                if (requestedAmount <= actualAmount + fundsFromPayout) {
-                    fundsFromPayout = requestedAmount - actualAmount;
-                    return (
-                        requestedAmount,
-                        carryFee + _calculateCarryFeeFromPayout(account, payoutIndex, fundsFromPayout),
-                        PayoutPtr(payoutIndex, fundsFromPayout)
-                    );
-                }
-                carryFee += _calculateCarryFeeFromPayout(account, payoutIndex, fundsFromPayout);
-                actualAmount += fundsFromPayout;
-            }
-            return (actualAmount, carryFee, PayoutPtr(payoutIndex - 1, fundsFromPayout));
-        }
-    }
-
-    function _getUserIncomeFromPayout(address account, uint256 payoutIndex) private view returns (uint256) {
-        require(payoutIndex < payouts.length, "Payout does not exist");
-
-        Payout memory payout = payouts[payoutIndex];
-        return _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
     }
 
     function _calculateUserIncomeInBlock(
@@ -494,11 +526,6 @@ contract InvestmentFund is
         }
     }
 
-    function _getRemainingUserIncomeFromCurrentPayout(address account) private view returns (uint256) {
-        PayoutPtr memory currentPayout = _currentPayout[account];
-        return _getUserIncomeFromPayout(account, currentPayout.index) - currentPayout.withdrawn;
-    }
-
     /**
      * @dev Returns carry fee in basis points for account in timestamp
      */
@@ -510,42 +537,13 @@ contract InvestmentFund is
             );
     }
 
-    /**
-     * @dev Returns carry fee in timestamp according to user's income
-     */
-    function _calculateCarryFee(address account, uint256 timestamp, uint256 income) private view returns (uint256) {
-        uint256 carryFeeSize = _getCarryFeeSize(account, timestamp);
-        return MathUpgradeable.mulDiv(income, carryFeeSize, BASIS_POINT_DIVISOR);
-    }
-
-    function _calculateCarryFeeFromPayout(
-        address account,
-        uint256 payoutIndex,
-        uint256 amount
-    ) private view returns (uint256) {
-        return
-            (payouts[payoutIndex].inProfit && amount > 0)
-                ? _calculateCarryFee(account, payouts[payoutIndex].blockData.timestamp, amount)
-                : 0;
-    }
-
-    function _calculateTotalCarryFeeInBlock(uint256 income, Block memory blockData) private view returns (uint256) {
-        uint256 carryFee = 0;
-        address[] memory wallets = IInvestmentNFT(investmentNft).getInvestors();
-        for (uint256 i = 0; i < wallets.length; i++) {
-            uint256 userIncome = _calculateUserIncomeInBlock(income, wallets[i], blockData);
-            carryFee += _calculateCarryFee(wallets[i], blockData.timestamp, userIncome);
-        }
-        return carryFee;
-    }
-
     // TODO: ZkSync transactions batching handling?
     function _carryFeeDistribution(uint256 carryFee) internal {
-        _transferFrom(currency, _msgSender(), treasuryWallet, (carryFee * 68) / 100);
-        _transferFrom(currency, _msgSender(), genesisNftRevenue, (carryFee * 12) / 100);
-        _transferFrom(currency, _msgSender(), lpPoolAddress, (carryFee * 99) / 1000);
-        _transferFrom(currency, _msgSender(), burnAddress, (carryFee * 99) / 1000);
-        _transferFrom(currency, _msgSender(), communityFund, (carryFee * 2) / 1000);
+        _transfer(currency, treasuryWallet, (carryFee * 68) / 100);
+        _transfer(currency, genesisNftRevenue, (carryFee * 12) / 100);
+        _transfer(currency, lpPoolAddress, (carryFee * 99) / 1000);
+        _transfer(currency, burnAddress, (carryFee * 99) / 1000);
+        _transfer(currency, communityFund, (carryFee * 2) / 1000);
     }
 
     uint256[39] private __gap;
