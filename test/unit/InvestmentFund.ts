@@ -118,7 +118,7 @@ describe('Investment Fund unit tests', () => {
     investmentNft.supportsInterface.reset();
     usdc.transfer.reset();
     usdc.transferFrom.reset();
-    staking.getDiscountInTimestamp.reset();
+    staking.getDiscountFromPreviousInvestmentInTimestamp.reset();
   };
 
   const setup = async () => {
@@ -669,7 +669,7 @@ describe('Investment Fund unit tests', () => {
       investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getInvestors.returns([deployer.address]);
       investmentNft.getTotalInvestmentValue.returns(investmentValue);
-      staking.getDiscountInTimestamp.returns(0);
+      staking.getDiscountFromPreviousInvestmentInTimestamp.returns(0);
     });
 
     [1, investmentValue.sub(1)].forEach((value) => {
@@ -800,7 +800,7 @@ describe('Investment Fund unit tests', () => {
       investmentNft.getPastParticipation.returns([investmentValue, investmentValue]);
       investmentNft.getInvestors.returns([deployer.address]);
       investmentNft.getTotalInvestmentValue.returns(investmentValue);
-      staking.getDiscountInTimestamp.returns(0);
+      staking.getDiscountFromPreviousInvestmentInTimestamp.returns(0);
     });
 
     it('Should unlock all available payouts', async () => {
@@ -885,7 +885,7 @@ describe('Investment Fund unit tests', () => {
       investmentNft.getTotalInvestmentValue.returns(totalInvestment);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
-      staking.getDiscountInTimestamp.returns(0);
+      staking.getDiscountFromPreviousInvestmentInTimestamp.returns(0);
     });
 
     it('Should return zero available funds if no profit provided and no unlocked payouts', async () => {
@@ -945,7 +945,7 @@ describe('Investment Fund unit tests', () => {
       investmentNft.getTotalInvestmentValue.returns(investmentValue);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
-      staking.getDiscountInTimestamp.returns(0);
+      staking.getDiscountFromPreviousInvestmentInTimestamp.returns(0);
     });
 
     describe('if no profit provided', () => {
@@ -1106,7 +1106,7 @@ describe('Investment Fund unit tests', () => {
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
 
-        staking.getDiscountInTimestamp.returns(0);
+        staking.getDiscountFromPreviousInvestmentInTimestamp.returns(0);
         await investmentFund.connect(project.wallet).provideProfit(profit);
 
         restorer = await takeSnapshot();

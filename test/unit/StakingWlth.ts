@@ -765,6 +765,284 @@ describe('Staking WLTH unit tests', () => {
     });
   });
 
+  describe('#getDiscountFromPreviousInvestmentInTimestamp()', () => {
+    it('Should return constant discount if staked in CRP', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake = { amount: toWlth('500'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      nft.getPastInvestmentValue.returns(toUsdc('1000'));
+      wlth.transferFrom.returns(true);
+      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+
+      await staking.connect(owner).registerFund(fund.address);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start, 100)
+      ).to.equal(4000);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          start.add(ONE_YEAR / 2),
+          100
+        )
+      ).to.equal(4000);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(4000);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          start.add(TWO_YEARS),
+          100
+        )
+      ).to.equal(4000);
+    });
+
+    it('Should return linear discount if staked in CDP', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake = { amount: toWlth('500'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      nft.getPastInvestmentValue.returns(toUsdc('1000'));
+
+      wlth.transferFrom.returns(true);
+      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+
+      await staking.connect(owner).registerFund(fund.address);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start, 100)
+      ).to.equal(0);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          start.add(ONE_YEAR / 2),
+          100
+        )
+      ).to.equal(2000);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(4000);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          start.add(TWO_YEARS),
+          100
+        )
+      ).to.equal(4000);
+    });
+
+    it('Should return correct discount if staked multiple times', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
+      const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      nft.getPastInvestmentValue.returns(toUsdc('1000'));
+
+      wlth.transferFrom.returns(true);
+      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
+      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+
+      const stake1Time = Date.now() + 1000;
+      const stake2Time = stake1Time + TWO_YEARS;
+
+      await staking.connect(owner).registerFund(fund.address);
+
+      await time.setNextBlockTimestamp(stake1Time);
+      await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
+
+      await time.setNextBlockTimestamp(stake2Time);
+      await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, stake1Time, 100)
+      ).to.equal(0);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          stake1Time + ONE_YEAR,
+          100
+        )
+      ).to.equal(400);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          stake1Time + TWO_YEARS,
+          100
+        )
+      ).to.equal(800);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          stake1Time + THREE_YEARS,
+          100
+        )
+      ).to.equal(1200 + 800);
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(
+          user.address,
+          fund.address,
+          stake1Time + FOUR_YEARS,
+          100
+        )
+      ).to.equal(1600 + 800);
+    });
+
+    it('Should return maximum discount if staked multiple times and sold all NFTs', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
+      const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      wlth.transferFrom.returns(true);
+      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
+      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+
+      const stake1Time = Date.now() + 1000;
+      const stake2Time = stake1Time + TWO_YEARS;
+
+      await staking.connect(owner).registerFund(fund.address);
+
+      await time.setNextBlockTimestamp(stake1Time);
+      await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
+
+      await time.setNextBlockTimestamp(stake2Time);
+      await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+
+      // user sells all NFTs
+      nft.getInvestmentValue.returns(0);
+
+      expect(await staking.getDiscountInTimestamp(user.address, fund.address, stake1Time)).to.equal(0);
+      expect(await staking.getDiscountInTimestamp(user.address, fund.address, stake1Time + ONE_YEAR)).to.equal(4000);
+      expect(await staking.getDiscountInTimestamp(user.address, fund.address, stake1Time + FOUR_YEARS)).to.equal(4000);
+    });
+
+    it('Should not increase discount for previous investment if decreased investment size after stake', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake = { amount: toWlth('500'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('2000'));
+      nft.getPastInvestmentValue.returns(toUsdc('2000'));
+      wlth.transferFrom.returns(true);
+      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+
+      await staking.connect(owner).registerFund(fund.address);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+
+      // user splits NFT and sells one worth $400
+      nft.getInvestmentValue.returns(toUsdc('1600'));
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+
+      // user sells token worth $800
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+
+      // user sells token worth $500
+      nft.getInvestmentValue.returns(toUsdc('500'));
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+    });
+
+    it('Should not decrease discount for previous investment if increased investment size after stake', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake = { amount: toWlth('500'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('2000'));
+      nft.getPastInvestmentValue.returns(toUsdc('2000'));
+      wlth.transferFrom.returns(true);
+      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+
+      await staking.connect(owner).registerFund(fund.address);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+
+      // user buys NFT worth $500
+      nft.getInvestmentValue.returns(toUsdc('2500'));
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.add(ONE_YEAR), 100)
+      ).to.equal(2000);
+    });
+
+    it('Should return zero discount if timestamp before stake', async () => {
+      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const stake = { amount: toWlth('500'), period: ONE_YEAR };
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('2000'));
+      nft.getPastInvestmentValue.returns(toUsdc('2000'));
+      wlth.transferFrom.returns(true);
+      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+
+      await staking.connect(owner).registerFund(fund.address);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+      const start = (await staking.getPositionDetails(stakeId)).period.start;
+
+      expect(
+        await staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, start.sub(1), 100)
+      ).to.equal(0);
+    });
+
+    it('Should revert returning discount if fund not registered', async () => {
+      const { staking, fund, user } = await setup();
+
+      await expect(
+        staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, Date.now(), 100)
+      ).to.be.revertedWith('Fund is not registered');
+    });
+  });
+
   describe('#getEstimatedDiscount()', () => {
     it('Should return correct discount estimation in CRP', async () => {
       const { staking, wlth, fund, nft, owner, user } = await setup();

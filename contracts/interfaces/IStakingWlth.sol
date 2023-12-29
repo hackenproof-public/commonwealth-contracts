@@ -121,6 +121,20 @@ interface IStakingWlth {
     function getDiscountInTimestamp(address account, address fund, uint256 timestamp) external view returns (uint256);
 
     /**
+     * @notice Returns discount for wallet in specified block
+     * @param account Address of wallet for which to return discount
+     * @param fund Address of investment fund
+     * @param timestamp Timestamp to return discount on
+     * @param blockNumber Investment value block number
+     */
+    function getDiscountFromPreviousInvestmentInTimestamp(
+        address account,
+        address fund,
+        uint256 timestamp,
+        uint256 blockNumber
+    ) external view returns (uint256);
+
+    /**
      * @notice Returns discount for wallet in specified timestamp
      * @param account Address of wallet for which to return discount
      * @param fund Address of investment fund

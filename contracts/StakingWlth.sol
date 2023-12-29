@@ -224,8 +224,21 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
      */
     function getDiscount(address account, address fund) external view returns (uint256) {
         require(registeredFunds.contains(fund), "Fund is not registered");
+        uint256 investmentSize = _getCurrentInvestment(account, fund);
 
-        return Math.min(_getDiscountForAccount(account, fund, block.timestamp), maxDiscount);
+        return Math.min(_getDiscountForAccount(account, fund, block.timestamp, investmentSize), maxDiscount);
+    }
+
+    function getDiscountFromPreviousInvestmentInTimestamp(
+        address account,
+        address fund,
+        uint256 timestamp,
+        uint256 blocknumber
+    ) external view returns (uint256) {
+        require(registeredFunds.contains(fund), "Fund is not registered");
+        uint256 investmentSize = _getInvestmentInBlock(account, fund, blocknumber);
+
+        return Math.min(_getDiscountForAccount(account, fund, timestamp, investmentSize), maxDiscount);
     }
 
     /**
@@ -233,8 +246,9 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
      */
     function getDiscountInTimestamp(address account, address fund, uint256 timestamp) external view returns (uint256) {
         require(registeredFunds.contains(fund), "Fund is not registered");
+        uint256 investmentSize = _getCurrentInvestment(account, fund);
 
-        return Math.min(_getDiscountForAccount(account, fund, timestamp), maxDiscount);
+        return Math.min(_getDiscountForAccount(account, fund, timestamp, investmentSize), maxDiscount);
     }
 
     /**
@@ -609,27 +623,35 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         Period memory period,
         uint256 timestamp
     ) private view returns (uint256) {
-        uint256 currentDiscount = _getDiscountForAccount(account, fund, timestamp);
-
         uint256 investment = _getCurrentInvestment(account, fund);
+        uint256 currentDiscount = _getDiscountForAccount(account, fund, timestamp, investment);
+
         uint256 newTargetDiscount = _calculateTargetDiscount(amountInUsdc, period.duration, investment);
         uint256 discountFromStake = _getDiscountFunction(_isFundInCRP(fund))(period, newTargetDiscount, timestamp);
 
         return currentDiscount + discountFromStake;
     }
 
-    function _getDiscountForAccount(address account, address fund, uint256 timestamp) private view returns (uint256) {
+    function _getDiscountForAccount(
+        address account,
+        address fund,
+        uint256 timestamp,
+        uint256 investment
+    ) private view returns (uint256) {
         uint256 totalDiscount = 0;
         uint256[] memory stakeIds = stakesPerAccount[account][fund];
         for (uint256 i = 0; i < stakeIds.length; i++) {
-            totalDiscount += _getDiscountForPosition(stakingPositions[stakeIds[i]], timestamp);
+            totalDiscount += _getDiscountForPosition(stakingPositions[stakeIds[i]], timestamp, investment);
         }
         return totalDiscount;
     }
 
-    function _getDiscountForPosition(Position memory pos, uint256 timestamp) private view returns (uint256) {
-        uint256 investmentSize = _getCurrentInvestment(pos.staker, pos.fund);
-        uint256 targetDiscount = _calculateTargetDiscount(pos.amountInUsdc, pos.period.duration, investmentSize);
+    function _getDiscountForPosition(
+        Position memory pos,
+        uint256 timestamp,
+        uint256 investment
+    ) private view returns (uint256) {
+        uint256 targetDiscount = _calculateTargetDiscount(pos.amountInUsdc, pos.period.duration, investment);
         function(Period memory, uint256, uint256) pure returns (uint256) func = _getDiscountFunction(pos.isCRP);
         return func(pos.period, targetDiscount, timestamp);
     }
@@ -677,6 +699,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     function _getCurrentInvestment(address account, address fund) private view returns (uint256) {
         address nft = IInvestmentFund(fund).investmentNft();
         return IInvestmentNFT(nft).getInvestmentValue(account);
+    }
+
+    function _getInvestmentInBlock(address account, address fund, uint256 blockNumber) private view returns (uint256) {
+        address nft = IInvestmentFund(fund).investmentNft();
+        return IInvestmentNFT(nft).getPastInvestmentValue(account, blockNumber);
     }
 
     function _isFundInCRP(address fund) private view returns (bool) {

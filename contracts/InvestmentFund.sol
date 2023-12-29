@@ -293,7 +293,7 @@ contract InvestmentFund is
             if (payouts[i].inProfit) {
                 uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
 
-                uint256 carryFeeSize = _getCarryFeeSize(account, block.timestamp);
+                uint256 carryFeeSize = _getCarryFeeSize(account, block.timestamp, payout.blockData.number);
 
                 amount +=
                     userIncomeBeforeCarryFee -
@@ -529,10 +529,16 @@ contract InvestmentFund is
     /**
      * @dev Returns carry fee in basis points for account in timestamp
      */
-    function _getCarryFeeSize(address account, uint256 timestamp) private view returns (uint256) {
+    function _getCarryFeeSize(address account, uint256 timestamp, uint256 blockNumber) private view returns (uint256) {
         return
             MathUpgradeable.max(
-                LibFund.DEFAULT_CARRY_FEE - stakingWlth.getDiscountInTimestamp(account, address(this), timestamp),
+                LibFund.DEFAULT_CARRY_FEE -
+                    stakingWlth.getDiscountFromPreviousInvestmentInTimestamp(
+                        account,
+                        address(this),
+                        timestamp,
+                        blockNumber
+                    ),
                 1000
             );
     }
