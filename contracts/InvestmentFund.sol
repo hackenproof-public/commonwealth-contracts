@@ -150,10 +150,6 @@ contract InvestmentFund is
         require(investmentNft_ != address(0), "Invalid NFT address");
         require(stakingWlth_ != address(0), "Invalid staking contract address");
         require(treasuryWallet_ != address(0), "Invalid treasury wallet address");
-        require(genesisNftRevenue_ != address(0), "Invalid revenue contract address");
-        require(lpPoolAddress_ != address(0), "Invalid lp pool contract address");
-        require(burnAddress_ != address(0), "Invalid burn contract address");
-        require(communityFund_ != address(0), "Invalid community contract address");
         require(managementFee_ < 10000, "Invalid management fee");
         require(cap_ > 0, "Invalid investment cap");
         require(
