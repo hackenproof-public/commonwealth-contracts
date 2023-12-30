@@ -1,9 +1,10 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { ISwapRouter, UniswapSwapper } from '../../typechain-types';
+import { ISwapRouter, UniswapSwapper, UniswapQuoter } from '../../typechain-types';
 
 describe('Uniswap swapper unit tests', () => {
   const SOME_AMOUNT = 12223;
@@ -16,11 +17,12 @@ describe('Uniswap swapper unit tests', () => {
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
+    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
     router.exactInputSingle.returns(SOME_OTHER_AMOUNT);
 
     const uniswapSwapper: UniswapSwapper = await deployProxy(
       'UniswapSwapper',
-      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, quoter.address],
       deployer
     );
 
@@ -31,13 +33,28 @@ describe('Uniswap swapper unit tests', () => {
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
+    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
     const uniswapSwapper: UniswapSwapper = await deployProxy(
       'UniswapSwapper',
-      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, quoter.address],
       deployer
     );
 
     expect(await uniswapSwapper.swapRouter()).to.equal(router.address);
+  });
+
+  it('Should revert deploying if dex quoter is zero address', async () => {
+    const [deployer, owner] = await ethers.getSigners();
+
+    const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
+    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+    await expect(
+      deployProxy(
+        'UniswapSwapper',
+        [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, constants.AddressZero],
+        deployer
+      )
+    ).to.be.revertedWith('DEX quoter is zero address');
   });
 
   it('Should emit swapped event', async () => {
