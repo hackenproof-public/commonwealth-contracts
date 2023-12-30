@@ -1,9 +1,10 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { GenesisNFTV1, GenesisNFTV2, GenesisNFTVesting, StakingGenesisNFT, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
@@ -76,6 +77,142 @@ describe('Genesis NFT Vesting unit tests', function () {
       expect(await genesisNFTVesting.genNftSeries1Contract()).to.equal(genNFTseries1.address);
       expect(await genesisNFTVesting.genNftSeries2Contract()).to.equal(genNFTseries2.address);
       expect(await genesisNFTVesting.stakingGenNftContract()).to.equal(stakingGenesisNft.address);
+    });
+
+    it('Should revert deploying if token address is zero', async () => {
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
+      const genNFTseries2: FakeContract<GenesisNFTV2> = await smock.fake('GenesisNFTV2');
+      const [deployer, owner] = await ethers.getSigners();
+
+      const TWENTY_FOUR_BILIONS = 24000000;
+      const SECONDS_IN_YEAR = 31536000;
+      const TWO_YEARS = 2 * SECONDS_IN_YEAR;
+      const ONE_MONTH = SECONDS_IN_YEAR / 12;
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+      const allocation = (TWENTY_FOUR_BILIONS * 10) ^ 18;
+      const cadence = ONE_MONTH;
+      const duration = TWO_YEARS;
+      await expect(
+        deployProxy(
+          'GenesisNFTVesting',
+          [
+            owner.address,
+            constants.AddressZero,
+            duration,
+            cadence,
+            vestingStartTimestamp,
+            genNFTseries1.address,
+            genNFTseries2.address,
+            stakingGenesisNft.address
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Token is zero address');
+    });
+
+    it('Should revert deploying if Gen1 address is zero', async () => {
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
+      const genNFTseries2: FakeContract<GenesisNFTV2> = await smock.fake('GenesisNFTV2');
+      const [deployer, owner] = await ethers.getSigners();
+
+      const TWENTY_FOUR_BILIONS = 24000000;
+      const SECONDS_IN_YEAR = 31536000;
+      const TWO_YEARS = 2 * SECONDS_IN_YEAR;
+      const ONE_MONTH = SECONDS_IN_YEAR / 12;
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+      const allocation = (TWENTY_FOUR_BILIONS * 10) ^ 18;
+      const cadence = ONE_MONTH;
+      const duration = TWO_YEARS;
+      await expect(
+        deployProxy(
+          'GenesisNFTVesting',
+          [
+            owner.address,
+            wlth.address,
+            duration,
+            cadence,
+            vestingStartTimestamp,
+            constants.AddressZero,
+            genNFTseries2.address,
+            stakingGenesisNft.address
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Gen1 is zero address');
+    });
+
+    it('Should revert deploying if Gen2 address is zero', async () => {
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
+      const genNFTseries2: FakeContract<GenesisNFTV2> = await smock.fake('GenesisNFTV2');
+      const [deployer, owner] = await ethers.getSigners();
+
+      const TWENTY_FOUR_BILIONS = 24000000;
+      const SECONDS_IN_YEAR = 31536000;
+      const TWO_YEARS = 2 * SECONDS_IN_YEAR;
+      const ONE_MONTH = SECONDS_IN_YEAR / 12;
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+      const allocation = (TWENTY_FOUR_BILIONS * 10) ^ 18;
+      const cadence = ONE_MONTH;
+      const duration = TWO_YEARS;
+      await expect(
+        deployProxy(
+          'GenesisNFTVesting',
+          [
+            owner.address,
+            wlth.address,
+            duration,
+            cadence,
+            vestingStartTimestamp,
+            genNFTseries1.address,
+            constants.AddressZero,
+            stakingGenesisNft.address
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Gen2 is zero address');
+    });
+
+    it('Should revert deploying if staking address is zero', async () => {
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
+      const genNFTseries2: FakeContract<GenesisNFTV2> = await smock.fake('GenesisNFTV2');
+      const [deployer, owner] = await ethers.getSigners();
+
+      const TWENTY_FOUR_BILIONS = 24000000;
+      const SECONDS_IN_YEAR = 31536000;
+      const TWO_YEARS = 2 * SECONDS_IN_YEAR;
+      const ONE_MONTH = SECONDS_IN_YEAR / 12;
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+      const allocation = (TWENTY_FOUR_BILIONS * 10) ^ 18;
+      const cadence = ONE_MONTH;
+      const duration = TWO_YEARS;
+      await expect(
+        deployProxy(
+          'GenesisNFTVesting',
+          [
+            owner.address,
+            wlth.address,
+            duration,
+            cadence,
+            vestingStartTimestamp,
+            genNFTseries1.address,
+            genNFTseries2.address,
+            constants.AddressZero
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Staking is zero address');
     });
   });
 

@@ -3,6 +3,8 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
+import { constants } from 'ethers';
 import { StakingGenesisNFT, StakingGenNFTVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
@@ -51,6 +53,38 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
       expect(await stakingGenNFTVesting.stakingGenNftAddress()).to.equal(stakingGenesisNft.address);
       expect(await stakingGenNFTVesting.vestingStartTimestamp()).to.equal(vestingStartTimestamp);
       expect(await stakingGenNFTVesting.allocation()).to.equal(allocation);
+    });
+
+    it('Should revert deploying if staking nft is zero address', async () => {
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+
+      const [deployer, beneficiary1, beneficiary2, owner] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      await expect(
+        deployProxy(
+          'StakingGenNFTVesting',
+          [owner.address, wlth.address, allocation, vestingStartTimestamp, constants.AddressZero],
+          deployer
+        )
+      ).to.be.revertedWith('Genesis NFT is zero address');
+    });
+
+    it('Should revert deploying if token is zero address', async () => {
+      const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
+      const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
+
+      const [deployer, beneficiary1, beneficiary2, owner] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
+      await expect(
+        deployProxy(
+          'StakingGenNFTVesting',
+          [owner.address, constants.AddressZero, allocation, vestingStartTimestamp, stakingGenesisNft.address],
+          deployer
+        )
+      ).to.be.revertedWith('Token is zero address');
     });
   });
 

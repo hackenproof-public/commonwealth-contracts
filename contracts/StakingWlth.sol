@@ -77,6 +77,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         require(usdc_ != address(0), "USDC token is zero address");
         require(dexQuoter_ != address(0), "DEX quoter is zero address");
         require(treasuryWallet != address(0), "Treasury is zero address");
+        require(communityFund_ != address(0), "Community is zero address");
         require(durations.length == coefficients.length, "Durations and coefficients lengths mismatch");
 
         __Context_init();

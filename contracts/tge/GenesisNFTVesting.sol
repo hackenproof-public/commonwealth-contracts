@@ -80,6 +80,10 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         address genNftSeries2Contract_,
         address stakingGenNftContract_
     ) {
+        require(token_ != address(0), "Token is zero address");
+        require(genNftSeries1Contract_ != address(0), "Gen1 is zero address");
+        require(genNftSeries2Contract_ != address(0), "Gen2 is zero address");
+        require(stakingGenNftContract_ != address(0), "Staking is zero address");
         token = token_;
         duration = duration_;
         cadence = cadence_;

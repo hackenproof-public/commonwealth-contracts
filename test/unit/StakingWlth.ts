@@ -163,6 +163,31 @@ describe('Staking WLTH unit tests', () => {
             usdc,
             quoter.address,
             defaultFee,
+            defaultTreasury,
+            constants.AddressZero,
+            maxDiscount,
+            [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
+            [5000, 3750, 3125, 2500]
+          ],
+          deployer
+        )
+      ).to.be.revertedWith('Treasury is zero address');
+    });
+
+    it('Should revert deploying if community fund is zero address', async () => {
+      const [deployer, owner, communityFund] = await ethers.getSigners();
+
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      await expect(
+        deployProxy(
+          'StakingWlth',
+          [
+            owner.address,
+            wlth.address,
+            usdc,
+            quoter.address,
+            defaultFee,
             constants.AddressZero,
             communityFund.address,
             maxDiscount,
@@ -171,7 +196,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWith('Treasury is zero address');
+      ).to.be.revertedWith('Community is zero address');
     });
   });
 

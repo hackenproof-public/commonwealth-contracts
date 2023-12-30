@@ -2,6 +2,7 @@ import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { formatBytes32String } from 'ethers/lib/utils';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import {
@@ -43,6 +44,51 @@ describe('Project unit tests', () => {
       expect(await project.status()).to.equal(formatBytes32String('Added'));
       expect(await project.vesting()).to.equal(vesting.address);
       expect(await project.supportsInterface(IProjectId)).to.equal(true);
+    });
+
+    it('Should revert deploying if token is zero address', async () => {
+      const [deployer, wallet, owner] = await ethers.getSigners();
+      const fundsAllocation = toUsdc('100000');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentFund: FakeContract<InvestmentFund> = await smock.fake('InvestmentFund');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      await expect(
+        deployProxy(
+          'Project',
+          [defaultProjectName, owner.address, constants.AddressZero, swapper.address, investmentFund.address, fundsAllocation],
+          deployer
+        )
+      ).to.be.revertedWith('Token is zero address');
+    });
+
+    it('Should revert deploying if investment fund is zero address', async () => {
+      const [deployer, wallet, owner] = await ethers.getSigners();
+      const fundsAllocation = toUsdc('100000');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentFund: FakeContract<InvestmentFund> = await smock.fake('InvestmentFund');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      await expect(
+        deployProxy(
+          'Project',
+          [defaultProjectName, owner.address, usdc.address, swapper.address, constants.AddressZero, fundsAllocation],
+          deployer
+        )
+      ).to.be.revertedWith('Investment is zero address');
+    });
+
+    it('Should revert deploying if swapper is zero address', async () => {
+      const [deployer, wallet, owner] = await ethers.getSigners();
+      const fundsAllocation = toUsdc('100000');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentFund: FakeContract<InvestmentFund> = await smock.fake('InvestmentFund');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      await expect(
+        deployProxy(
+          'Project',
+          [defaultProjectName, owner.address, usdc.address, constants.AddressZero, investmentFund.address, fundsAllocation],
+          deployer
+        )
+      ).to.be.revertedWith('Swapper is zero address');
     });
   });
 

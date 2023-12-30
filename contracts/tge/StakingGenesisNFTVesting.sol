@@ -58,6 +58,8 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
         uint256 vestingStartTimestamp_,
         address stakingGenNftAddress_
     ) {
+        require(stakingGenNftAddress_ != address(0), "Genesis NFT is zero address");
+        require(token_ != address(0), "Token is zero address");
         stakingGenNftAddress = stakingGenNftAddress_;
         token = token_;
         allocation = allocation_;
