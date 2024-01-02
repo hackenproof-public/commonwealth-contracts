@@ -3,11 +3,16 @@ pragma solidity ^0.8.18;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {BaseVesting} from "./BaseVesting.sol";
 import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+error BaseVesting__TokenZeroAddress();
+error BaseVesting__GenesisNftZeroAddress();
+error BaseVesting__VestingNotStarted();
+error BaseVesting__NotEnoughTokensVested();
+error BaseVesting__NotEnoughTokensOnContract();
 
 contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
@@ -49,7 +54,7 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
      * @param token Token address
      * @param amount Amount released
      */
-    event Released(address indexed beneficiary, address indexed token, uint256 amount);
+    event Released(address indexed beneficiary, address indexed token, uint256 indexed amount);
 
     constructor(
         address owner_,
@@ -58,8 +63,9 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
         uint256 vestingStartTimestamp_,
         address stakingGenNftAddress_
     ) {
-        require(stakingGenNftAddress_ != address(0), "Genesis NFT is zero address");
-        require(token_ != address(0), "Token is zero address");
+        if (stakingGenNftAddress_ == address(0)) revert BaseVesting__TokenZeroAddress();
+        if (token_ == address(0)) revert BaseVesting__GenesisNftZeroAddress();
+
         stakingGenNftAddress = stakingGenNftAddress_;
         token = token_;
         allocation = allocation_;
@@ -71,16 +77,17 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
      * @dev Release the tokens from this contract to the beneficiary
      */
     function release(uint256 amount, address beneficiary) public virtual {
-        require(accessCheck(beneficiary), "Unauthorized access!");
-        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        require(amount <= releaseableAmount(beneficiary), "Not enough tokens vested!");
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
+        address tokenAddress = token;
+        if (block.timestamp < vestingStartTimestamp) revert BaseVesting__VestingNotStarted();
+        if (amount > releaseableAmount(beneficiary)) revert BaseVesting__NotEnoughTokensVested();
+        if (IERC20(tokenAddress).balanceOf(address(this)) < amount) revert BaseVesting__NotEnoughTokensOnContract();
 
         released += amount;
         amountClaimedByWallet[beneficiary] += amount;
-        emit Released(beneficiary, token, amount);
 
-        IERC20(token).safeTransfer(beneficiary, amount);
+        IERC20(tokenAddress).safeTransfer(beneficiary, amount);
+
+        emit Released(beneficiary, tokenAddress, amount);
     }
 
     /**
@@ -92,13 +99,5 @@ contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
                 IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) *
             1e18 -
             amountClaimedByWallet[beneficiary];
-    }
-
-    /**
-     * @dev Defines which address can release tokens
-     */
-    function accessCheck(address beneficiary) public view returns (bool) {
-        return (IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) > 0 ||
-            IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary) > 0);
     }
 }

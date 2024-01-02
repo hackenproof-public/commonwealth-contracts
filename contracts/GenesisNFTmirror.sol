@@ -5,6 +5,16 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 
+error GenesisNftMirror__OwnerZeroAddress();
+error GenesisNftMirror__GovernorZeroAddress();
+error GenesisNftMirror__TokenIdsOwnersLenghtsMismatch();
+error GenesisNftMirror__AccessDenied();
+error GenesisNftMirror__GovernorAlready();
+error GenesisNftMirror__ZeroAddress();
+error GenesisNftMirror__InvalidTokenId();
+error GenesisNftMirror__IndexOutOfBounds();
+error GenesisNftMirror__OwnerIndexOutOfBounds();
+
 contract GenesisNFTmirror is OwnablePausable {
     event TokenMoved(uint256 indexed tokenId, address indexed to);
 
@@ -18,6 +28,11 @@ contract GenesisNFTmirror is OwnablePausable {
     mapping(uint256 => address) private tokens;
     mapping(address => uint256) private balances;
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
+
+    modifier GovernorOrOwnerOnly() {
+        if (msg.sender == governor || msg.sender == owner()) revert GenesisNftMirror__OwnerZeroAddress();
+        _;
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -33,9 +48,9 @@ contract GenesisNFTmirror is OwnablePausable {
         string memory _symbol
     ) public initializer {
         __OwnablePausable_init(_owner);
-        require(_owner != address(0), "Owner is zero address");
-        require(_governor != address(0), "Governor is zero address");
-        require(_tokenIds.length == _tokenOwners.length, "Token id count must be equal to token owner count");
+        if (_owner == address(0)) revert GenesisNftMirror__OwnerZeroAddress();
+        if (_governor == address(0)) revert GenesisNftMirror__GovernorZeroAddress();
+        if (_tokenIds.length == _tokenOwners.length) revert GenesisNftMirror__TokenIdsOwnersLenghtsMismatch();
 
         _transferOwnership(_owner);
         governor = _governor;
@@ -48,9 +63,7 @@ contract GenesisNFTmirror is OwnablePausable {
         }
     }
 
-    function moveToken(uint256 token, address newHolder) external {
-        require(msg.sender == governor || msg.sender == owner(), "Unauthorized access");
-
+    function moveToken(uint256 token, address newHolder) external GovernorOrOwnerOnly {
         if (tokens[token] == address(0)) {
             totalSupply++;
             _allTokens.push(token);
@@ -58,19 +71,17 @@ contract GenesisNFTmirror is OwnablePausable {
 
         _decreaseOldHolderBalance(token);
 
-        emit TokenMoved(token, address(0));
-
         uint256 newHolderBalance = balances[newHolder];
         _ownedTokens[newHolder][newHolderBalance] = token;
 
         balances[newHolder] = newHolderBalance + 1;
 
         tokens[token] = newHolder;
+
+        emit TokenMoved(token, address(0));
     }
 
-    function destroyToken(uint256 token) external {
-        require(msg.sender == governor || msg.sender == owner(), "Unauthorized access");
-
+    function destroyToken(uint256 token) external GovernorOrOwnerOnly {
         _decreaseOldHolderBalance(token);
 
         emit TokenMoved(token, address(0));
@@ -79,31 +90,31 @@ contract GenesisNFTmirror is OwnablePausable {
     }
 
     function changeGovernor(address newGovernor) external onlyOwner {
-        require(newGovernor != governor, "This is a governor already");
+        if (newGovernor == address(0)) revert GenesisNftMirror__ZeroAddress();
+        if (newGovernor == governor) revert GenesisNftMirror__GovernorAlready();
 
         governor = newGovernor;
     }
 
     function balanceOf(address owner) public view returns (uint256) {
-        require(owner != address(0), "address zero is invalid owner");
+        if (owner == address(0)) revert GenesisNftMirror__ZeroAddress();
 
         return balances[owner];
     }
 
     function ownerOf(uint256 tokenId) public view returns (address) {
-        address owner = tokens[tokenId];
-        require(owner != address(0), "invalid token ID");
-
-        return owner;
+        if (tokens[tokenId] == address(0)) {
+            revert GenesisNftMirror__ZeroAddress();
+        } else return tokens[tokenId];
     }
 
     function tokenByIndex(uint256 index) public view virtual returns (uint256) {
-        require(index < totalSupply, "Index out of bounds");
+        if (index >= totalSupply) revert GenesisNftMirror__IndexOutOfBounds();
         return _allTokens[index];
     }
 
     function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual returns (uint256) {
-        require(index < balanceOf(owner), "Owner index out of bounds");
+        if (index >= balanceOf(owner)) revert GenesisNftMirror__OwnerIndexOutOfBounds();
         return _ownedTokens[owner][index];
     }
 

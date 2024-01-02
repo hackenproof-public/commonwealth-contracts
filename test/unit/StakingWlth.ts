@@ -48,7 +48,6 @@ describe('Staking WLTH unit tests', () => {
         usdc,
         quoter.address,
         defaultFee,
-        defaultTreasury,
         defaultCommunityFund,
         maxDiscount,
         [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
@@ -114,7 +113,6 @@ describe('Staking WLTH unit tests', () => {
             usdc,
             quoter.address,
             defaultFee,
-            defaultTreasury,
             defaultCommunityFund,
             maxDiscount,
             [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
@@ -138,7 +136,6 @@ describe('Staking WLTH unit tests', () => {
             usdc,
             quoter.address,
             defaultFee,
-            defaultTreasury,
             defaultCommunityFund,
             maxDiscount,
             [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
@@ -147,31 +144,6 @@ describe('Staking WLTH unit tests', () => {
           deployer
         )
       ).to.be.revertedWith('Token is zero address');
-    });
-
-    it('Should revert deploying if treasury is zero address', async () => {
-      const [deployer, owner, communityFund] = await ethers.getSigners();
-
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
-      await expect(
-        deployProxy(
-          'StakingWlth',
-          [
-            owner.address,
-            wlth.address,
-            usdc,
-            quoter.address,
-            defaultFee,
-            defaultTreasury,
-            constants.AddressZero,
-            maxDiscount,
-            [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
-            [5000, 3750, 3125, 2500]
-          ],
-          deployer
-        )
-      ).to.be.revertedWith('Treasury is zero address');
     });
 
     it('Should revert deploying if community fund is zero address', async () => {
@@ -189,7 +161,6 @@ describe('Staking WLTH unit tests', () => {
             quoter.address,
             defaultFee,
             constants.AddressZero,
-            communityFund.address,
             maxDiscount,
             [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
             [5000, 3750, 3125, 2500]
@@ -306,7 +277,7 @@ describe('Staking WLTH unit tests', () => {
       quoter.quote.returns([toUsdc('601'), 0, 0, 0]);
 
       await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWith(
-        'Target discount exceeds maximum value'
+        'Target discount above max value'
       );
     });
 
@@ -319,7 +290,7 @@ describe('Staking WLTH unit tests', () => {
 
       await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
       await expect(staking.connect(user).stake(fund.address, stake2.amount, stake2.duration)).to.be.revertedWith(
-        'Target discount exceeds maximum value'
+        'Target discount above max value'
       );
     });
 

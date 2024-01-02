@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IStateMachine} from "./interfaces/IStateMachine.sol";
 
+error StateMachine__NotAllowedInCurrentState();
+
 contract StateMachine is IStateMachine, Initializable {
     /**
      * @dev Current state
@@ -32,7 +34,7 @@ contract StateMachine is IStateMachine, Initializable {
      * @dev Only functions allowed using allowFunction are permitted
      */
     modifier onlyAllowedStates() {
-        require(functionsAllowed[currentState][msg.sig], "Not allowed in current state");
+        if (!functionsAllowed[currentState][msg.sig]) revert StateMachine__NotAllowedInCurrentState();
         _;
     }
 

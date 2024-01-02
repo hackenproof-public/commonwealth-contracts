@@ -125,44 +125,6 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
 
       await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).not.to.be.reverted;
     });
-
-    it('Should not allow staking small tokens if small contract is not initialised', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
-
-      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWith(
-        'Small NFT contract was not configured'
-      );
-    });
-
-    it('Should not allow staking large tokens if large contract is not initialised', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
-
-      await expect(stakingGenesisNft.connect(deployer).stake([], SOME_STAKE)).to.be.revertedWith(
-        'Large NFT contract was not configured'
-      );
-    });
-
-    it('Should allow staking if small contract is uninitialised but we use large', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
-      SOME_STAKE.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
-
-      await expect(stakingGenesisNft.connect(deployer).stake([], SOME_STAKE)).not.to.be.reverted;
-    });
-
-    it('Should allow staking if large contract is uninitialised but we use small', async () => {
-      const { stakingGenesisNft, deployer, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
-      SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
-
-      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).not.to.be.reverted;
-    });
   });
 
   describe('#getRewardSmall', () => {
@@ -306,7 +268,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
       await stakingGenesisNft.connect(deployer).stake(SOME_STAKE.slice(1), []);
 
       await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWith(
-        'You have not staked some of these tokens'
+        'not staked tokens found'
       );
     });
 
@@ -422,64 +384,6 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
         ...SOME_STAKE,
         ...SOME_OTHER_STAKE
       ]);
-    });
-  });
-
-  describe('#initialiseSmallNft', () => {
-    it('Should not allow non-owner to init small nft', async () => {
-      const { stakingGenesisNft, deployer } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await expect(stakingGenesisNft.connect(deployer).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
-    });
-
-    it('Should not allow init small nft if it was already initialised', async () => {
-      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
-      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await expect(stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address)).to.be.revertedWith(
-        'Small NFT was already initialised'
-      );
-    });
-
-    it('Should init small nft', async () => {
-      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const smallGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await stakingGenesisNft.connect(owner).initialiseSmallNft(smallGenesisNFT.address);
-
-      expect(await stakingGenesisNft.smallNft()).to.equal(smallGenesisNFT.address);
-    });
-  });
-
-  describe('#initialiseLargeNft', () => {
-    it('Should not allow non-owner to init large nft', async () => {
-      const { stakingGenesisNft, deployer } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await expect(stakingGenesisNft.connect(deployer).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
-    });
-
-    it('Should not allow init large nft if it was already initialised', async () => {
-      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
-      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await expect(stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address)).to.be.revertedWith(
-        'Large NFT was already initialised'
-      );
-    });
-
-    it('Should init large nft', async () => {
-      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-      const largeGenesisNFT: FakeContract<IERC721Upgradeable> = await smock.fake('GenesisNFT');
-
-      await stakingGenesisNft.connect(owner).initialiseLargeNft(largeGenesisNFT.address);
-
-      expect(await stakingGenesisNft.largeNft()).to.equal(largeGenesisNFT.address);
     });
   });
 });

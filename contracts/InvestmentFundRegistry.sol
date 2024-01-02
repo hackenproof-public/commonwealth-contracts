@@ -5,6 +5,13 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IInvestmentFundRegistry} from "./interfaces/IInvestmentFundRegistry.sol";
 
+error InvestmentFundRegistry__OwnerAccountZeroAddress();
+error InvestmentFundRegistry__InvestmentFundZeroAddress();
+error InvestmentFundRegistry__InvestmentFundAlreadyAdded();
+error InvestmentFundRegistry__InvestmentFundNotAdded();
+error InvestmentFundRegistry__InvestmentFundAddFailed();
+error InvestmentFundRegistry__InvestmentFundRemoveFailed();
+
 /**
  * @title Investment fund registry contract
  */
@@ -23,7 +30,7 @@ contract InvestmentFundRegistry is OwnableUpgradeable, IInvestmentFundRegistry {
      * @param owner Address of registry contract owner
      */
     function initialize(address owner) public initializer {
-        require(owner != address(0), "Owner is zero address");
+        if (owner == address(0)) revert InvestmentFundRegistry__OwnerAccountZeroAddress();
 
         __Context_init();
         __Ownable_init();
@@ -35,11 +42,11 @@ contract InvestmentFundRegistry is OwnableUpgradeable, IInvestmentFundRegistry {
      * @inheritdoc IInvestmentFundRegistry
      */
     function addFund(address fundAddress) external onlyOwner {
-        require(fundAddress != address(0), "Invalid fund address");
+        if (fundAddress == address(0)) revert InvestmentFundRegistry__InvestmentFundZeroAddress();
+        if (_funds.contains(fundAddress)) revert InvestmentFundRegistry__InvestmentFundAlreadyAdded();
+        if (!_funds.add(fundAddress)) revert InvestmentFundRegistry__InvestmentFundAddFailed();
 
         emit FundAddedToRegistry(fundAddress);
-
-        require(_funds.add(fundAddress), "Adding fund to registry failed");
     }
 
     /**
@@ -60,9 +67,10 @@ contract InvestmentFundRegistry is OwnableUpgradeable, IInvestmentFundRegistry {
      * @inheritdoc IInvestmentFundRegistry
      */
     function removeFund(address fundAddress) external onlyOwner {
-        emit FundRemovedFromRegistry(fundAddress);
+        if (!_funds.contains(fundAddress)) revert InvestmentFundRegistry__InvestmentFundNotAdded();
+        if (!_funds.remove(fundAddress)) revert InvestmentFundRegistry__InvestmentFundRemoveFailed();
 
-        require(_funds.remove(fundAddress), "Removing fund from registry failed");
+        emit FundRemovedFromRegistry(fundAddress);
     }
 
     uint256[49] private __gap;

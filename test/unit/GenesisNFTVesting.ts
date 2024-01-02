@@ -4,7 +4,6 @@ import { expect } from 'chai';
 import { BigNumber, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { deployProxy } from '../../scripts/utils';
 import { GenesisNFTV1, GenesisNFTV2, GenesisNFTVesting, StakingGenesisNFT, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
@@ -96,7 +95,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const cadence = ONE_MONTH;
       const duration = TWO_YEARS;
       await expect(
-        deployProxy(
+        deploy(
           'GenesisNFTVesting',
           [
             owner.address,
@@ -130,7 +129,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const cadence = ONE_MONTH;
       const duration = TWO_YEARS;
       await expect(
-        deployProxy(
+        deploy(
           'GenesisNFTVesting',
           [
             owner.address,
@@ -164,7 +163,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const cadence = ONE_MONTH;
       const duration = TWO_YEARS;
       await expect(
-        deployProxy(
+        deploy(
           'GenesisNFTVesting',
           [
             owner.address,
@@ -198,7 +197,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       const cadence = ONE_MONTH;
       const duration = TWO_YEARS;
       await expect(
-        deployProxy(
+        deploy(
           'GenesisNFTVesting',
           [
             owner.address,
@@ -303,7 +302,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('You are not owner of given Genesis NFT!');
+      ).to.be.revertedWith('Not owner of given Genesis NFT');
     });
 
     it('Should revert if address does not have any Genesis NFTs', async () => {
@@ -318,7 +317,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Unauthorized access!');
+      ).to.be.revertedWith('Unauthorized access');
     });
 
     it('Should revert if vesting has not started yet', async () => {
@@ -330,7 +329,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Vesting has not started yet!');
+      ).to.be.revertedWith('Vesting has not started yet');
     });
 
     it('Should revert if not enough tokens vested', async () => {
@@ -345,7 +344,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('44000'), owner.address)
-      ).to.be.revertedWith('Not enough tokens vested!');
+      ).to.be.revertedWith('Not enough tokens vested');
     });
 
     it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -361,7 +360,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Not enough tokens to process the release!');
+      ).to.be.revertedWith('Insufficient tokens for release');
     });
 
     it('Should release all tokens availabe for the specific Genesis NFT owned by beneficiary', async () => {

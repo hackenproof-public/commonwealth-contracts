@@ -1,8 +1,8 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { formatBytes32String } from 'ethers/lib/utils';
 import { constants } from 'ethers';
+import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import {
@@ -55,7 +55,14 @@ describe('Project unit tests', () => {
       await expect(
         deployProxy(
           'Project',
-          [defaultProjectName, owner.address, constants.AddressZero, swapper.address, investmentFund.address, fundsAllocation],
+          [
+            defaultProjectName,
+            owner.address,
+            constants.AddressZero,
+            swapper.address,
+            investmentFund.address,
+            fundsAllocation
+          ],
           deployer
         )
       ).to.be.revertedWith('Token is zero address');
@@ -85,7 +92,14 @@ describe('Project unit tests', () => {
       await expect(
         deployProxy(
           'Project',
-          [defaultProjectName, owner.address, usdc.address, constants.AddressZero, investmentFund.address, fundsAllocation],
+          [
+            defaultProjectName,
+            owner.address,
+            usdc.address,
+            constants.AddressZero,
+            investmentFund.address,
+            fundsAllocation
+          ],
           deployer
         )
       ).to.be.revertedWith('Swapper is zero address');

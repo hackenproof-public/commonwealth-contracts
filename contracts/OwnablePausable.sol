@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
+error OwnablePausable__OwnerAccountZeroAddress();
+
 contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
     // solhint-disable-next-line func-name-mixedcase
     function __OwnablePausable_init(address owner_) internal onlyInitializing {
@@ -12,7 +14,7 @@ contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
 
     // solhint-disable-next-line func-name-mixedcase
     function __OwnablePausable_init_unchained(address owner_) internal onlyInitializing {
-        require(owner_ != address(0), "Owner is zero address");
+        if (owner_ == address(0)) revert OwnablePausable__OwnerAccountZeroAddress();
 
         __Ownable_init();
         __Pausable_init();
@@ -32,6 +34,13 @@ contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
      */
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    /**
+     * @notice disables renounceOwnership - contract cannot be ownerless
+     */
+    function renounceOwnership() public view override onlyOwner {
+        revert("disabled");
     }
 
     uint256[50] private __gap;

@@ -15,6 +15,7 @@ import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 error InvestmentFund__NotRegisteredProject(address project);
 error InvestmentFund__ZeroProfitProvided();
@@ -23,6 +24,24 @@ error InvestmentFund__NotTheUnlocker(address account);
 error InvestmentFund__NoPayoutToUnclock();
 error InvestmentFund__PayoutIndexTooHigh();
 error InvestmentFund__PayoutIndexTooLow();
+error InvestmentFund__ZeroAmountInvested();
+error InvestmentFund__TotalInvestmentAboveCap(uint256 newTotalInvestment);
+error InvestmentFund__NotEnoughTokensOnInvestmentFund();
+error InvestmentFund__ProjectExist();
+error InvestmentFund__ProjectZeroAddress();
+error InvestmentFund__InvalidBlockNumber();
+error InvestmentFund__UnlockerZeroAddress();
+error InvestmentFund__CurrencyZeroAddress();
+error InvestmentFund__InvestmentNftZeroAddress();
+error InvestmentFund__StakingWlthZeroAddress();
+error InvestmentFund__TreasuryZeroAddress();
+error InvestmentFund__LpPoolZeroAddress();
+error InvestmentFund__BurnZeroAddress();
+error InvestmentFund__CommunityFundZeroAddress();
+error InvestmentFund__GenesisNftRevenueZeroAddress();
+error InvestmentFund__InvalidManagementFee();
+error InvestmentFund__InvalidInvestmentCap();
+error InvestmentFund__InvestmentNftInterfaceNotSupported();
 
 /**
  * @title Investment Fund contract
@@ -35,6 +54,7 @@ contract InvestmentFund is
     ERC165Upgradeable
 {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using SafeERC20 for IERC20;
 
     struct PayoutPtr {
         uint256 index;
@@ -175,21 +195,20 @@ contract InvestmentFund is
         __ReentrancyGuard_init();
         __ERC165_init();
 
-        require(unlocker_ != address(0), "Invalid unlocker address");
-        require(currency_ != address(0), "Invalid currency address");
-        require(investmentNft_ != address(0), "Invalid NFT address");
-        require(stakingWlth_ != address(0), "Invalid staking contract address");
-        require(feeDistributionAddresses_.treasuryWallet != address(0), "Invalid treasury wallet address");
-        require(feeDistributionAddresses_.lpPool != address(0), "Invalid lp pool address");
-        require(feeDistributionAddresses_.burn != address(0), "Invalid burn address");
-        require(feeDistributionAddresses_.communityFund != address(0), "Invalid community fund address");
-        require(feeDistributionAddresses_.genesisNftRevenue != address(0), "Invalid genesis nft revenue address");
-        require(managementFee_ < 10000, "Invalid management fee");
-        require(cap_ > 0, "Invalid investment cap");
-        require(
-            IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true,
-            "Required interface not supported"
-        );
+        if (unlocker_ == address(0)) revert InvestmentFund__UnlockerZeroAddress();
+        if (currency_ == address(0)) revert InvestmentFund__CurrencyZeroAddress();
+        if (investmentNft_ == address(0)) revert InvestmentFund__InvestmentNftZeroAddress();
+        if (stakingWlth_ == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
+        if (feeDistributionAddresses_.treasuryWallet == address(0)) revert InvestmentFund__TreasuryZeroAddress();
+        if (feeDistributionAddresses_.lpPool == address(0)) revert InvestmentFund__LpPoolZeroAddress();
+        if (feeDistributionAddresses_.burn == address(0)) revert InvestmentFund__BurnZeroAddress();
+        if (feeDistributionAddresses_.communityFund == address(0)) revert InvestmentFund__CommunityFundZeroAddress();
+        if (feeDistributionAddresses_.genesisNftRevenue == address(0))
+            revert InvestmentFund__GenesisNftRevenueZeroAddress();
+        if (managementFee_ >= 10000) revert InvestmentFund__InvalidManagementFee();
+        if (cap_ <= 0) revert InvestmentFund__InvalidInvestmentCap();
+        if (IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true)
+            revert InvestmentFund__InvestmentNftInterfaceNotSupported();
 
         unlocker = unlocker_;
         name = name_;
@@ -211,14 +230,15 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function invest(uint240 amount, string calldata tokenUri) external override onlyAllowedStates nonReentrant {
-        require(amount > 0, "Invalid amount invested");
+        if (amount <= 0) revert InvestmentFund__ZeroAmountInvested();
+        uint256 actualCap = cap;
 
         uint256 newTotalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue() + amount;
-        require(newTotalInvestment <= cap, "Total invested funds exceed cap");
+        if (newTotalInvestment > actualCap) revert InvestmentFund__TotalInvestmentAboveCap(newTotalInvestment);
 
-        if (newTotalInvestment >= cap) {
+        if (newTotalInvestment == actualCap) {
             currentState = LibFund.STATE_CAP_REACHED;
-            emit CapReached(cap);
+            emit CapReached(actualCap);
         }
 
         _invest(_msgSender(), amount, tokenUri);
@@ -245,8 +265,11 @@ contract InvestmentFund is
             revert InvestmentFund__PayoutIndexTooHigh();
         }
 
-        for (uint256 i = nextPayout; i <= index; i++) {
+        for (uint256 i = nextPayout; i <= index; ) {
             payouts[i].locked = false;
+            unchecked {
+                i++;
+            }
         }
 
         nextPayoutToUnlock = index + 1;
@@ -259,6 +282,7 @@ contract InvestmentFund is
     function withdraw() external onlyAllowedStates nonReentrant {
         (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) = getAvailableFundsDetails(_msgSender());
 
+        address currencyAddress = currency;
         userTotalWithdrawal[_msgSender()] += amount;
         userNextPayout[_msgSender()] = nextUserPayoutIndex;
 
@@ -270,9 +294,9 @@ contract InvestmentFund is
             _carryFeeDistribution(carryFee);
         }
 
-        _transfer(currency, _msgSender(), amount);
+        _transfer(currencyAddress, _msgSender(), amount);
 
-        emit ProfitWithdrawn(_msgSender(), currency, amount);
+        emit ProfitWithdrawn(_msgSender(), currencyAddress, amount);
     }
 
     /**
@@ -288,7 +312,7 @@ contract InvestmentFund is
             return (0, 0, nextUserPayoutIndex);
         }
 
-        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; i++) {
+        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; ) {
             Payout memory payout = payouts[i];
             if (payouts[i].inProfit) {
                 uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
@@ -306,6 +330,9 @@ contract InvestmentFund is
             } else {
                 amount += _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
             }
+            unchecked {
+                i++;
+            }
         }
         return (amount, carryFee, nextPayoutIndex);
     }
@@ -321,9 +348,10 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function addProject(address project) external onlyAllowedStates onlyOwner {
-        require(project != address(0), "Project is zero address");
+        if (project == address(0)) revert InvestmentFund__ProjectZeroAddress();
+        if (_projects.contains(_msgSender())) revert InvestmentFund__ProjectExist();
 
-        require(_projects.add(project), "Project already exists");
+        _projects.add(project);
 
         emit ProjectAdded(_msgSender(), project);
     }
@@ -346,8 +374,8 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function removeProject(address project) external onlyAllowedStates onlyOwner {
-        require(_projects.remove(project), "Project does not exist");
-
+        if (!_projects.contains(project)) revert InvestmentFund__NotRegisteredProject(_msgSender());
+        _projects.remove(project);
         emit ProjectRemoved(_msgSender(), project);
     }
 
@@ -357,15 +385,13 @@ contract InvestmentFund is
 
     // TODO: business logic clarification with client
     function deployFunds() external onlyAllowedStates onlyOwner {
-        // for (uint256 i = 0; i < _projects.length(); i++) {
+        // for (uint256 i; i < _projects.length(); i++) {
         //     address project = _projects.at(i);
         //     uint256 amount = IProject(project).getFundsAllocation();
-        //     require(
-        //         IERC20(currency).balanceOf(address(this)) >= amount,
-        //         "Not enough tokens to process the funds deployment!"
-        //     );
+        //     if(IERC20(currency).balanceOf(address(this)) < amount) revert InvestmentFund__NotEnoughTokensOnInvestmentFund();
         //     IERC20(currency).approve(project, amount);
         //     IProject(project).deployFunds(amount);
+        //     unchecked {i++;}
         // }
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
     }
@@ -375,14 +401,14 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function deployFundsToProject(address project, uint256 amount) external onlyOwner {
-        require(_projects.contains(project), "Project does not exist");
-        require(
-            IERC20(currency).balanceOf(address(this)) >= amount,
-            "Not enough tokens to process the funds deployment!"
-        );
+        if (!_projects.contains(project)) revert InvestmentFund__NotRegisteredProject(project);
+        if (IERC20(currency).balanceOf(address(this)) < amount)
+            revert InvestmentFund__NotEnoughTokensOnInvestmentFund();
 
-        IERC20(currency).approve(project, amount);
+        IERC20(currency).safeIncreaseAllowance(project, amount);
         IProject(project).deployFunds(amount);
+
+        emit FundsDeployedToProject(address(this), project, amount);
     }
 
     /**
@@ -400,7 +426,7 @@ contract InvestmentFund is
 
         uint256 newTotalIncome = totalIncome + amount;
         uint256 totalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue();
-        uint256 initialCarryFee = 0;
+        uint256 initialCarryFee;
         if (totalIncome >= totalInvestment) {
             initialCarryFee = MathUpgradeable.mulDiv(amount, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
             payouts.push(Payout(amount, blockData, true, true));
@@ -492,12 +518,13 @@ contract InvestmentFund is
 
     function _invest(address investor, uint256 amount, string calldata tokenUri) internal {
         uint256 fee = (uint256(amount) * managementFee) / BASIS_POINT_DIVISOR;
-
-        emit Invested(investor, currency, amount, fee);
+        address currencyAddress = currency;
 
         _transferFrom(currency, investor, treasuryWallet, fee);
         _transferFrom(currency, investor, address(this), amount - fee);
         IInvestmentNFT(investmentNft).mint(investor, amount, tokenUri);
+
+        emit Invested(investor, currencyAddress, amount, fee);
     }
 
     function _calculateUserIncomeInBlock(
@@ -517,7 +544,7 @@ contract InvestmentFund is
         address account,
         uint256 blockNumber
     ) private view returns (uint256 userValue, uint256 totalValue) {
-        require(blockNumber <= block.number, "Invalid block number");
+        if (blockNumber > block.number) revert InvestmentFund__InvalidBlockNumber();
 
         if (blockNumber < block.number) {
             return IInvestmentNFT(investmentNft).getPastParticipation(account, blockNumber);

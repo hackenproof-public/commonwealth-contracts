@@ -5,6 +5,11 @@ import {BaseVesting} from "./BaseVesting.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+error WhitelistedVesting__UnauthorizedAccess();
+error WhitelistedVesting__VestingNotStarted();
+error WhitelistedVesting__NotEnoughTokensVested();
+error WhitelistedVesting__NotEnoughTokensOnContract();
+
 contract WhitelistedVesting is BaseVesting {
     using SafeERC20 for IERC20;
     /**
@@ -50,16 +55,18 @@ contract WhitelistedVesting is BaseVesting {
      * @dev Releases the tokens for whitelisted address
      */
     function release(uint256 amount, address beneficiary) public override {
-        require(accessCheck(), "Unauthorized access!");
-        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        require(amount <= releaseableAmount(), "Not enough tokens vested!");
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
+        address tokenAddress = token;
+        if (!accessCheck()) revert WhitelistedVesting__UnauthorizedAccess();
+        if (block.timestamp < vestingStartTimestamp) revert WhitelistedVesting__VestingNotStarted();
+        if (amount > releaseableAmount()) revert WhitelistedVesting__NotEnoughTokensVested();
+        if (IERC20(tokenAddress).balanceOf(address(this)) < amount) revert WhitelistedVesting__NotEnoughTokensOnContract();
 
         released += amount;
         amountReleasedByAddress[beneficiary] += amount;
-        emit Released(beneficiary, token, amount);
 
-        IERC20(token).safeTransfer(beneficiary, amount);
+        IERC20(tokenAddress).safeTransfer(beneficiary, amount);
+
+        emit Released(beneficiary, tokenAddress, amount);
     }
 
     /**

@@ -494,7 +494,7 @@ describe('Investment Fund unit tests', () => {
     });
   });
 
-  describe('#invest()', () => {
+  describe.only('#invest()', () => {
     [BigNumber.from(1), defaultInvestmentCap.sub(1)].forEach((amount: BigNumber) => {
       it(`Should invest if amount lower than cap [amount=${amount}]`, async () => {
         const { investmentFund, usdc, wallet } = await setup();

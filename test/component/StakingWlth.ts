@@ -22,7 +22,18 @@ describe('Staking WLTH component tests', () => {
   const maxDiscount = 4000; // in basis points
   const defaultTreasury = ethers.Wallet.createRandom().address;
   const defaultCommunityFund = ethers.Wallet.createRandom().address;
+  const defaultLpPool = ethers.Wallet.createRandom().address;
+  const defaultBurn = ethers.Wallet.createRandom().address;
+  const defaultGenesisNftRevenue = ethers.Wallet.createRandom().address;
+  const defaultUnlocker = ethers.Wallet.createRandom();
   const tokenUri = 'ipfs://token-uri';
+  const FeeDistributionAddresses = {
+    treasuryWallet: defaultTreasury,
+    lpPool: defaultLpPool,
+    burn: defaultBurn,
+    communityFund: defaultCommunityFund,
+    genesisNftRevenue: defaultGenesisNftRevenue
+  };
 
   const deployStaking = async () => {
     const [deployer, owner, user, genesisNftRevenue, lpPool, burnAddr] = await ethers.getSigners();
@@ -39,7 +50,6 @@ describe('Staking WLTH component tests', () => {
         usdc.address,
         quoter.address,
         defaultFee,
-        treasury,
         defaultCommunityFund,
         maxDiscount,
         [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
@@ -52,15 +62,12 @@ describe('Staking WLTH component tests', () => {
       'InvestmentFund',
       [
         owner.address,
+        defaultUnlocker.address,
         'Investment Fund',
         usdc.address,
         nft.address,
         staking.address,
-        treasury,
-        genesisNftRevenue.address,
-        lpPool.address,
-        burnAddr.address,
-        defaultCommunityFund,
+        FeeDistributionAddresses,
         managementFee,
         defaultInvestmentCap
       ],

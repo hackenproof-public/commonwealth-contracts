@@ -12,9 +12,7 @@ const upgradeBridge: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
   //
   const GEN1NFT_ADDRESS = '0xfFD89A3F528D8808456E1617A29561a30Dd8FC36';
   const MIRROR_ADDRESS = '0xD240675DafAcc5401D1Db0d1292a5Bf9Db39936A';
-  const l1Provider = new ethers.providers.JsonRpcProvider(
-    ''
-  );
+  const l1Provider = new ethers.providers.JsonRpcProvider('');
   // Set up the Governor wallet to be the same as the one that deployed the governance contract.
   const wallet = new ethers.Wallet('', l1Provider);
   // Set a constant that accesses the Layer 1 contract.

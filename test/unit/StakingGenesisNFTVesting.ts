@@ -1,10 +1,9 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
-import { deployProxy } from '../../scripts/utils';
-import { constants } from 'ethers';
 import { StakingGenesisNFT, StakingGenNFTVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
@@ -63,7 +62,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       await expect(
-        deployProxy(
+        deploy(
           'StakingGenNFTVesting',
           [owner.address, wlth.address, allocation, vestingStartTimestamp, constants.AddressZero],
           deployer
@@ -79,7 +78,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       await expect(
-        deployProxy(
+        deploy(
           'StakingGenNFTVesting',
           [owner.address, constants.AddressZero, allocation, vestingStartTimestamp, stakingGenesisNft.address],
           deployer
@@ -121,7 +120,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('1000000'), beneficiary1.address)
-        ).to.be.revertedWith('Unauthorized access!');
+        ).to.be.revertedWith('Vesting has not started yet!');
       });
 
       it('Should not release tokens before vesting time', async () => {
@@ -159,7 +158,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('20'), beneficiary1.address)
-        ).to.be.revertedWith('Not enough tokens to process the release!');
+        ).to.be.revertedWith('Insufficient tokens for release');
       });
 
       it('Should release tokens if wallet has only Series 1 Genesis NFT Staked', async () => {

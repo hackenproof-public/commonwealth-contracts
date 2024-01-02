@@ -4,11 +4,10 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-
 const deploySwapper: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
   const deploymentCofing = getDeploymentConfig();
-  
+
   const quoter = await getContractAddress(network.config.chainId!, 'UniswapQuoter');
 
   const parameters = [

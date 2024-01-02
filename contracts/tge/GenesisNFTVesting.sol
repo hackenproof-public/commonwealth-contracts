@@ -9,12 +9,33 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+error GenesisNftVesting__TokenZeroAddress();
+error GenesisNftVesting__GenesisNftSeries1ZeroAddress();
+error GenesisNftVesting__GenesisNftSeries2ZeroAddress();
+error GenesisNftVesting__StakingGenesisNftZeroAddress();
+error GenesisNftVesting__AccessDenied();
+error GenesisNftVesting__VestingNotStarted();
+error GenesisNftVesting__NotOwnerOfGenesisNft();
+error GenesisNftVesting__NotEnoughTokensVested();
+error GenesisNftVesting__InsufficientTokensOnContract();
+
 contract GenesisNFTVesting is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     using Math for uint256;
 
+    /**
+     * @notice Genesis NFT Series 1 contract address
+     */
     address public genNftSeries1Contract;
+
+    /**
+     * @notice Genesis NFT Series 2 contract address
+     */
     address public genNftSeries2Contract;
+
+    /**
+     * @notice Staking Genesis NFT contract address
+     */
     address public stakingGenNftContract;
 
     /**
@@ -80,10 +101,11 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         address genNftSeries2Contract_,
         address stakingGenNftContract_
     ) {
-        require(token_ != address(0), "Token is zero address");
-        require(genNftSeries1Contract_ != address(0), "Gen1 is zero address");
-        require(genNftSeries2Contract_ != address(0), "Gen2 is zero address");
-        require(stakingGenNftContract_ != address(0), "Staking is zero address");
+        if (token_ == address(0)) revert GenesisNftVesting__TokenZeroAddress();
+        if (genNftSeries1Contract_ == address(0)) revert GenesisNftVesting__GenesisNftSeries1ZeroAddress();
+        if (genNftSeries2Contract_ == address(0)) revert GenesisNftVesting__GenesisNftSeries2ZeroAddress();
+        if (stakingGenNftContract_ == address(0)) revert GenesisNftVesting__StakingGenesisNftZeroAddress();
+
         token = token_;
         duration = duration_;
         cadence = cadence_;
@@ -102,8 +124,8 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         uint256[] memory series2TokenIds,
         address beneficiary
     ) public virtual {
-        require(accessCheck(beneficiary), "Unauthorized access!");
-        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
+        if (!accessCheck(beneficiary)) revert GenesisNftVesting__AccessDenied();
+        if (block.timestamp < vestingStartTimestamp) revert GenesisNftVesting__VestingNotStarted();
 
         uint256[] memory stakedSeries1Tokens = IStakingGenesisNFT(stakingGenNftContract).getStakedTokensLarge(
             beneficiary
@@ -113,7 +135,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         );
 
         if (series1TokenIds.length > 0) {
-            for (uint i = 0; i < series1TokenIds.length; i++) {
+            for (uint i; i < series1TokenIds.length; ) {
                 if (
                     IERC721Upgradeable(genNftSeries1Contract).ownerOf(series1TokenIds[i]) == beneficiary ||
                     _contains(stakedSeries1Tokens, series1TokenIds[i])
@@ -127,11 +149,14 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                 } else {
                     revert TokenNotOwnedByWallet(1, series1TokenIds[i]);
                 }
+                unchecked {
+                    i++;
+                }
             }
         }
 
         if (series2TokenIds.length > 0) {
-            for (uint i = 0; i < series2TokenIds.length; i++) {
+            for (uint i; i < series2TokenIds.length; ) {
                 if (
                     IERC721Upgradeable(genNftSeries2Contract).ownerOf(series2TokenIds[i]) == beneficiary ||
                     _contains(stakedSeries2Tokens, series2TokenIds[i])
@@ -144,6 +169,9 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                     );
                 } else {
                     revert TokenNotOwnedByWallet(2, series2TokenIds[i]);
+                }
+                unchecked {
+                    i++;
                 }
             }
         }
@@ -158,8 +186,8 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         uint256 actualTimestamp,
         address beneficiary
     ) public view returns (uint256) {
-        require(accessCheck(beneficiary), "Access denied");
-        uint256 amount = 0;
+        if (!accessCheck(beneficiary)) revert GenesisNftVesting__AccessDenied();
+        uint256 amount;
         uint256[] memory stakedSeries1Tokens = IStakingGenesisNFT(stakingGenNftContract).getStakedTokensLarge(
             beneficiary
         );
@@ -167,7 +195,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
             beneficiary
         );
         if (series1TokenIds.length > 0) {
-            for (uint i = 0; i < series1TokenIds.length; i++) {
+            for (uint i; i < series1TokenIds.length; ) {
                 if (
                     IERC721Upgradeable(genNftSeries1Contract).ownerOf(series1TokenIds[i]) == beneficiary ||
                     _contains(stakedSeries1Tokens, series1TokenIds[i])
@@ -176,11 +204,14 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                 } else {
                     revert TokenNotOwnedByWallet(1, series1TokenIds[i]);
                 }
+                unchecked {
+                    i++;
+                }
             }
         }
 
         if (series2TokenIds.length > 0) {
-            for (uint i = 0; i < series2TokenIds.length; i++) {
+            for (uint i; i < series2TokenIds.length; ) {
                 if (
                     IERC721Upgradeable(genNftSeries2Contract).ownerOf(series2TokenIds[i]) == beneficiary ||
                     _contains(stakedSeries2Tokens, series2TokenIds[i])
@@ -189,17 +220,22 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
                 } else {
                     revert TokenNotOwnedByWallet(2, series2TokenIds[i]);
                 }
+                unchecked {
+                    i++;
+                }
             }
         }
         return amount;
     }
 
     function _contains(uint256[] memory array, uint256 value) private pure returns (bool) {
-        bool arrayContainsValue = false;
-        for (uint i = 0; i < array.length; i++) {
-            if (array[i] == value) arrayContainsValue = true;
+        for (uint i; i < array.length; ) {
+            if (array[i] == value) return true;
+            unchecked {
+                i++;
+            }
         }
-        return arrayContainsValue;
+        return false;
     }
 
     function releaseableAmountPerNFT(
@@ -207,7 +243,7 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
         uint256 tokenId,
         uint256 actualTimestamp
     ) public view returns (uint256) {
-        require(actualTimestamp >= vestingStartTimestamp, "Vesting has not started yet!");
+        if (block.timestamp < vestingStartTimestamp) revert GenesisNftVesting__VestingNotStarted();
         uint256 cadencesAmount = (actualTimestamp - vestingStartTimestamp) / cadence;
         if (series1) {
             uint256 claimed = amountClaimedBySeries1TokenId[tokenId];
@@ -223,17 +259,16 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
     }
 
     function releasePerNFT(bool isSeries1, uint256 tokenId, uint256 amount, address beneficiary) public {
-        require(
+        if (!accessCheck(beneficiary)) revert GenesisNftVesting__AccessDenied();
+        if (
             isSeries1
                 ? IERC721Upgradeable(genNftSeries1Contract).ownerOf(tokenId) == msg.sender
-                : IERC721Upgradeable(genNftSeries2Contract).ownerOf(tokenId) == msg.sender,
-            "You are not owner of given Genesis NFT!"
-        );
-        require(accessCheck(beneficiary), "Unauthorized access!");
-        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
+                : IERC721Upgradeable(genNftSeries2Contract).ownerOf(tokenId) == msg.sender
+        ) revert GenesisNftVesting__NotOwnerOfGenesisNft();
+        if (block.timestamp < vestingStartTimestamp) revert GenesisNftVesting__VestingNotStarted();
         uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, block.timestamp);
-        require(availableAmount >= amount, "Not enough tokens vested!");
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough tokens to process the release!");
+        if (availableAmount < amount) revert GenesisNftVesting__NotEnoughTokensVested();
+        if (IERC20(token).balanceOf(address(this)) < amount) revert GenesisNftVesting__InsufficientTokensOnContract();
 
         released += amount;
         if (isSeries1) {
@@ -253,8 +288,11 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
     }
 
     function bonusSetup(uint256[] memory series1tokenIds) public onlyOwner {
-        for (uint i = 0; i < series1tokenIds.length; i++) {
+        for (uint i; i < series1tokenIds.length; ) {
             bonusTokens[series1tokenIds[i]] = true;
+            unchecked {
+                i++;
+            }
         }
     }
 

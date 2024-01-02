@@ -7,6 +7,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
+error BaseVesting__UnauthorizedAccess();
+error BaseVesting__VestingNotStarted();
+error BaseVesting__NotEnoughTokensVested();
+error BaseVesting__NotEnoughTokensOnContract();
+
 /**
  * @title Base vesting schedule contract
  */
@@ -55,7 +60,7 @@ abstract contract BaseVesting is ReentrancyGuard, Ownable {
      * @param token Token address
      * @param amount Amount released
      */
-    event Released(address indexed beneficiary, address indexed token, uint256 amount);
+    event Released(address indexed beneficiary, address indexed token, uint256 indexed amount);
 
     /**
      * @notice Initializes the contract
@@ -88,15 +93,17 @@ abstract contract BaseVesting is ReentrancyGuard, Ownable {
      * @dev Release the tokens from this contract to the beneficiary
      */
     function release(uint256 amount, address beneficiary) public virtual {
-        require(accessCheck(), "Unauthorized access!");
-        require(block.timestamp >= vestingStartTimestamp, "Vesting has not started yet!");
-        require(amount <= releaseableAmount(), "Not enough tokens vested!");
-        require(IERC20(token).balanceOf(address(this)) >= amount, "Not enough currency to process the release!");
+        address tokenAddress = token;
+        if (!accessCheck()) revert BaseVesting__UnauthorizedAccess();
+        if (block.timestamp < vestingStartTimestamp) revert BaseVesting__VestingNotStarted();
+        if (amount > releaseableAmount()) revert BaseVesting__NotEnoughTokensVested();
+        if (IERC20(tokenAddress).balanceOf(address(this)) < amount) revert BaseVesting__NotEnoughTokensOnContract();
 
         released += amount;
-        emit Released(beneficiary, token, amount);
 
-        IERC20(token).safeTransfer(beneficiary, amount);
+        IERC20(tokenAddress).safeTransfer(beneficiary, amount);
+
+        emit Released(beneficiary, tokenAddress, amount);
     }
 
     /**

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -12,6 +11,14 @@ import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {_transferFrom} from "./libraries/Utils.sol";
 import {LibProject} from "./libraries/LibProject.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
+
+error Project__TokenZeroAddress();
+error Project__InvestmentFundZeroAddress();
+error Project__DexSwapperZeroAddress();
+error Project__VestingZeroAddress();
+error Project__AmountLessOrEqualZero();
+error Project__AmountExceedAvailableFunds();
+error Project__NotInvestmentFund();
 
 /**
  * @title Project contract
@@ -79,9 +86,9 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
         address investmentFund_,
         uint256 fundsAllocation_
     ) public initializer {
-        require(token_ != address(0), "Token is zero address");
-        require(investmentFund_ != address(0), "Investment is zero address");
-        require(swapper_ != address(0), "Swapper is zero address");
+        if (token_ == address(0)) revert Project__TokenZeroAddress();
+        if (investmentFund_ == address(0)) revert Project__InvestmentFundZeroAddress();
+        if (swapper_ == address(0)) revert Project__DexSwapperZeroAddress();
         __Context_init();
         __OwnablePausable_init(owner_);
         __ReentrancyGuard_init();
@@ -97,10 +104,12 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
      * @inheritdoc IProject
      */
     function setVesting(address vesting_) external onlyOwner {
-        require(vesting_ != address(0), "Vesting is zero address");
+        if (vesting_ == address(0)) revert Project__VestingZeroAddress();
 
-        emit VestingContractChanged(_msgSender(), address(vesting), vesting_);
+        address vestingAddress = address(vesting);
         vesting = IVesting(vesting_);
+
+        emit VestingContractChanged(_msgSender(), vestingAddress, vesting_);
     }
 
     /**
@@ -114,7 +123,7 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
      * @inheritdoc IProject
      */
     function sellVestedToInvestmentFund(uint256 amount) external onlyOwner {
-        require(amount > 0, "Amount has to be above zero");
+        if (amount <= 0) revert Project__AmountLessOrEqualZero();
 
         vesting.release(amount);
 
@@ -132,10 +141,9 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
      * @inheritdoc IProject
      */
     function deployFunds(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount must be higher than zero");
-        require(amount <= fundsAllocation - fundsDeployed, "Amount exeeds available funds for this project");
-        require(_msgSender() == investmentFund, "Only investment fund can deploy funds");
-
+        if (amount <= 0) revert Project__AmountLessOrEqualZero();
+        if (amount > fundsAllocation - fundsDeployed) revert Project__AmountExceedAvailableFunds();
+        if (_msgSender() != investmentFund) revert Project__NotInvestmentFund();
         fundsDeployed += amount;
         status = LibProject.STATUS_DEPLOYED;
 

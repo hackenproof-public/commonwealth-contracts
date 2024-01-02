@@ -18,6 +18,16 @@ interface ZkSyncGenesisNFTmirror {
     function destroyToken(uint) external;
 }
 
+error GenesisNft__NotEnoughGas();
+error GenesisNft__OwnerAccountZeroAddress();
+error GenesisNft__NewOwnerAccountZeroAddress();
+error GenesisNft__RecipientZeroAddress();
+error GenesisNft__TokenNotOwnedOrApproved();
+error GenesisNft__ZkSyncBridgeZeroAddress();
+error GenesisNft__ZkSyncMirrorZeroAddress();
+error GenesisNft__RecipientsAmountsLengthsMismatch();
+error GenesisNft__ZeroTokenAmount();
+
 /**
  * @title Genesis NFT contract
  */
@@ -49,7 +59,7 @@ abstract contract GenesisNFT is
     event TokenURIChanged(address indexed caller, string uri);
 
     modifier enoughGas(uint256 _value, uint256 _gasLimit) {
-        require(_value >= _gasLimit, "Not enough gas");
+        if (_value < _gasLimit) revert GenesisNft__NotEnoughGas();
         _;
     }
 
@@ -83,7 +93,7 @@ abstract contract GenesisNFT is
         __ERC2981_init();
         __ERC721Holder_init();
 
-        require(owner_ != address(0), "Owner account is zero address");
+        if (owner_ == address(0)) revert GenesisNft__OwnerAccountZeroAddress();
 
         _grantRole(DEFAULT_ADMIN_ROLE, owner_);
         _grantRole(MINTER_ROLE, owner_);
@@ -109,7 +119,7 @@ abstract contract GenesisNFT is
      * @param newOwner Address of new contract owner
      */
     function setOwner(address newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newOwner != address(0), "New owner is zero address");
+        if (newOwner == address(0)) revert GenesisNft__NewOwnerAccountZeroAddress();
 
         _owner = newOwner;
     }
@@ -142,11 +152,14 @@ abstract contract GenesisNFT is
      * @inheritdoc IERC721Mintable
      */
     function mint(address recipient, uint256 amount) external onlyRole(MINTER_ROLE) {
-        require(recipient != address(0), "Recipient is zero address");
+        if (recipient == address(0)) revert GenesisNft__RecipientZeroAddress();
 
         uint256 startId = totalSupply();
-        for (uint256 i = 0; i < amount; i++) {
+        for (uint256 i; i < amount; ) {
             _safeMint(recipient, startId + i);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -157,13 +170,16 @@ abstract contract GenesisNFT is
      * @param gasLimit Gas limit for zkSync transaction
      */
     function mintNotify(address recipient, uint256 amount, uint256 gasLimit) external payable onlyRole(MINTER_ROLE) {
-        require(recipient != address(0), "Recipient is zero address");
+        if (recipient == address(0)) revert GenesisNft__RecipientZeroAddress();
         uint256 valuePerToken = msg.value / amount;
 
         uint256 startId = totalSupply();
-        for (uint256 i = 0; i < amount; i++) {
+        for (uint256 i; i < amount; ) {
             _safeMint(recipient, startId + i);
             _notifyZkSyncMirrorMove(startId + i, recipient, valuePerToken, gasLimit);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -174,11 +190,17 @@ abstract contract GenesisNFT is
         _validateMintBatch(recipients, amounts);
 
         uint256 startId = totalSupply();
-        for (uint256 i = 0; i < recipients.length; i++) {
-            for (uint256 j = 0; j < amounts[i]; j++) {
+        for (uint256 i; i < recipients.length; ) {
+            for (uint256 j; j < amounts[i]; ) {
                 _safeMint(recipients[i], startId + j);
+                unchecked {
+                    j++;
+                }
             }
             startId += amounts[i];
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -220,7 +242,7 @@ abstract contract GenesisNFT is
      */
     function transferFromNotify(address from, address to, uint256 tokenId, uint256 gasLimit) public payable {
         //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
+        if (!_isApprovedOrOwner(_msgSender(), tokenId)) revert GenesisNft__TokenNotOwnedOrApproved();
 
         _transfer(from, to, tokenId);
         _notifyZkSyncMirrorMove(tokenId, to, msg.value, gasLimit);
@@ -253,7 +275,7 @@ abstract contract GenesisNFT is
      * @param zkSyncBridge New metadata URI
      */
     function setZkSyncBridge(address zkSyncBridge) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(zkSyncBridge != address(0), "this address is zero");
+        if (zkSyncBridge == address(0)) revert GenesisNft__ZkSyncBridgeZeroAddress();
 
         _zkSyncBridge = zkSyncBridge;
     }
@@ -263,7 +285,7 @@ abstract contract GenesisNFT is
      * @param zkSyncMirror New metadata URI
      */
     function setZkSyncMirror(address zkSyncMirror) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(zkSyncMirror != address(0), "this address is zero");
+        if (zkSyncMirror == address(0)) revert GenesisNft__ZkSyncMirrorZeroAddress();
 
         _zkSyncMirror = zkSyncMirror;
     }
@@ -308,10 +330,13 @@ abstract contract GenesisNFT is
     }
 
     function _validateMintBatch(address[] memory recipients, uint256[] memory amounts) private pure {
-        require(recipients.length == amounts.length, "Recipients and amounts length mismatch");
-        for (uint256 i = 0; i < recipients.length; i++) {
-            require(recipients[i] != address(0), "Recipient is zero address");
-            require(amounts[i] > 0, "Tokens amount is equal to zero");
+        if (recipients.length == amounts.length) revert GenesisNft__RecipientsAmountsLengthsMismatch();
+        for (uint256 i; i < recipients.length; ) {
+            if (recipients[i] != address(0)) revert GenesisNft__RecipientZeroAddress();
+            if (amounts[i] > 0) revert GenesisNft__ZeroTokenAmount();
+            unchecked {
+                i++;
+            }
         }
     }
 

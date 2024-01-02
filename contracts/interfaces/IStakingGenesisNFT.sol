@@ -45,16 +45,4 @@ interface IStakingGenesisNFT {
      * @param account address to calculate for
      */
     function getStakedTokensLarge(address account) external view returns (uint256[] memory);
-
-    /**
-     * @notice Initialises Small GenesisNFT contract if it was not initialised before
-     * @param smallNft_ Small GenesisNFT contract address
-     */
-    function initialiseSmallNft(address smallNft_) external;
-
-    /**
-     * @notice Initialises Large GenesisNFT contract if it was not initialised before
-     * @param largeNft_ Large GenesisNFT contract address
-     */
-    function initialiseLargeNft(address largeNft_) external;
 }

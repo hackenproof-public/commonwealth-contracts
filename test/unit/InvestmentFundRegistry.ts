@@ -124,7 +124,7 @@ describe('Investment fund registry unit tests', () => {
       const { investmentFundRegistry, owner } = await loadFixture(deployFixture);
 
       await expect(investmentFundRegistry.connect(owner).removeFund(constants.AddressZero)).to.be.revertedWith(
-        'Removing fund from registry failed'
+        'Removing fund failed'
       );
     });
   });

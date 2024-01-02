@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721EnumerableUpgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CheckpointsUpgradeable.sol";
@@ -10,6 +10,14 @@ import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/util
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
+
+error InvestmentNft__AlreadyMinter();
+error InvestmentNft__NotMinter();
+error InvestmentNft__InvalidTokenValue();
+error InvestmentNft__NotTokenOwner();
+error InvestmentNft__SplitLimitExceeded();
+error InvestmentNft__TokenUrisAndValuesLengthsMismatch();
+error InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
 
 /**
  * @title Investment NFT contract
@@ -77,7 +85,7 @@ contract InvestmentNFT is
      * @param account Address to be added
      */
     function addMinter(address account) external onlyOwner {
-        require(!_minters[account], "Account already has minter rights");
+        if (_minters[account]) revert InvestmentNft__AlreadyMinter();
 
         _minters[account] = true;
         emit MinterAdded(_msgSender(), account);
@@ -88,7 +96,7 @@ contract InvestmentNFT is
      * @param account Address to be removed
      */
     function removeMinter(address account) external onlyOwner {
-        require(_minters[account], "Account does not have minter rights");
+        if (!_minters[account]) revert InvestmentNft__NotMinter();
 
         _minters[account] = false;
         emit MinterRemoved(_msgSender(), account);
@@ -106,7 +114,7 @@ contract InvestmentNFT is
      * @inheritdoc IInvestmentNFT
      */
     function mint(address to, uint256 value, string calldata tokenUri) external whenNotPaused {
-        require(_minters[_msgSender()], "Account does not have minter rights");
+        if (!_minters[_msgSender()]) revert InvestmentNft__NotMinter();
         _mintWithURI(to, value, tokenUri);
     }
 
@@ -193,7 +201,7 @@ contract InvestmentNFT is
     }
 
     function _mintWithURI(address to, uint256 value, string calldata tokenUri) private {
-        require(value > 0, "Invalid token value");
+        if (value <= 0) revert InvestmentNft__InvalidTokenValue();
 
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -209,14 +217,14 @@ contract InvestmentNFT is
     }
 
     function _validateSplit(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) private view {
-        require(_msgSender() == ownerOf(tokenId), "Caller is not a token owner");
-        require(values.length <= SPLIT_LIMIT, "Split limit exceeded");
-        require(values.length == tokenUris.length, "Values and tokens URIs length mismatch");
+        if (_msgSender() == ownerOf(tokenId)) revert InvestmentNft__NotTokenOwner();
+        if (values.length <= SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
+        if (values.length == tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
         uint256 valuesSum = 0;
         for (uint256 i = 0; i < values.length; i++) {
             valuesSum += values[i];
         }
-        require(valuesSum == tokenValue[tokenId], "Tokens value before and after split do not match");
+        if (valuesSum == tokenValue[tokenId]) revert InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
     }
 
     function _beforeTokenTransfer(

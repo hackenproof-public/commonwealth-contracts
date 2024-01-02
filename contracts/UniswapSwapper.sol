@@ -9,6 +9,8 @@ import {IDexQuoter} from "./interfaces/IDexQuoter.sol";
 import {ISwapper} from "./interfaces/ISwapper.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 
+error UniswapSwapper__DexQuoterZeroAddress();
+
 contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable {
     ISwapRouter public swapRouter;
     IDexQuoter public dexQuoter;
@@ -26,7 +28,7 @@ contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable
      * @param _feeTier Fee tier value
      */
     function initialize(address _owner, address _swapRouter, uint24 _feeTier, address dexQuoter_) public initializer {
-        require(dexQuoter_ != address(0), "DEX quoter is zero address");
+        if (dexQuoter_ == address(0)) revert UniswapSwapper__DexQuoterZeroAddress();
         __Context_init();
         __OwnablePausable_init(_owner);
 

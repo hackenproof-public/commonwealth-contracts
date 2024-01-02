@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {IERC20Upgradeable, SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {IPeriodicVesting, IVesting} from "./interfaces/IPeriodicVesting.sol";
 
 /**
@@ -146,9 +146,6 @@ contract PeriodicVesting is IPeriodicVesting, ERC165Upgradeable {
         return token;
     }
 
-    /**
-     * @inheritdoc IERC165Upgradeable
-     */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return
             interfaceId == type(IPeriodicVesting).interfaceId ||

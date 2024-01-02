@@ -8,6 +8,14 @@ import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IStakingGenesisNFT} from "./interfaces/IStakingGenesisNFT.sol";
 
+error StakingGenesisNft__OwnerZeroAddress();
+error StakingGenesisNft__SmallNftZeroAddress();
+error StakingGenesisNft__LargeNftZeroAddress();
+error StakingGenesisNft__InvalidFinalTimestamp();
+error StakingGenesisNft__StakingFinished();
+error StakingGenesisNft__NoTokensStaked();
+error StakingGenesisNft__UnexpectedTokenId();
+
 /**
  * @title Staking Genesis NFT
  */
@@ -44,53 +52,47 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
         __Context_init();
         __OwnablePausable_init(owner);
 
+        if (owner == address(0)) revert StakingGenesisNft__OwnerZeroAddress();
+        if (smallNft_ == address(0)) revert StakingGenesisNft__SmallNftZeroAddress();
+        if (largeNft_ == address(0)) revert StakingGenesisNft__LargeNftZeroAddress();
+
         finalTimestamp = finalTimestamp_;
         smallNft = IERC721Upgradeable(smallNft_);
         largeNft = IERC721Upgradeable(largeNft_);
         rewardPeriod = rewardPeriod_;
     }
 
-    function initialiseSmallNft(address smallNft_) external onlyOwner {
-        require(address(smallNft) == address(0), "Small NFT was already initialised");
-
-        smallNft = IERC721Upgradeable(smallNft_);
-    }
-
-    function initialiseLargeNft(address largeNft_) external onlyOwner {
-        require(address(largeNft) == address(0), "Large NFT was already initialised");
-
-        largeNft = IERC721Upgradeable(largeNft_);
-    }
-
     function setFinalTimestamp(uint256 finalTimestamp_) external onlyOwner {
-        require(finalTimestamp_ >= block.timestamp, "Cannot set final timestamp for one in the past");
+        if (finalTimestamp_ < block.timestamp) revert StakingGenesisNft__InvalidFinalTimestamp();
 
         finalTimestamp = finalTimestamp_;
     }
 
     function stake(uint256[] calldata tokenIdsSmall, uint256[] calldata tokenIdsLarge) external whenNotPaused {
-        require(block.timestamp <= finalTimestamp, "Staking time has ended");
+        if (block.timestamp > finalTimestamp) revert StakingGenesisNft__StakingFinished();
 
         if (tokenIdsSmall.length > 0) {
-            require(address(smallNft) != address(0), "Small NFT contract was not configured");
-
             stakedSmallKeys[_msgSender()].push(block.timestamp);
             _saveStake(tokenIdsSmall, stakedSmall[_msgSender()], smallNft);
         }
 
         if (tokenIdsLarge.length > 0) {
-            require(address(largeNft) != address(0), "Large NFT contract was not configured");
-
             stakedLargeKeys[_msgSender()].push(block.timestamp);
             _saveStake(tokenIdsLarge, stakedLarge[_msgSender()], largeNft);
         }
 
-        for (uint256 i = 0; i < tokenIdsSmall.length; i++) {
+        for (uint256 i; i < tokenIdsSmall.length; ) {
             smallNft.safeTransferFrom(_msgSender(), address(this), tokenIdsSmall[i]);
+            unchecked {
+                i++;
+            }
         }
 
-        for (uint256 i = 0; i < tokenIdsLarge.length; i++) {
+        for (uint256 i; i < tokenIdsLarge.length; ) {
             largeNft.safeTransferFrom(_msgSender(), address(this), tokenIdsLarge[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -111,12 +113,18 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
         rewardsSmall[_msgSender()] += smallReward;
         rewardsLarge[_msgSender()] += largeReward;
 
-        for (uint256 i = 0; i < tokenIdsSmall.length; i++) {
+        for (uint256 i; i < tokenIdsSmall.length; ) {
             smallNft.safeTransferFrom(address(this), _msgSender(), tokenIdsSmall[i]);
+            unchecked {
+                i++;
+            }
         }
 
-        for (uint256 i = 0; i < tokenIdsLarge.length; i++) {
+        for (uint256 i; i < tokenIdsLarge.length; ) {
             largeNft.safeTransferFrom(address(this), _msgSender(), tokenIdsLarge[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -133,17 +141,27 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
     }
 
     function getStakedTokensSmall(address account) external view returns (uint256[] memory) {
-        uint256 amount = 0;
-        for (uint256 i = 0; i < stakedSmallKeys[account].length; i++) {
+        uint256 amount;
+        uint256 stakedSmallKeysLength = stakedSmallKeys[account].length;
+        for (uint256 i; i < stakedSmallKeysLength; ) {
             amount += stakedSmall[account][stakedSmallKeys[account][i]].length;
+            unchecked {
+                i++;
+            }
         }
 
         uint256[] memory tokenIds = new uint256[](amount);
-        uint256 index = 0;
-        for (uint256 i = 0; i < stakedSmallKeys[account].length; i++) {
+        uint256 index;
+        for (uint256 i; i < stakedSmallKeys[account].length; ) {
             uint256 key = stakedSmallKeys[account][i];
-            for (uint256 j = 0; j < stakedSmall[account][key].length; j++) {
+            for (uint256 j; j < stakedSmall[account][key].length; ) {
                 tokenIds[index++] = stakedSmall[account][key][j];
+                unchecked {
+                    j++;
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -151,18 +169,28 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
     }
 
     function getStakedTokensLarge(address account) external view returns (uint256[] memory) {
-        uint256 amount = 0;
-
-        for (uint256 i = 0; i < stakedLargeKeys[account].length; i++) {
+        uint256 amount;
+        uint256 stakedLargeKeysLength = stakedLargeKeys[account].length;
+        for (uint256 i; i < stakedLargeKeysLength; ) {
             amount += stakedLarge[account][stakedLargeKeys[account][i]].length;
+            unchecked {
+                i++;
+            }
         }
 
         uint256[] memory tokenIds = new uint256[](amount);
-        uint256 index = 0;
-        for (uint256 i = 0; i < stakedLargeKeys[account].length; i++) {
+        uint256 index;
+        for (uint256 i; i < stakedLargeKeysLength; ) {
             uint256 key = stakedLargeKeys[account][i];
-            for (uint256 j = 0; j < stakedLarge[account][key].length; j++) {
+            uint256 stakedLargeAccountKeyLength = stakedLarge[account][key].length;
+            for (uint256 j; j < stakedLargeAccountKeyLength; ) {
                 tokenIds[index++] = stakedLarge[account][key][j];
+                unchecked {
+                    j++;
+                }
+            }
+            unchecked {
+                i++;
             }
         }
 
@@ -174,10 +202,13 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
         mapping(uint256 => uint256[]) storage staked,
         IERC721Upgradeable nft
     ) internal {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(nft.ownerOf(tokenIds[i]) == _msgSender(), "Unexpected tokenId");
+        for (uint256 i; i < tokenIds.length; ) {
+            if (nft.ownerOf(tokenIds[i]) != _msgSender()) revert StakingGenesisNft__UnexpectedTokenId();
 
             staked[block.timestamp].push(tokenIds[i]);
+            unchecked {
+                i++;
+            }
         }
     }
 
@@ -187,20 +218,29 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
         mapping(uint256 => uint256[]) storage staked,
         uint256 dailyReward
     ) internal returns (uint256) {
-        uint256 reward = 0;
+        uint256 reward;
 
-        for (uint i = 0; i < tokenIds.length; i++) {
-            bool found = false;
-            for (uint j = 0; !found && j < keys.length; j++) {
-                for (uint k = 0; !found && k < staked[keys[j]].length; k++) {
+        for (uint i; i < tokenIds.length; ) {
+            bool found;
+            for (uint j; !found && j < keys.length; ) {
+                for (uint k; !found && k < staked[keys[j]].length; ) {
                     if (staked[keys[j]][k] == tokenIds[i]) {
                         _remove(k, staked[keys[j]]);
                         reward += _calculateOneTokenReward(keys[j], dailyReward);
                         found = true;
                     }
+                    unchecked {
+                        k++;
+                    }
+                }
+                unchecked {
+                    j++;
                 }
             }
-            require(found, "You have not staked some of these tokens");
+            if (!found) revert StakingGenesisNft__NoTokensStaked();
+            unchecked {
+                i++;
+            }
         }
 
         return reward;
@@ -211,12 +251,13 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
         mapping(uint256 => uint256[]) storage staked,
         uint dailyReward
     ) internal view returns (uint256) {
-        uint256 reward = 0;
-
-        for (uint256 i = 0; i < keys.length; i++) {
+        uint256 reward;
+        for (uint256 i; i < keys.length; ) {
             reward += _calculateOneTokenReward(keys[i], dailyReward) * staked[keys[i]].length;
+            unchecked {
+                i++;
+            }
         }
-
         return reward;
     }
 
