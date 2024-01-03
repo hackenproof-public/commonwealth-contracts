@@ -41,7 +41,7 @@ interface IProject {
      * @notice Sells amount of vested tokens to a given investment fund
      * @param amount amount of vested tokens to be sold
      */
-    function sellVestedToInvestmentFund(uint256 amount) external;
+    function sellVestedToInvestmentFund(uint256 amount, uint256 slippageLimit) external;
 
     /**
      * @notice Returns funds allocation for this project
