@@ -122,7 +122,7 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
     /**
      * @inheritdoc IProject
      */
-    function sellVestedToInvestmentFund(uint256 amount) external onlyOwner {
+    function sellVestedToInvestmentFund(uint256 amount, uint256 slippageLimit) external onlyOwner {
         if (amount <= 0) revert Project__AmountLessOrEqualZero();
 
         vesting.release(amount);
@@ -131,7 +131,7 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
         address targetToken = IInvestmentFund(investmentFund).getDetails().currency;
 
         IERC20Upgradeable(sourceToken).safeIncreaseAllowance(address(swapper), amount);
-        uint256 amountOut = swapper.swap(amount, sourceToken, targetToken);
+        uint256 amountOut = swapper.swap(amount, sourceToken, targetToken, slippageLimit);
 
         IERC20Upgradeable(targetToken).safeIncreaseAllowance(address(investmentFund), amountOut);
         IInvestmentFund(investmentFund).provideProfit(amountOut);

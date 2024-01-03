@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { ISwapRouter, UniswapQuoter, UniswapSwapper } from '../../typechain-types';
+import { ISwapRouter, UniswapSwapper } from '../../typechain-types';
 
 describe('Uniswap swapper unit tests', () => {
   const SOME_AMOUNT = 12223;
@@ -12,17 +12,17 @@ describe('Uniswap swapper unit tests', () => {
   const SOME_ADDRESS = '0xbd3Afb0bB76683eCb4225F9DBc91f998713C3b01';
   const SOME_OTHER_ADDRESS = '0x388C818CA8B9251b393131C08a736A67ccB19297';
   const ZERO_POINT_THREE_FEE_TIER = 3000;
+  const SOME_SLIPPAGE = 10; // 1% slippage
 
   const deploySwapper = async () => {
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
     router.exactInputSingle.returns(SOME_OTHER_AMOUNT);
 
     const uniswapSwapper: UniswapSwapper = await deployProxy(
       'UniswapSwapper',
-      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, quoter.address],
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
       deployer
     );
 
@@ -33,29 +33,13 @@ describe('Uniswap swapper unit tests', () => {
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
     const uniswapSwapper: UniswapSwapper = await deployProxy(
       'UniswapSwapper',
-      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, quoter.address],
+      [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER],
       deployer
     );
 
     expect(await uniswapSwapper.swapRouter()).to.equal(router.address);
-  });
-
-  it('Should revert deploying if dex quoter is zero address', async () => {
-    const { uniswapSwapper } = await loadFixture(deploySwapper);
-    const [deployer, owner] = await ethers.getSigners();
-
-    const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
-    await expect(
-      deployProxy(
-        'UniswapSwapper',
-        [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, constants.AddressZero],
-        deployer
-      )
-    ).to.be.revertedWithCustomError(uniswapSwapper,'UniswapSwapper__DexQuoterZeroAddress');
   });
 
   it('Should revert deploying if dex swap router is zero address', async () => {
@@ -63,11 +47,10 @@ describe('Uniswap swapper unit tests', () => {
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
-    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
     await expect(
       deployProxy(
         'UniswapSwapper',
-        [owner.address, constants.AddressZero, ZERO_POINT_THREE_FEE_TIER, quoter.address],
+        [owner.address, constants.AddressZero, ZERO_POINT_THREE_FEE_TIER],
         deployer
       )
     ).to.be.revertedWithCustomError(uniswapSwapper,'UniswapSwapper__DexSwapRouterZeroAddress');
@@ -76,7 +59,7 @@ describe('Uniswap swapper unit tests', () => {
   it('Should emit swapped event', async () => {
     const { uniswapSwapper, deployer } = await loadFixture(deploySwapper);
 
-    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS))
+    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS, SOME_SLIPPAGE))
       .to.emit(uniswapSwapper, 'Swapped')
       .withArgs(deployer.address, SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_AMOUNT, SOME_OTHER_ADDRESS);
   });
@@ -85,7 +68,7 @@ describe('Uniswap swapper unit tests', () => {
     const { uniswapSwapper, owner } = await loadFixture(deploySwapper);
 
     await uniswapSwapper.connect(owner).pause();
-    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS)).to.be.revertedWith(
+    await expect(uniswapSwapper.swap(SOME_AMOUNT, SOME_ADDRESS, SOME_OTHER_ADDRESS, SOME_SLIPPAGE)).to.be.revertedWith(
       'Pausable: paused'
     );
   });

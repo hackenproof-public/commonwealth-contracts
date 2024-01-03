@@ -198,7 +198,7 @@ describe('Project unit tests', () => {
     it('Should revert if amount is zero', async () => {
       const { project, owner } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0)).to.be.revertedWithCustomError(project,'Project__AmountLessOrEqualZero');
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 10)).to.be.revertedWithCustomError(project,'Project__AmountLessOrEqualZero');
     });
   });
 });
