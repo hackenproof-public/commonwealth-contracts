@@ -330,10 +330,10 @@ abstract contract GenesisNFT is
     }
 
     function _validateMintBatch(address[] memory recipients, uint256[] memory amounts) private pure {
-        if (recipients.length == amounts.length) revert GenesisNft__RecipientsAmountsLengthsMismatch();
+        if (recipients.length != amounts.length) revert GenesisNft__RecipientsAmountsLengthsMismatch();
         for (uint256 i; i < recipients.length; ) {
-            if (recipients[i] != address(0)) revert GenesisNft__RecipientZeroAddress();
-            if (amounts[i] > 0) revert GenesisNft__ZeroTokenAmount();
+            if (recipients[i] == address(0)) revert GenesisNft__RecipientZeroAddress();
+            if (amounts[i] <= 0) revert GenesisNft__ZeroTokenAmount();
             unchecked {
                 i++;
             }

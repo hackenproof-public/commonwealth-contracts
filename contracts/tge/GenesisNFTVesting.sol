@@ -260,10 +260,10 @@ contract GenesisNFTVesting is ReentrancyGuard, Ownable {
 
     function releasePerNFT(bool isSeries1, uint256 tokenId, uint256 amount, address beneficiary) public {
         if (!accessCheck(beneficiary)) revert GenesisNftVesting__AccessDenied();
-        if (
-            isSeries1
+        if (!
+            (isSeries1
                 ? IERC721Upgradeable(genNftSeries1Contract).ownerOf(tokenId) == msg.sender
-                : IERC721Upgradeable(genNftSeries2Contract).ownerOf(tokenId) == msg.sender
+                : IERC721Upgradeable(genNftSeries2Contract).ownerOf(tokenId) == msg.sender)
         ) revert GenesisNftVesting__NotOwnerOfGenesisNft();
         if (block.timestamp < vestingStartTimestamp) revert GenesisNftVesting__VestingNotStarted();
         uint256 availableAmount = releaseableAmountPerNFT(isSeries1, tokenId, block.timestamp);

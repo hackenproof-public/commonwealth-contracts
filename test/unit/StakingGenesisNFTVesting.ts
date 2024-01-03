@@ -55,6 +55,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
     });
 
     it('Should revert deploying if staking nft is zero address', async () => {
+      const { stakingGenNFTVesting } = await loadFixture(deploySimpleVesting);
       const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
 
@@ -67,10 +68,11 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
           [owner.address, wlth.address, allocation, vestingStartTimestamp, constants.AddressZero],
           deployer
         )
-      ).to.be.revertedWith('Genesis NFT is zero address');
+      ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__TokenZeroAddress');
     });
 
     it('Should revert deploying if token is zero address', async () => {
+      const { stakingGenNFTVesting } = await loadFixture(deploySimpleVesting);
       const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
       const vestingStartTimestamp = referenceTimestamp + ONE_MONTH;
 
@@ -83,7 +85,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
           [owner.address, constants.AddressZero, allocation, vestingStartTimestamp, stakingGenesisNft.address],
           deployer
         )
-      ).to.be.revertedWith('Token is zero address');
+      ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__GenesisNftZeroAddress');
     });
   });
 
@@ -117,13 +119,14 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
         wlth.balanceOf.returns(allocation);
         stakingGenesisNft.getRewardLarge.returns(0);
         stakingGenesisNft.getRewardSmall.returns(0);
+        await time.increaseTo(vestingStartTimestamp + ONE_SECOND * 10);
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('1000000'), beneficiary1.address)
-        ).to.be.revertedWith('Vesting has not started yet!');
+        ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__NotEnoughTokensVested');
       });
 
-      it('Should not release tokens before vesting time', async () => {
+      it('Should revert on release before vesting time', async () => {
         const { stakingGenNFTVesting, stakingGenesisNft, vestingStartTimestamp, beneficiary1, wlth } =
           await loadFixture(deploySimpleVesting);
         wlth.balanceOf.returns(allocation);
@@ -132,7 +135,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('1000000'), beneficiary1.address)
-        ).to.be.revertedWith('Vesting has not started yet!');
+        ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__VestingNotStarted');
       });
 
       it('Should revert releasing tokens if not enough vested', async () => {
@@ -146,7 +149,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('20'), beneficiary1.address)
-        ).to.be.revertedWith('Not enough tokens vested!');
+        ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__NotEnoughTokensVested');
       });
 
       it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -158,7 +161,7 @@ describe('Staking GenesisNFT Vesting unit tests', () => {
 
         await expect(
           stakingGenNFTVesting.connect(beneficiary1).release(toWlth('20'), beneficiary1.address)
-        ).to.be.revertedWith('Insufficient tokens for release');
+        ).to.be.revertedWithCustomError(stakingGenNFTVesting,'BaseVesting__NotEnoughTokensOnContract');
       });
 
       it('Should release tokens if wallet has only Series 1 Genesis NFT Staked', async () => {

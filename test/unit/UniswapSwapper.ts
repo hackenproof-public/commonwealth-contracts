@@ -44,6 +44,7 @@ describe('Uniswap swapper unit tests', () => {
   });
 
   it('Should revert deploying if dex quoter is zero address', async () => {
+    const { uniswapSwapper } = await loadFixture(deploySwapper);
     const [deployer, owner] = await ethers.getSigners();
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
@@ -54,7 +55,22 @@ describe('Uniswap swapper unit tests', () => {
         [owner.address, router.address, ZERO_POINT_THREE_FEE_TIER, constants.AddressZero],
         deployer
       )
-    ).to.be.revertedWith('DEX quoter is zero address');
+    ).to.be.revertedWithCustomError(uniswapSwapper,'UniswapSwapper__DexQuoterZeroAddress');
+  });
+
+  it('Should revert deploying if dex swap router is zero address', async () => {
+    const { uniswapSwapper } = await loadFixture(deploySwapper);
+    const [deployer, owner] = await ethers.getSigners();
+
+    const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
+    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+    await expect(
+      deployProxy(
+        'UniswapSwapper',
+        [owner.address, constants.AddressZero, ZERO_POINT_THREE_FEE_TIER, quoter.address],
+        deployer
+      )
+    ).to.be.revertedWithCustomError(uniswapSwapper,'UniswapSwapper__DexSwapRouterZeroAddress');
   });
 
   it('Should emit swapped event', async () => {

@@ -48,11 +48,10 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should revert deployment if owner is zero address', async () => {
+      const { investmentNft } = await loadFixture(deployFixture);
       const [deployer] = await ethers.getSigners();
 
-      await expect(deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)).to.be.revertedWith(
-        'Owner is zero address'
-      );
+      await expect(deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)).to.be.revertedWithCustomError(investmentNft,'OwnablePausable__OwnerAccountZeroAddress');
     });
   });
 
@@ -75,9 +74,7 @@ describe('Investment NFT unit tests', () => {
     it('Should revert minting if not minter', async () => {
       const { investmentNft, user } = await loadFixture(deployFixture);
 
-      await expect(investmentNft.connect(user).mint(user.address, 1000, tokenUri)).to.be.revertedWith(
-        'Account does not have minter rights'
-      );
+      await expect(investmentNft.connect(user).mint(user.address, 1000, tokenUri)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotMinter');
     });
 
     it('Should revert minting if contract paused', async () => {
@@ -133,21 +130,17 @@ describe('Investment NFT unit tests', () => {
       });
 
       it('Should revert splitting NFT if caller is not token owner', async () => {
-        await expect(investmentNft.connect(minter).split(tokenId, [300, 700], [tokenUri, tokenUri])).to.be.revertedWith(
-          'Caller is not a token owner'
-        );
+        await expect(investmentNft.connect(minter).split(tokenId, [300, 700], [tokenUri, tokenUri])).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotTokenOwner');
       });
 
       it('Should revert splitting NFT if values length differs from token URIs length', async () => {
-        await expect(investmentNft.connect(user).split(tokenId, [300, 700], [tokenUri])).to.be.revertedWith(
-          'Values and tokens URIs length mismatch'
-        );
+        await expect(investmentNft.connect(user).split(tokenId, [300, 700], [tokenUri])).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__TokenUrisAndValuesLengthsMismatch');
       });
 
       it('Should revert splitting NFT if new value differs from the old one', async () => {
         await expect(
           investmentNft.connect(user).split(tokenId, [333, 333, 333], [tokenUri, tokenUri, tokenUri])
-        ).to.be.revertedWith('Tokens value before and after split do not match');
+        ).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__TokenValuesBeforeAfterSplitMismatch');
       });
 
       it('Should revert splitting NFT if contract paused', async () => {
@@ -178,7 +171,7 @@ describe('Investment NFT unit tests', () => {
                 tokenUri
               ]
             )
-        ).to.be.revertedWith('Split limit exceeded');
+        ).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__SplitLimitExceeded');
       });
     });
   });
@@ -324,18 +317,14 @@ describe('Investment NFT unit tests', () => {
       const { investmentNft, user } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).addMinter(user.address);
-      await expect(investmentNft.connect(owner).addMinter(user.address)).to.be.revertedWith(
-        'Account already has minter rights'
-      );
+      await expect(investmentNft.connect(owner).addMinter(user.address)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__AlreadyMinter');
     });
 
     it('Should revert removing minter if does not exist', async () => {
       const { investmentNft, minter } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).removeMinter(minter.address);
-      await expect(investmentNft.connect(owner).removeMinter(minter.address)).to.be.revertedWith(
-        'Account does not have minter rights'
-      );
+      await expect(investmentNft.connect(owner).removeMinter(minter.address)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotMinter');
     });
   });
 });

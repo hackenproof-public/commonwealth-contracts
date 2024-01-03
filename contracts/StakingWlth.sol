@@ -144,7 +144,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         }
         IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), amount);
 
-        emit TokensStaked(_msgSender(), fund, stakeId, amount);
+        emit TokensStaked(_msgSender(), fund, stakeId, amount + fee);
         //slither-disable-end reentrancy-no-eth
     }
 

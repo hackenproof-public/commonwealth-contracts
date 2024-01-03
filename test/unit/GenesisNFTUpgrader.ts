@@ -37,12 +37,13 @@ describe('GenesisNFTUpgrader unit tests', () => {
 
     it('Should revert deploying if owner is zero address', async () => {
       [deployer, owner, user] = await ethers.getSigners();
+      const { upgrader } = await loadFixture(deployFixture);
 
       const sourceNft: FakeContract<GenNFTV2> = await smock.fake('GenNFT');
       const targetNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
       await expect(
         deployProxy('GenesisNFTUpgrader', [constants.AddressZero, sourceNft.address, targetNft.address], deployer)
-      ).to.be.revertedWith('Owner is zero address');
+      ).to.be.revertedWithCustomError(upgrader,'OwnablePausable__OwnerAccountZeroAddress');
     });
 
     it('Should revert deploying if source contract is zero address', async () => {

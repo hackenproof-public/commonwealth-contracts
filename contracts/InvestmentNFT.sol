@@ -217,14 +217,14 @@ contract InvestmentNFT is
     }
 
     function _validateSplit(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) private view {
-        if (_msgSender() == ownerOf(tokenId)) revert InvestmentNft__NotTokenOwner();
-        if (values.length <= SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
-        if (values.length == tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
+        if (_msgSender() != ownerOf(tokenId)) revert InvestmentNft__NotTokenOwner();
+        if (values.length > SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
+        if (values.length != tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
         uint256 valuesSum = 0;
         for (uint256 i = 0; i < values.length; i++) {
             valuesSum += values[i];
         }
-        if (valuesSum == tokenValue[tokenId]) revert InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
+        if (valuesSum != tokenValue[tokenId]) revert InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
     }
 
     function _beforeTokenTransfer(

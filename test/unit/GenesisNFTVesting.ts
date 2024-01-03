@@ -79,6 +79,7 @@ describe('Genesis NFT Vesting unit tests', function () {
     });
 
     it('Should revert deploying if token address is zero', async () => {
+      const { genesisNFTVesting } = await loadFixture(deployFixture);
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
@@ -109,10 +110,11 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWith('Token is zero address');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__TokenZeroAddress');
     });
 
     it('Should revert deploying if Gen1 address is zero', async () => {
+      const { genesisNFTVesting } = await loadFixture(deployFixture);
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
@@ -143,10 +145,11 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWith('Gen1 is zero address');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__GenesisNftSeries1ZeroAddress');
     });
 
     it('Should revert deploying if Gen2 address is zero', async () => {
+      const { genesisNFTVesting } = await loadFixture(deployFixture);
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
@@ -177,10 +180,11 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWith('Gen2 is zero address');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__GenesisNftSeries2ZeroAddress');
     });
 
-    it('Should revert deploying if staking address is zero', async () => {
+    it('Should revert deploying if staking Genesis NFT contract address is zero', async () => {
+      const { genesisNFTVesting } = await loadFixture(deployFixture);
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
       const stakingGenesisNft: FakeContract<StakingGenesisNFT> = await smock.fake('StakingGenesisNFT');
       const genNFTseries1: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
@@ -211,7 +215,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWith('Staking is zero address');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__StakingGenesisNftZeroAddress');
     });
   });
 
@@ -302,7 +306,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Not owner of given Genesis NFT');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__NotOwnerOfGenesisNft');
     });
 
     it('Should revert if address does not have any Genesis NFTs', async () => {
@@ -317,7 +321,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Unauthorized access');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__AccessDenied');
     });
 
     it('Should revert if vesting has not started yet', async () => {
@@ -329,7 +333,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Vesting has not started yet');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__VestingNotStarted');
     });
 
     it('Should revert if not enough tokens vested', async () => {
@@ -344,7 +348,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('44000'), owner.address)
-      ).to.be.revertedWith('Not enough tokens vested');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__NotEnoughTokensVested');
     });
 
     it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -360,7 +364,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWith('Insufficient tokens for release');
+      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__InsufficientTokensOnContract');
     });
 
     it('Should release all tokens availabe for the specific Genesis NFT owned by beneficiary', async () => {

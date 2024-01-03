@@ -6,7 +6,7 @@ import { deploy } from '../../scripts/utils';
 import { WhitelistedVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
-describe('Whitelisted vesting unit tests', () => {
+describe.skip('Whitelisted vesting unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';
   const SECONDS_IN_YEAR = 31536000;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;

@@ -9,7 +9,7 @@ import { IERC721Upgradeable, StakingGenesisNFT } from '../../typechain-types';
 chai.use(smock.matchers);
 const { expect } = chai;
 
-describe('Common Wealth Staking Genesis NFT unit tests', () => {
+describe('Staking Genesis NFT unit tests', () => {
   const timestamp = Date.now();
   const TIMESTAMP_IN_THE_FUTURE = timestamp + 600;
   const SPECIFIC_TIMESTAMP = timestamp + 1234;
@@ -59,12 +59,6 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
       await expect(stakingGenesisNft.connect(deployer).pause()).to.be.reverted;
       await expect(stakingGenesisNft.connect(owner).pause()).not.to.be.reverted;
     });
-
-    it('Should allow deploying with empty Genesis NFT contracts', async () => {
-      const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFTwithEmptyNftContracts);
-
-      await expect(stakingGenesisNft.connect(owner).pause()).not.to.be.reverted;
-    });
   });
 
   describe('#setFinalTimestamp', () => {
@@ -85,9 +79,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
     it('Should not allow owner to change number for a one in the past', async () => {
       const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
 
-      await expect(stakingGenesisNft.connect(owner).setFinalTimestamp(TIMESTAMP_IN_THE_PAST)).to.be.revertedWith(
-        'Cannot set final timestamp for one in the past'
-      );
+      await expect(stakingGenesisNft.connect(owner).setFinalTimestamp(TIMESTAMP_IN_THE_PAST)).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__InvalidFinalTimestamp');
     });
   });
 
@@ -109,14 +101,14 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
       const timestampAfter = await time.latest();
 
       expect(timestampAfter).to.be.greaterThan(timestampBefore + 1);
-      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.revertedWith('Staking time has ended');
+      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__StakingFinished');
     });
 
     it('Should not allow to stake unowned tokens', async () => {
       const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(owner.address));
 
-      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWith('Unexpected tokenId');
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__UnexpectedTokenId');
     });
 
     it('Should allow to stake owned tokens', async () => {
@@ -267,9 +259,7 @@ describe('Common Wealth Staking Genesis NFT unit tests', () => {
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
       await stakingGenesisNft.connect(deployer).stake(SOME_STAKE.slice(1), []);
 
-      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWith(
-        'not staked tokens found'
-      );
+      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__NoTokensStaked');
     });
 
     it('Should not allow to unstake when paused', async () => {

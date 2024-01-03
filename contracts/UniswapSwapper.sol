@@ -10,6 +10,7 @@ import {ISwapper} from "./interfaces/ISwapper.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 
 error UniswapSwapper__DexQuoterZeroAddress();
+error UniswapSwapper__DexSwapRouterZeroAddress();
 
 contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable {
     ISwapRouter public swapRouter;
@@ -27,13 +28,14 @@ contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable
      * @param _swapRouter Address of router for swaps execution
      * @param _feeTier Fee tier value
      */
-    function initialize(address _owner, address _swapRouter, uint24 _feeTier, address dexQuoter_) public initializer {
-        if (dexQuoter_ == address(0)) revert UniswapSwapper__DexQuoterZeroAddress();
+    function initialize(address _owner, address _swapRouter, uint24 _feeTier, address _dexQuoter) public initializer {
+        if (_dexQuoter == address(0)) revert UniswapSwapper__DexQuoterZeroAddress();
+        if (_swapRouter == address(0)) revert UniswapSwapper__DexSwapRouterZeroAddress();
         __Context_init();
         __OwnablePausable_init(_owner);
 
         swapRouter = ISwapRouter(_swapRouter);
-        dexQuoter = IDexQuoter(dexQuoter_);
+        dexQuoter = IDexQuoter(_dexQuoter);
         feeTier = _feeTier;
     }
 

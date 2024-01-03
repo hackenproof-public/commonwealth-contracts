@@ -208,7 +208,16 @@ describe('Investment Fund unit tests', () => {
 
     describe('Deployment', () => {
       it('Should revert deployment if invalid owner', async () => {
-        const [deployer, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, unlocker,treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -223,24 +232,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Owner is zero address');
+        ).to.be.revertedWithCustomError(investmentFund,'OwnablePausable__OwnerAccountZeroAddress');
       });
 
       it('Should revert deployment if invalid unlocker', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, owner,treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -255,24 +266,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid unlocker address');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__UnlockerZeroAddress');
       });
 
       it('Should revert deployment if invalid currency', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, unlocker,treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund, owner] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
         const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -286,24 +299,26 @@ describe('Investment Fund unit tests', () => {
               constants.AddressZero,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid currency address');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__CurrencyZeroAddress');
       });
 
       it('Should revert deployment if invalid NFT address', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker,treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
@@ -317,24 +332,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               constants.AddressZero,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid NFT address');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__InvestmentNftZeroAddress');
       });
 
       it('Should revert deployment if invalid staking address', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker,treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -348,24 +365,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               constants.AddressZero,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid staking contract address');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__StakingWlthZeroAddress');
       });
 
       it('Should revert deployment if invalid treasury wallet address', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: constants.AddressZero,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -380,24 +399,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: constants.AddressZero,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid treasury wallet address');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__TreasuryZeroAddress');
       });
 
-      it('Should revert deployment if invalid management fee', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+      it('Should revert deployment if invalid liquidity pool address', async () => {
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker, genesisNftRevenue, treasuryWallet, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: constants.AddressZero,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -412,24 +433,162 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
+              defaultManagementFee,
+              defaultInvestmentCap
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__LpPoolZeroAddress');
+      });
+
+      it('Should revert deployment if invalid burn wallet address', async () => {
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker, genesisNftRevenue, treasuryWallet, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: constants.AddressZero,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
+
+        const usdc: FakeContract<USDC> = await smock.fake('USDC');
+        const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+        const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+        await expect(
+          deployProxy(
+            'InvestmentFund',
+            [
+              owner.address,
+              unlocker.address,
+              'Investment Fund',
+              usdc.address,
+              investmentNft.address,
+              staking.address,
+              feeDistributionAddresses,
+              defaultManagementFee,
+              defaultInvestmentCap
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__BurnZeroAddress');
+      });
+
+      it('Should revert deployment if invalid community fund wallet address', async () => {
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker, genesisNftRevenue, treasuryWallet, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: constants.AddressZero,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
+
+        const usdc: FakeContract<USDC> = await smock.fake('USDC');
+        const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+        const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+        await expect(
+          deployProxy(
+            'InvestmentFund',
+            [
+              owner.address,
+              unlocker.address,
+              'Investment Fund',
+              usdc.address,
+              investmentNft.address,
+              staking.address,
+              feeDistributionAddresses,
+              defaultManagementFee,
+              defaultInvestmentCap
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__CommunityFundZeroAddress');
+      });
+
+      it('Should revert deployment if invalid genesis nft revenue wallet address', async () => {
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker, genesisNftRevenue, treasuryWallet, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: constants.AddressZero
+        };
+
+        const usdc: FakeContract<USDC> = await smock.fake('USDC');
+        const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+        const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+        await expect(
+          deployProxy(
+            'InvestmentFund',
+            [
+              owner.address,
+              unlocker.address,
+              'Investment Fund',
+              usdc.address,
+              investmentNft.address,
+              staking.address,
+              feeDistributionAddresses,
+              defaultManagementFee,
+              defaultInvestmentCap
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__GenesisNftRevenueZeroAddress');
+      });
+
+      it('Should revert deployment if invalid management fee', async () => {
+        const { investmentFund } = await setup();
+        const [deployer, owner, unlocker,treasuryWallet,  genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
+
+        const usdc: FakeContract<USDC> = await smock.fake('USDC');
+        const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+        const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+        await expect(
+          deployProxy(
+            'InvestmentFund',
+            [
+              owner.address,
+              unlocker.address,
+              'Investment Fund',
+              usdc.address,
+              investmentNft.address,
+              staking.address,
+              feeDistributionAddresses,
               10000,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid management fee');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__InvalidManagementFee');
       });
 
       it('Should revert deployment if invalid investment cap', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, unlocker, owner, treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -444,24 +603,26 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               0
             ],
             deployer
           )
-        ).to.be.revertedWith('Invalid investment cap');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__InvalidInvestmentCap');
       });
 
       it('Should revert deployment if NFT contract does not support proper interface', async () => {
-        const [deployer, owner, unlocker, genesisNftRevenue, lpPool, burnAddr, communityFund] =
-          await ethers.getSigners();
+        const { investmentFund } = await setup();
+        const [deployer, unlocker, owner, treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund] = await ethers.getSigners();
+
+        const feeDistributionAddresses = {
+          treasuryWallet: treasuryWallet.address,
+          lpPool: lpPool.address,
+          burn: burnAddr.address,
+          communityFund: communityFund.address,
+          genesisNftRevenue: genesisNftRevenue.address
+        };
 
         const usdc: FakeContract<USDC> = await smock.fake('USDC');
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -477,24 +638,18 @@ describe('Investment Fund unit tests', () => {
               usdc.address,
               investmentNft.address,
               staking.address,
-              {
-                treasuryWallet: defaultTreasury,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
+              feeDistributionAddresses,
               defaultManagementFee,
               defaultInvestmentCap
             ],
             deployer
           )
-        ).to.be.revertedWith('Required interface not supported');
+        ).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__InvestmentNftInterfaceNotSupported');
       });
     });
   });
 
-  describe.only('#invest()', () => {
+  describe('#invest()', () => {
     [BigNumber.from(1), defaultInvestmentCap.sub(1)].forEach((amount: BigNumber) => {
       it(`Should invest if amount lower than cap [amount=${amount}]`, async () => {
         const { investmentFund, usdc, wallet } = await setup();
@@ -532,15 +687,13 @@ describe('Investment Fund unit tests', () => {
 
       const amount = defaultInvestmentCap.add(1);
 
-      await expect(investmentFund.connect(wallet).invest(amount, tokenUri)).to.be.revertedWith(
-        'Total invested funds exceed cap'
-      );
+      await expect(investmentFund.connect(wallet).invest(amount, tokenUri)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__TotalInvestmentAboveCap');
     });
 
     it('Should revert investing if amount is 0', async () => {
       const { investmentFund, wallet } = await setup();
 
-      await expect(investmentFund.connect(wallet).invest(0, tokenUri)).to.be.revertedWith('Invalid amount invested');
+      await expect(investmentFund.connect(wallet).invest(0, tokenUri)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__ZeroAmountInvested');
     });
 
     it('Should revert investing if currency fee transfer fails', async () => {
@@ -549,7 +702,7 @@ describe('Investment Fund unit tests', () => {
       usdc.transferFrom.returnsAtCall(0, false);
       usdc.transferFrom.returnsAtCall(1, true);
 
-      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWith('Currency transfer failed');
+      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWithCustomError(investmentFund,'Utils__CurrencyTransferFailed');
     });
 
     it('Should revert investing if currency transfer fails', async () => {
@@ -558,7 +711,7 @@ describe('Investment Fund unit tests', () => {
       usdc.transferFrom.returnsAtCall(0, true);
       usdc.transferFrom.returnsAtCall(1, false);
 
-      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWith('Currency transfer failed');
+      await expect(investmentFund.connect(wallet).invest(1, tokenUri)).to.be.revertedWithCustomError(investmentFund,'Utils__CurrencyTransferFailed');
     });
 
     [0, 1].forEach((call) => {
@@ -599,9 +752,7 @@ describe('Investment Fund unit tests', () => {
     it('Should revert adding project to fund if project is zero address', async () => {
       ({ investmentFund, owner } = await setup());
 
-      await expect(investmentFund.connect(owner).addProject(ethers.constants.AddressZero)).to.be.revertedWith(
-        'Project is zero address'
-      );
+      await expect(investmentFund.connect(owner).addProject(ethers.constants.AddressZero)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__ProjectZeroAddress');
     });
 
     it('Should revert adding project to fund if already exists', async () => {
@@ -610,9 +761,7 @@ describe('Investment Fund unit tests', () => {
       const project: FakeContract<Project> = await smock.fake('Project');
       await investmentFund.connect(owner).addProject(project.address);
 
-      await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWith(
-        'Project already exists'
-      );
+      await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__ProjectExist');
     });
   });
 
@@ -634,14 +783,10 @@ describe('Investment Fund unit tests', () => {
     it('Should revert removing project from fund if it does not exist', async () => {
       ({ investmentFund, owner } = await setup());
 
-      await expect(investmentFund.connect(owner).removeProject(ethers.constants.AddressZero)).to.be.revertedWith(
-        'Project does not exist'
-      );
+      await expect(investmentFund.connect(owner).removeProject(ethers.constants.AddressZero)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__NotRegisteredProject');
 
       const project: FakeContract<Project> = await smock.fake('Project');
-      await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWith(
-        'Project does not exist'
-      );
+      await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWithCustomError(investmentFund,'InvestmentFund__NotRegisteredProject');
     });
   });
 
@@ -773,7 +918,10 @@ describe('Investment Fund unit tests', () => {
 
     it('Should revert providing profit if transfer fails', async () => {
       usdc.transferFrom.returns(false);
-      await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.revertedWith('Currency transfer failed');
+      await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.revertedWithCustomError(
+        investmentFund,
+        'Utils__CurrencyTransferFailed'
+      );
     });
   });
 
@@ -972,7 +1120,10 @@ describe('Investment Fund unit tests', () => {
       it('Should revert withdrawal if currency transfer fails', async () => {
         usdc.transfer.returns(false);
 
-        await expect(investmentFund.connect(wallet).withdraw()).to.be.revertedWith('Currency transfer failed');
+        await expect(investmentFund.connect(wallet).withdraw()).to.revertedWithCustomError(
+          investmentFund,
+          'Utils__CurrencyTransferFailed'
+        );
       });
     });
   });
@@ -1002,7 +1153,10 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert withdrawing', async () => {
-        await expect(investmentFund.withdraw()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.withdraw()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should not revert stopping funds collection', async () => {
@@ -1010,23 +1164,31 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert funds deployment', async () => {
-        await expect(investmentFund.connect(owner).deployFunds()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).deployFunds()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert providing profits', async () => {
         await investmentFund.connect(owner).addProject(project.address);
-        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert closing fund', async () => {
-        await expect(investmentFund.connect(owner).closeFund()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).closeFund()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert unlocking payouts', async () => {
-        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
     });
@@ -1045,28 +1207,37 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).addProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert removing project', async () => {
-        await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).removeProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert withdrawing', async () => {
-        await expect(investmentFund.withdraw()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.withdraw()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );;
       });
 
       it('Should revert stopping funds collection', async () => {
-        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
@@ -1075,18 +1246,23 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert providing profits', async () => {
-        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert closing fund', async () => {
-        await expect(investmentFund.connect(owner).closeFund()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).closeFund()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert unlocking payouts', async () => {
-        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
     });
@@ -1124,19 +1300,24 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).addProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert removing project', async () => {
-        await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).removeProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should not revert withdrawing', async () => {
@@ -1145,13 +1326,17 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert stopping funds collection', async () => {
-        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert funds deployment', async () => {
-        await expect(investmentFund.connect(owner).deployFunds()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).deployFunds()).to.be.to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should not revert providing profits', async () => {
@@ -1182,48 +1367,65 @@ describe('Investment Fund unit tests', () => {
       });
 
       it('Should revert adding project', async () => {
-        await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).addProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert removing project', async () => {
-        await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).removeProject(project.address)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert investing', async () => {
-        await expect(investmentFund.invest(1, tokenUri)).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.invest(1, tokenUri)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert withdrawing', async () => {
-        await expect(investmentFund.withdraw()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.withdraw()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert stopping funds collection', async () => {
-        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(owner).stopCollectingFunds()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert funds deployment', async () => {
-        await expect(investmentFund.connect(owner).deployFunds()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).deployFunds()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert providing profits', async () => {
-        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(project.wallet).provideProfit(1)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
 
       it('Should revert closing fund', async () => {
-        await expect(investmentFund.connect(owner).closeFund()).to.be.revertedWith('Not allowed in current state');
+        await expect(investmentFund.connect(owner).closeFund()).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert unlocking payouts', async () => {
-        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.be.revertedWith(
-          'Not allowed in current state'
+        await expect(investmentFund.connect(unlocker).unlockPayoutsTo(0)).to.revertedWithCustomError(
+          investmentFund,
+          'StateMachine__NotAllowedInCurrentState'
         );
       });
     });

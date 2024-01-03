@@ -207,7 +207,7 @@ contract InvestmentFund is
             revert InvestmentFund__GenesisNftRevenueZeroAddress();
         if (managementFee_ >= 10000) revert InvestmentFund__InvalidManagementFee();
         if (cap_ <= 0) revert InvestmentFund__InvalidInvestmentCap();
-        if (IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true)
+        if (!IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true)
             revert InvestmentFund__InvestmentNftInterfaceNotSupported();
 
         unlocker = unlocker_;
@@ -349,7 +349,7 @@ contract InvestmentFund is
      */
     function addProject(address project) external onlyAllowedStates onlyOwner {
         if (project == address(0)) revert InvestmentFund__ProjectZeroAddress();
-        if (_projects.contains(_msgSender())) revert InvestmentFund__ProjectExist();
+        if (_projects.contains(project)) revert InvestmentFund__ProjectExist();
 
         _projects.add(project);
 

@@ -120,7 +120,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWith('Vesting has not started yet!');
+        ).to.be.revertedWithCustomError(simpleVesting,'BaseVesting__VestingNotStarted');
       });
 
       it('Should release tokens within vesting time', async () => {
@@ -150,7 +150,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000').add(ONE_TOKEN), beneficiary.address)
-        ).to.be.revertedWith('Not enough tokens vested!');
+        ).to.be.revertedWithCustomError(simpleVesting,'BaseVesting__NotEnoughTokensVested');
       });
 
       it('Should revert releasing tokens if not beneficiary', async () => {
@@ -163,7 +163,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(deployer).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWith('Unauthorized access!');
+        ).to.be.revertedWithCustomError(simpleVesting,'BaseVesting__UnauthorizedAccess');
       });
 
       it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -175,11 +175,11 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWith('Not enough currency to process the release!');
+        ).to.be.revertedWithCustomError(simpleVesting,'BaseVesting__NotEnoughTokensOnContract');
       });
 
       it('Should revert releasing tokens if transfer fails', async () => {
-        const { simpleVesting, vestingStartTimestamp, beneficiary, wlth, deployer } = await loadFixture(
+        const { simpleVesting, vestingStartTimestamp, beneficiary, wlth } = await loadFixture(
           deploySimpleVesting
         );
         wlth.transfer.returns(false);
