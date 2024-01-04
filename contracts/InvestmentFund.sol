@@ -325,8 +325,8 @@ contract InvestmentFund is
 
                 if (carryFeeSize > LOWEST_CARRY_FEE) {
                     carryFeeSize -= LOWEST_CARRY_FEE;
+                    carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
                 }
-                carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
             } else {
                 amount += _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
             }
