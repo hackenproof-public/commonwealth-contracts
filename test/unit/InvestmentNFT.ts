@@ -5,7 +5,7 @@ import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { IERC721EnumerableUpgradeable__factory, IInvestmentNFT__factory, InvestmentNFT } from '../../typechain-types';
-import { getInterfaceIdWithBase } from '../utils';
+import { getInterfaceIdWithBase, toUsdc } from '../utils';
 
 describe('Investment NFT unit tests', () => {
   const tokenUri = 'ipfs://token-uri';
@@ -51,7 +51,9 @@ describe('Investment NFT unit tests', () => {
       const { investmentNft } = await loadFixture(deployFixture);
       const [deployer] = await ethers.getSigners();
 
-      await expect(deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)).to.be.revertedWithCustomError(investmentNft,'OwnablePausable__OwnerAccountZeroAddress');
+      await expect(
+        deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)
+      ).to.be.revertedWithCustomError(investmentNft, 'OwnablePausable__OwnerAccountZeroAddress');
     });
   });
 
@@ -60,7 +62,7 @@ describe('Investment NFT unit tests', () => {
       const { investmentNft, user, minter } = await loadFixture(deployFixture);
 
       const tokenId = 0;
-      const amount = 1000;
+      const amount = toUsdc('50');
 
       await expect(investmentNft.connect(minter).mint(user.address, amount, tokenUri))
         .to.emit(investmentNft, 'Transfer')
@@ -71,22 +73,32 @@ describe('Investment NFT unit tests', () => {
       expect(await investmentNft.tokenValue(tokenId)).to.equal(amount);
     });
 
+    it('Should revert minting if a value less than 50 USDC', async () => {
+      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+
+      await expect(
+        investmentNft.connect(minter).mint(user.address, toUsdc('49'), tokenUri)
+      ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvestmentTooLow');
+    });
+
     it('Should revert minting if not minter', async () => {
       const { investmentNft, user } = await loadFixture(deployFixture);
 
-      await expect(investmentNft.connect(user).mint(user.address, 1000, tokenUri)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotMinter');
+      await expect(
+        investmentNft.connect(user).mint(user.address, toUsdc('50'), tokenUri)
+      ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__NotMinter');
     });
 
     it('Should revert minting if contract paused', async () => {
       const { investmentNft, owner, user, minter } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).pause();
-      await expect(investmentNft.connect(minter).mint(user.address, 1000, tokenUri)).to.be.revertedWith(
+      await expect(investmentNft.connect(minter).mint(user.address, toUsdc('50'), tokenUri)).to.be.revertedWith(
         'Pausable: paused'
       );
 
       await investmentNft.connect(owner).unpause();
-      await expect(investmentNft.connect(minter).mint(user.address, 1000, tokenUri)).not.to.be.reverted;
+      await expect(investmentNft.connect(minter).mint(user.address, toUsdc('50'), tokenUri)).not.to.be.reverted;
     });
   });
 
@@ -101,7 +113,7 @@ describe('Investment NFT unit tests', () => {
 
     describe('when token exists', async () => {
       const tokenId = 0;
-      const tokenValue = 1000;
+      const tokenValue = toUsdc('120');
 
       before(async () => {
         ({ investmentNft, owner, user, minter } = await loadFixture(deployFixture));
@@ -117,7 +129,7 @@ describe('Investment NFT unit tests', () => {
       });
 
       it('Should split NFT', async () => {
-        await expect(investmentNft.connect(user).split(tokenId, [300, 700], [tokenUri, tokenUri]))
+        await expect(investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')], [tokenUri, tokenUri]))
           .to.emit(investmentNft, 'TokenSplitted')
           .withArgs(user.address, tokenId);
 
@@ -125,29 +137,35 @@ describe('Investment NFT unit tests', () => {
         expect(await investmentNft.balanceOf(user.address)).to.equal(2);
         expect(await investmentNft.ownerOf(1)).to.equal(user.address);
         expect(await investmentNft.ownerOf(2)).to.equal(user.address);
-        expect(await investmentNft.tokenValue(1)).to.equal(300);
-        expect(await investmentNft.tokenValue(2)).to.equal(700);
+        expect(await investmentNft.tokenValue(1)).to.equal(toUsdc('50'));
+        expect(await investmentNft.tokenValue(2)).to.equal(toUsdc('70'));
       });
 
       it('Should revert splitting NFT if caller is not token owner', async () => {
-        await expect(investmentNft.connect(minter).split(tokenId, [300, 700], [tokenUri, tokenUri])).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotTokenOwner');
+        await expect(
+          investmentNft.connect(minter).split(tokenId, [toUsdc('50'), toUsdc('70')], [tokenUri, tokenUri])
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__NotTokenOwner');
       });
 
       it('Should revert splitting NFT if values length differs from token URIs length', async () => {
-        await expect(investmentNft.connect(user).split(tokenId, [300, 700], [tokenUri])).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__TokenUrisAndValuesLengthsMismatch');
+        await expect(
+          investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')], [tokenUri])
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__TokenUrisAndValuesLengthsMismatch');
       });
 
       it('Should revert splitting NFT if new value differs from the old one', async () => {
         await expect(
-          investmentNft.connect(user).split(tokenId, [333, 333, 333], [tokenUri, tokenUri, tokenUri])
-        ).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__TokenValuesBeforeAfterSplitMismatch');
+          investmentNft
+            .connect(user)
+            .split(tokenId, [toUsdc('50'), toUsdc('50'), toUsdc('50')], [tokenUri, tokenUri, tokenUri])
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__TokenValuesBeforeAfterSplitMismatch');
       });
 
       it('Should revert splitting NFT if contract paused', async () => {
         await investmentNft.connect(owner).pause();
-        await expect(investmentNft.connect(user).split(tokenId, [300, 700], [tokenUri, tokenUri])).to.be.revertedWith(
-          'Pausable: paused'
-        );
+        await expect(
+          investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')], [tokenUri, tokenUri])
+        ).to.be.revertedWith('Pausable: paused');
       });
 
       it('Should revert splitting NFT if limit for splitting is reached', async () => {
@@ -156,7 +174,19 @@ describe('Investment NFT unit tests', () => {
             .connect(user)
             .split(
               tokenId,
-              [333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333],
+              [
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50'),
+                toUsdc('50')
+              ],
               [
                 tokenUri,
                 tokenUri,
@@ -171,13 +201,19 @@ describe('Investment NFT unit tests', () => {
                 tokenUri
               ]
             )
-        ).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__SplitLimitExceeded');
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__SplitLimitExceeded');
+      });
+
+      it('Should revert splitting NFT if a value less than 50 USDC', async () => {
+        await expect(
+          investmentNft.connect(user).split(tokenId, [toUsdc('49'), toUsdc('71')], [tokenUri, tokenUri])
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvestmentTooLow');
       });
     });
   });
 
   describe('Investment value getters', () => {
-    const tokenValue = 1000;
+    const tokenValue = toUsdc('50');
 
     it('Should return investment value', async () => {
       const { investmentNft, user, minter } = await loadFixture(deployFixture);
@@ -193,13 +229,13 @@ describe('Investment NFT unit tests', () => {
 
       await investmentNft.connect(minter).mint(user.address, tokenValue, tokenUri);
 
-      const tokenValue2 = 100;
+      const tokenValue2 = toUsdc('50');
       await investmentNft.connect(minter).mint(user.address, tokenValue2, tokenUri);
       await investmentNft.connect(minter).mint(minter.address, tokenValue2, tokenUri);
 
-      expect(await investmentNft.getInvestmentValue(user.address)).to.equal(tokenValue + tokenValue2);
+      expect(await investmentNft.getInvestmentValue(user.address)).to.equal(tokenValue.add(tokenValue2));
       expect(await investmentNft.getInvestmentValue(minter.address)).to.equal(tokenValue2);
-      expect(await investmentNft.getTotalInvestmentValue()).to.equal(tokenValue + 2 * tokenValue2);
+      expect(await investmentNft.getTotalInvestmentValue()).to.equal(tokenValue.add(tokenValue2.mul(2)));
     });
 
     it('Should return investment value from specific block', async () => {
@@ -208,7 +244,7 @@ describe('Investment NFT unit tests', () => {
       await investmentNft.connect(minter).mint(user.address, tokenValue, tokenUri);
       const blockNumber = await ethers.provider.getBlockNumber();
 
-      const tokenValue2 = 100;
+      const tokenValue2 = toUsdc('50');
       const expectedInvestmentInBlock = tokenValue;
       await investmentNft.connect(minter).mint(user.address, tokenValue2, tokenUri);
 
@@ -225,8 +261,8 @@ describe('Investment NFT unit tests', () => {
 
       await investmentNft.connect(minter).mint(user.address, tokenValue, tokenUri);
 
-      const tokenValue2 = 100;
-      const totalInvestmentValue = tokenValue + tokenValue2;
+      const tokenValue2 = toUsdc('50');
+      const totalInvestmentValue = tokenValue.add(tokenValue2);
       await investmentNft.connect(minter).mint(user.address, tokenValue2, tokenUri);
 
       const blockNumber = await ethers.provider.getBlockNumber();
@@ -256,7 +292,7 @@ describe('Investment NFT unit tests', () => {
   });
 
   describe('#setTokenUri()', () => {
-    const tokenValue = 1000;
+    const tokenValue = toUsdc('50');
 
     it('Should set new token URI', async () => {
       const { investmentNft, owner, minter } = await loadFixture(deployFixture);
@@ -317,14 +353,20 @@ describe('Investment NFT unit tests', () => {
       const { investmentNft, user } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).addMinter(user.address);
-      await expect(investmentNft.connect(owner).addMinter(user.address)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__AlreadyMinter');
+      await expect(investmentNft.connect(owner).addMinter(user.address)).to.be.revertedWithCustomError(
+        investmentNft,
+        'InvestmentNft__AlreadyMinter'
+      );
     });
 
     it('Should revert removing minter if does not exist', async () => {
       const { investmentNft, minter } = await loadFixture(deployFixture);
 
       await investmentNft.connect(owner).removeMinter(minter.address);
-      await expect(investmentNft.connect(owner).removeMinter(minter.address)).to.be.revertedWithCustomError(investmentNft,'InvestmentNft__NotMinter');
+      await expect(investmentNft.connect(owner).removeMinter(minter.address)).to.be.revertedWithCustomError(
+        investmentNft,
+        'InvestmentNft__NotMinter'
+      );
     });
   });
 });

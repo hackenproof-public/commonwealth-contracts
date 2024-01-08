@@ -10,6 +10,7 @@ import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/util
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
+import {MINIMUM_INVESTMENT} from "./libraries/Constants.sol";
 
 error InvestmentNft__AlreadyMinter();
 error InvestmentNft__NotMinter();
@@ -18,6 +19,7 @@ error InvestmentNft__NotTokenOwner();
 error InvestmentNft__SplitLimitExceeded();
 error InvestmentNft__TokenUrisAndValuesLengthsMismatch();
 error InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
+error InvestmentNft__InvestmentTooLow();
 
 /**
  * @title Investment NFT contract
@@ -115,6 +117,7 @@ contract InvestmentNFT is
      */
     function mint(address to, uint256 value, string calldata tokenUri) external whenNotPaused {
         if (!_minters[_msgSender()]) revert InvestmentNft__NotMinter();
+        if (value < MINIMUM_INVESTMENT) revert InvestmentNft__InvestmentTooLow();
         _mintWithURI(to, value, tokenUri);
     }
 
@@ -126,8 +129,11 @@ contract InvestmentNFT is
 
         _burn(tokenId);
         address owner = _msgSender();
-        for (uint256 i = 0; i < values.length; i++) {
+        for (uint256 i; i < values.length; ) {
             _mintWithURI(owner, values[i], tokenUris[i]);
+            unchecked {
+                i++;
+            }
         }
 
         emit TokenSplitted(_msgSender(), tokenId);
@@ -221,8 +227,12 @@ contract InvestmentNFT is
         if (values.length > SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
         if (values.length != tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
         uint256 valuesSum = 0;
-        for (uint256 i = 0; i < values.length; i++) {
+        for (uint256 i; i < values.length; ) {
+            if (values[i] < MINIMUM_INVESTMENT) revert InvestmentNft__InvestmentTooLow();
             valuesSum += values[i];
+            unchecked {
+                i++;
+            }
         }
         if (valuesSum != tokenValue[tokenId]) revert InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
     }

@@ -10,7 +10,7 @@ import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
 import {IProject} from "./interfaces/IProject.sol";
 import {LibFund} from "./libraries/LibFund.sol";
-import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE} from "./libraries/Constants.sol";
+import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE, MINIMUM_INVESTMENT} from "./libraries/Constants.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
@@ -24,7 +24,7 @@ error InvestmentFund__NotTheUnlocker(address account);
 error InvestmentFund__NoPayoutToUnclock();
 error InvestmentFund__PayoutIndexTooHigh();
 error InvestmentFund__PayoutIndexTooLow();
-error InvestmentFund__ZeroAmountInvested();
+error InvestmentFund__InvestmentTooLow();
 error InvestmentFund__TotalInvestmentAboveCap(uint256 newTotalInvestment);
 error InvestmentFund__NotEnoughTokensOnInvestmentFund();
 error InvestmentFund__ProjectExist();
@@ -230,7 +230,7 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function invest(uint240 amount, string calldata tokenUri) external override onlyAllowedStates nonReentrant {
-        if (amount <= 0) revert InvestmentFund__ZeroAmountInvested();
+        if (amount < MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = cap;
 
         uint256 newTotalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue() + amount;

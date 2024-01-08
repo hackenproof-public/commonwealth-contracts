@@ -104,98 +104,99 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
     'STARK'
   );
 
-  const arbitrumEcosystemFund = await createFund(
-    hre,
-    'Arbitrum Ecosystem Fund',
-    usdcAddress,
-    staking,
-    deploymentConfig,
-    '1000000000000',
-    fundRegistry,
-    'AEF'
-  );
-  await deployProject(
-    hre,
-    'Radiant',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    arbitrumEcosystemFund,
-    '200000000000',
-    'RXD'
-  );
 
-  const zkSyncFund = await createFund(
-    hre,
-    'ZK Sync Fund',
-    usdcAddress,
-    staking,
-    deploymentConfig,
-    '1000000000000',
-    fundRegistry,
-    'ZKSF'
-  );
-  await deployProject(
-    hre,
-    'Woo Network',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    zkSyncFund,
-    '200000000000',
-    'WOO'
-  );
+  // const arbitrumEcosystemFund = await createFund(
+  //   hre,
+  //   'Arbitrum Ecosystem Fund',
+  //   usdcAddress,
+  //   staking,
+  //   deploymentConfig,
+  //   '1000000000000',
+  //   fundRegistry,
+  //   'AEF'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Radiant',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   arbitrumEcosystemFund,
+  //   '200000000000',
+  //   'RXD'
+  // );
 
-  const aiWeb3Fund = await createFund(
-    hre,
-    'AI & Web3 Fund',
-    usdcAddress,
-    staking,
-    deploymentConfig,
-    '1000000000000',
-    fundRegistry,
-    'AIWF'
-  );
-  await deployProject(
-    hre,
-    'Paal AI',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    aiWeb3Fund,
-    '200000000000',
-    'PAAL'
-  );
-  await deployProject(
-    hre,
-    'Dynex',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    aiWeb3Fund,
-    '200000000000',
-    'DNX'
-  );
-  await deployProject(
-    hre,
-    'Bittensor',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    aiWeb3Fund,
-    '200000000000',
-    'TAO'
-  );
-  await deployProject(
-    hre,
-    'Worldcoin',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    aiWeb3Fund,
-    '200000000000',
-    'WLD'
-  );
+  // const zkSyncFund = await createFund(
+  //   hre,
+  //   'ZK Sync Fund',
+  //   usdcAddress,
+  //   staking,
+  //   deploymentConfig,
+  //   '1000000000000',
+  //   fundRegistry,
+  //   'ZKSF'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Woo Network',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   zkSyncFund,
+  //   '200000000000',
+  //   'WOO'
+  // );
+
+  // const aiWeb3Fund = await createFund(
+  //   hre,
+  //   'AI & Web3 Fund',
+  //   usdcAddress,
+  //   staking,
+  //   deploymentConfig,
+  //   '5000000000000',
+  //   fundRegistry,
+  //   'AIWF'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Paal AI',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'PAAL'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Dynex',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'DNX'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Bittensor',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'TAO'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Worldcoin',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'WLD'
+  // );
 };
 
 export default configureFunds;
@@ -245,12 +246,17 @@ async function configureFund(fundAddress: string, nftAddress: string, registryAd
   console.log(`Configure fund ${fundAddress} with NFT ${nftAddress} and registry ${registryAddress}`);
 
   console.log(registryAddress);
-  const wallet = getSingerWallet();
+  // const wallet = getSingerWallet();
+
+  const provider = new ethers.providers.JsonRpcProvider('https://devnet.neonevm.org');
+  const wallet = new ethers.Wallet('f1a503f2394a2445abc84a65e6a4e28c4496b65b0c6e28a63ad8b924cb1b7232', provider);
 
   const nft = await ethers.getContractAt('InvestmentNFT', nftAddress, wallet);
   const registry = await ethers.getContractAt('InvestmentFundRegistry', registryAddress, wallet);
   const staking = await ethers.getContractAt('StakingWlth', stakingAddress, wallet);
 
+
+  console.log(registry.address)
   await nft.addMinter(fundAddress);
   await registry.addFund(fundAddress);
   await staking.registerFund(fundAddress);
@@ -317,6 +323,12 @@ async function configureProjectForFund(fundAddress: string, projectAddress: stri
 
   console.log(`Project ${projectAddress} configured for fund ${fundAddress}`);
 }
+
+// function getSingerWallet() {
+//   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name)!;
+//   const provider = new ethers.providers.JsonRpcProvider('https://devnet.neonevm.org');
+//   return new ethers.Wallet(deployerPrivateKey, provider);
+// }
 
 function getSingerWallet() {
   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name)!;

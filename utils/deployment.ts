@@ -83,6 +83,7 @@ export async function deployEvm<Type extends Contract>(
   opts?: DeployProxyOptions
 ): Promise<Type | undefined> {
   const provider = getProvider(providerParams);
+
   const deployer = await getEvmDeployer(provider);
 
   const contractParams = extractDeploymentParams(deploymentParams);
@@ -308,7 +309,6 @@ async function getEvmDeployer(provider: Provider): Promise<Signer> {
     deployer = ethers.provider.getSigner();
   } else {
     const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name);
-    console.log(deployerPrivateKey, 'test');
     if (deployerPrivateKey === undefined || deployerPrivateKey === '') {
       throw Error('Invalid private key');
     }
@@ -324,7 +324,6 @@ async function getEvmDeployer(provider: Provider): Promise<Signer> {
 
 async function getZkDeployer(hre: HardhatRuntimeEnvironment): Promise<Deployer> {
   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name);
-  console.log(network.name);
   if (deployerPrivateKey === undefined || deployerPrivateKey === '') {
     throw Error('Invalid private key');
   }
