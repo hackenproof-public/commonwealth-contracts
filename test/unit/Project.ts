@@ -7,9 +7,11 @@ import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import {
   InvestmentFund,
+  InvestmentNFT,
   IProject__factory,
   PeriodicVesting,
   Project,
+  StakingWlth,
   UniswapSwapper,
   USDC
 } from '../../typechain-types';
@@ -34,7 +36,7 @@ describe('Project unit tests', () => {
     const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
     await project.connect(owner).setVesting(vesting.address);
 
-    return { project, vesting, deployer, wallet, owner, investmentFund, usdc, fundsAllocation, investmentFundSigner };
+    return { project, vesting, deployer, wallet, owner, investmentFund, usdc, fundsAllocation, investmentFundSigner, swapper };
   };
 
   describe('Deployment', () => {
@@ -198,7 +200,152 @@ describe('Project unit tests', () => {
     it('Should revert if amount is zero', async () => {
       const { project, owner } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 10)).to.be.revertedWithCustomError(project,'Project__AmountLessOrEqualZero');
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.revertedWithCustomError(
+        project,
+        'Project__AmountLessOrEqualZero'
+      );
+    });
+
+    it('Should revert if vesting contract is zero address', async () => {
+      const [deployer, owner, investmentFundSigner] = await ethers.getSigners();
+      const fundsAllocation = toUsdc('100000');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      const project: Project = await deployProxy(
+        'Project',
+        [
+          defaultProjectName,
+          owner.address,
+          usdc.address,
+          swapper.address,
+          investmentFundSigner.address,
+          fundsAllocation
+        ],
+        deployer
+      );
+
+      await expect(project.connect(owner).sellVestedToInvestmentFund(1,0)).to.be.revertedWithCustomError(
+        project,
+        'Project__VestingZeroAddress'
+      );
+    });
+
+    it('Should revert if vested contract do not release any tokens', async () => {
+      const { project, owner } = await loadFixture(deployProject);
+
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.revertedWithCustomError(
+        project,
+        'Project__AmountLessOrEqualZero'
+      );
+    });
+
+    it('Should revert if swap fails', async () => {
+      const { project, owner, swapper } = await loadFixture(deployProject);
+      swapper.swap.returns(false);
+
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.reverted;
+    });
+
+    it('Should revert providing zero profit to investment fund', async () => {
+      const { owner } = await loadFixture(deployProject);
+
+      const defaultManagementFee = 1000;
+      const defaultInvestmentCap = toUsdc('1000000');
+      const [treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund, unlocker, deployer] =
+        await ethers.getSigners();
+      const feeDistributionAddresses = {
+        treasuryWallet: treasuryWallet.address,
+        lpPool: lpPool.address,
+        burn: burnAddr.address,
+        communityFund: communityFund.address,
+        genesisNftRevenue: genesisNftRevenue.address
+      };
+
+      const fundsAllocation = toUsdc('100000');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+      investmentNft.supportsInterface.returns(true);
+      const investmentFund: InvestmentFund = await deployProxy(
+        'InvestmentFund',
+        [
+          owner.address,
+          unlocker.address,
+          'someFund',
+          usdc.address,
+          investmentNft.address,
+          staking.address,
+          feeDistributionAddresses,
+          defaultManagementFee,
+          defaultInvestmentCap
+        ],
+        deployer
+      );
+
+      const project: Project = await deployProxy(
+        'Project',
+        [defaultProjectName, owner.address, usdc.address, swapper.address, investmentFund.address, fundsAllocation],
+        deployer
+      );
+
+      const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
+      await project.connect(owner).setVesting(vesting.address);
+
+      await investmentFund.connect(owner).addProject(owner.address);
+      swapper.swap.returns(0);
+      await expect(project.connect(owner).sellVestedToInvestmentFund(100,0)).to.be.reverted;
+    });
+
+    it('Should revert providing profit if addres is not registered as project', async () => {
+      const { owner } = await loadFixture(deployProject);
+
+      const defaultManagementFee = 1000;
+      const defaultInvestmentCap = toUsdc('1000000');
+      const [treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund, unlocker, deployer] =
+        await ethers.getSigners();
+      const feeDistributionAddresses = {
+        treasuryWallet: treasuryWallet.address,
+        lpPool: lpPool.address,
+        burn: burnAddr.address,
+        communityFund: communityFund.address,
+        genesisNftRevenue: genesisNftRevenue.address
+      };
+
+      const fundsAllocation = toUsdc('100000');
+      const swapper: FakeContract<UniswapSwapper> = await smock.fake('UniswapSwapper');
+      const usdc: FakeContract<USDC> = await smock.fake('USDC');
+      const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
+      const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
+      investmentNft.supportsInterface.returns(true);
+      const investmentFund: InvestmentFund = await deployProxy(
+        'InvestmentFund',
+        [
+          owner.address,
+          unlocker.address,
+          'someFund',
+          usdc.address,
+          investmentNft.address,
+          staking.address,
+          feeDistributionAddresses,
+          defaultManagementFee,
+          defaultInvestmentCap
+        ],
+        deployer
+      );
+
+      const project: Project = await deployProxy(
+        'Project',
+        [defaultProjectName, owner.address, usdc.address, swapper.address, investmentFund.address, fundsAllocation],
+        deployer
+      );
+
+      const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
+      vesting.getVestedToken.returns(usdc.address);
+      await project.connect(owner).setVesting(vesting.address);
+      usdc.balanceOf.returns(100);
+      swapper.swap.returns(100);
+      await expect(project.connect(owner).sellVestedToInvestmentFund(100,0)).to.be.reverted;
     });
   });
 });

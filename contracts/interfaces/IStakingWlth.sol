@@ -141,13 +141,15 @@ interface IStakingWlth {
      * @param amountInUsdc USDC equivalent of staked amount
      * @param period Staking period
      * @param timestamp Timestamp to return discount on
+     * @param unstaked says if estimation is done for unstaking WLTH, effectively reducing discount due to WLTH stake reduction
      */
     function getEstimatedDiscount(
         address account,
         address fund,
         uint256 amountInUsdc,
         Period calldata period,
-        uint256 timestamp
+        uint256 timestamp,
+        bool unstaked
     ) external view returns (uint256);
 
     /**

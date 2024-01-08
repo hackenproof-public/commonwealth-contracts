@@ -5,6 +5,8 @@ import {IQuoterV2} from "@uniswap/v3-periphery/contracts/interfaces/IQuoterV2.so
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IDexQuoter} from "./interfaces/IDexQuoter.sol";
 
+error UniswapQuoter__OriginQuoterZeroAddress();
+
 contract UniswapQuoter is ReentrancyGuardUpgradeable, IDexQuoter {
     IQuoterV2 private quoter;
     uint24 private feeTier;
@@ -15,6 +17,7 @@ contract UniswapQuoter is ReentrancyGuardUpgradeable, IDexQuoter {
     }
 
     function initialize(address _quoter, uint24 _feeTier) public initializer {
+        if (_quoter == address(0)) revert UniswapQuoter__OriginQuoterZeroAddress();
         quoter = IQuoterV2(_quoter);
         feeTier = _feeTier;
     }

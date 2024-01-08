@@ -154,7 +154,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     function unstake(address fund, uint256 amount) external nonReentrant {
         _validateUnstake(_msgSender(), fund, amount);
 
-        uint256 penalty = 0;
+        uint256 penalty;
         uint256 amountToUnstake = amount;
 
         if (_isFundInCRP(fund)) {
@@ -276,11 +276,12 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address fund,
         uint256 amountInUsdc,
         Period memory period,
-        uint256 timestamp
+        uint256 timestamp,
+        bool isUnstake
     ) external view returns (uint256) {
         if (!registeredFunds.contains(fund)) revert StakingWlth__InvestmentFundNotRegistered();
 
-        return _getEstimatedDiscount(account, fund, amountInUsdc, period, timestamp);
+        return _getEstimatedDiscount(account, fund, amountInUsdc, period, timestamp, isUnstake);
     }
 
     function getPenalty(address account, address fund, uint256 amount) external view returns (uint256) {
@@ -677,7 +678,8 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address fund,
         uint256 amountInUsdc,
         Period memory period,
-        uint256 timestamp
+        uint256 timestamp,
+        bool unstaked
     ) private view returns (uint256) {
         uint256 investment = _getCurrentInvestment(account, fund);
         uint256 currentDiscount = _getDiscountForAccount(account, fund, timestamp, investment);
@@ -685,7 +687,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 newTargetDiscount = _calculateTargetDiscount(amountInUsdc, period.duration, investment);
         uint256 discountFromStake = _getDiscountFunction(_isFundInCRP(fund))(period, newTargetDiscount, timestamp);
 
-        return currentDiscount + discountFromStake;
+        return unstaked? currentDiscount - discountFromStake : currentDiscount + discountFromStake;
     }
 
     function _getDiscountForAccount(

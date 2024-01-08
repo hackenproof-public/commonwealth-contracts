@@ -124,6 +124,7 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
      */
     function sellVestedToInvestmentFund(uint256 amount, uint256 slippageLimit) external onlyOwner {
         if (amount <= 0) revert Project__AmountLessOrEqualZero();
+        if (address(vesting) == address(0)) revert Project__VestingZeroAddress();
 
         vesting.release(amount);
 

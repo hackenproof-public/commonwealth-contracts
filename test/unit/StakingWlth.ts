@@ -1068,14 +1068,14 @@ describe('Staking WLTH unit tests', () => {
       const stakeTime = (await time.latest()) + 1000;
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
         800
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
       ).to.equal(800);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
       ).to.equal(800);
     });
 
@@ -1091,14 +1091,14 @@ describe('Staking WLTH unit tests', () => {
       const stakeTime = (await time.latest()) + 1000;
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
         0
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
       ).to.equal(400);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
       ).to.equal(800);
     });
 
@@ -1119,14 +1119,14 @@ describe('Staking WLTH unit tests', () => {
       await staking.connect(user).stake(fund.address, stake.amount, stake.period);
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
         0
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
       ).to.equal(800);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
       ).to.equal(1600);
     });
   });
