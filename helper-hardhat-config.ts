@@ -18,7 +18,7 @@ const TWO_YEARS = 2 * SECONDS_IN_YEAR;
 const THREE_YEARS = 3 * SECONDS_IN_YEAR;
 const FOUR_YEARS = 4 * SECONDS_IN_YEAR;
 
-export const zkNetworksIds = [280, 324];
+export const zkNetworksIds = [280, 300, 324];
 export const environments = ['dev', 'stage', 'beta'] as const;
 export type environmentType = (typeof environments)[number];
 
@@ -56,6 +56,7 @@ export interface networkConfigItem {
   lpPoolAddress: string;
   burnAddress: string;
   genesisNftStakingAllocation: number;
+  unlocker: string;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -98,7 +99,8 @@ const localConfig: networkConfigItem = {
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
-  genesisNftStakingAllocation: 24000000
+  genesisNftStakingAllocation: 24000000,
+  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const goerliConfig: networkConfigItem = {
@@ -131,7 +133,8 @@ const goerliConfig: networkConfigItem = {
   genesisNftRevenueAddress: '0x',
   lpPoolAddress: '0x',
   burnAddress: '0x',
-  genesisNftStakingAllocation: 24000000
+  genesisNftStakingAllocation: 24000000,
+  unlocker: '0x'
 };
 
 const zkSyncTestnet: networkConfigItem = {
@@ -159,12 +162,13 @@ const zkSyncTestnet: networkConfigItem = {
   investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   investmentFundManagementFee: 1000,
   nftVestingDuration: THREE_DAYS,
-  nftVestingCadence: THREE_DAYS / 24, // 50 DAYS / 100
+  nftVestingCadence: THREE_DAYS / 24,
   nftVestingStartTimestamp: 1699971572,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
-  genesisNftStakingAllocation: 24000000
+  genesisNftStakingAllocation: 24000000,
+  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const zkTestnetDevConfig: networkConfigItem = {
@@ -186,9 +190,38 @@ const zkTestnetStageConfig: networkConfigItem = {
   nftVestingStartTimestamp: 1700049600
 };
 
+const sepoliaZkTestnetDevConfig: networkConfigItem = {
+  ...zkSyncTestnet,
+  uniswapQuaterV2Address: '0x4159c3667A4fd0a173177617d91abD8f1C9Bb248',
+  uniswapSwapRouterV2Address: '0xb54FD0C533138B44Dc56Fd1f1923a751e2782b78',
+  nftVestingDuration: TWELVE_DAYS,
+  nftVestingCadence: TWELVE_DAYS / 24,
+  nftVestingStartTimestamp: 1702911325
+};
+
+const sepoliaZkTestnetStageConfig: networkConfigItem = {
+  ...zkSyncTestnet,
+  uniswapQuaterV2Address: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
+  uniswapSwapRouterV2Address: '0xc15DC040Ad9Ab568fFc661c05b6e5eb4ab439dAB',
+  stakingTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
+  communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
+  investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
+  genesisNftRevenueAddress: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
+  lpPoolAddress: '0x09ca397106b9519c8F98bE6d106813D82562b58e',
+  burnAddress: '0xd969736e88De00F2e8c964d23659674e2c58F6b4',
+  nftVestingCadence: FIFTY_DAYS / 100,
+  nftVestingDuration: FIFTY_DAYS,
+  nftVestingStartTimestamp: 1702222787
+};
+
 export const networkConfig: networkConfigInfo = {
   31337: {
     ...localConfig
+  },
+  11155111: {
+    ...localConfig,
+    dev: { ...sepoliaZkTestnetDevConfig },
+    stage: { ...sepoliaZkTestnetStageConfig }
   },
   5: {
     ...localConfig,
@@ -200,5 +233,16 @@ export const networkConfig: networkConfigInfo = {
     ...zkSyncTestnet,
     dev: { ...zkTestnetDevConfig },
     stage: { ...zkTestnetStageConfig }
+  },
+  300: {
+    ...zkSyncTestnet,
+    dev: { ...sepoliaZkTestnetDevConfig },
+    stage: { ...sepoliaZkTestnetStageConfig }
+  },
+
+  245022926: {
+    ...zkSyncTestnet,
+    dev: { ...sepoliaZkTestnetDevConfig },
+    stage: { ...sepoliaZkTestnetStageConfig }
   }
 };

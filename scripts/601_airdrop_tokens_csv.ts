@@ -15,37 +15,36 @@ async function main() {
   const delimiter = ';';
 
   // stage
-  // const usdcAddress = '0xd5dEe34F2611A75b31d2339a1F6Cc8B92E7d9d36';
-  // const wlthAddress = '0x0BF95BDF972C268ca86a4a6C4b3c29a4181D698D';
-  // const s1Address = '0xe80C0EbE2EF00c5399368AC44F5D8f9407E51206';
-  // const s2Address = '0x586D8dD6C382424D9eA849B49d4269201FA6d89E';
+  const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
+  const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
+  const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
+  const S1_MIRROR_ADDRESS = '0x2EE589Dc10880F1F66b89B47A6Aafe85eE419107';
+  const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
+  const S2_MIRROR_ADDRESS = '0xa29e14e8fdB519B51B33D67c78e053125B8f6C17';
 
   // dev
-  const usdcAddress = '0x6A6cA681690dB8B75e899db8c64171969f037108';
-  const wlthAddress = '0x527Cb7bb76eCEE076384CFd9FC82061b515cc2B8';
-  // const s1Address = '0x946D4a6fC82adfD4f13e72198210fC859ACF21b0';
-  // const s2Address = '0x86576D86135473f0CC50dE152508605CBC01AFA8'; 
+  // const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
+  // const wlthAddress = '0xe418b5F692D950b3318b9FCdeD88718505D05798';
+  // const GEN1NFT_ADDRESS = '0x23C801711748a0Ddd98399c30910Fb9f9F65AE32'; 
+  // const S1_MIRROR_ADDRESS = '0xa469275068a516E60679f85C3642987Aa7571877';
+  // const GEN2NFT_ADDRESS = '0x099016255f27f5482d642b7bFCD8a3050549E903'; 
+  // const S2_MIRROR_ADDRESS = '0x6BbC5caC9A37d2Be56768184B9969556E0194f63';
 
-  const GEN1NFT_ADDRESS = '0x946D4a6fC82adfD4f13e72198210fC859ACF21b0'; // s1 goerli
-  const S1_MIRROR_ADDRESS = '0xeB8b1Ec414059e0d29108A2b2851EeAAF5Ec9c1c';
-
-  const GEN2NFT_ADDRESS = '0x86576D86135473f0CC50dE152508605CBC01AFA8'; // s2 goerli
-  const S2_MIRROR_ADDRESS = '0xD061CdA871C0691734478F95f563407c8EEB6A25';
   const l1Provider = new ethers.providers.JsonRpcProvider(
-    'https://eth-goerli.g.alchemy.com/v2/HlxwpAK0C-3s3rLFa8Y8y0aSo1bqUxK9'
+    'https://eth-sepolia.g.alchemy.com/v2/kaJnbyOsoAMnNzsiCjwfcZR69GwHiUAZ'
   );
 
-  const goerliWallet = new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'goerli')!, l1Provider);
+  const sepoliaWallet = new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider);
 
   // Set a constant that accesses the Layer 1 contract.
-  const nftV1 = new Contract(GEN1NFT_ADDRESS, NFT_ABI.abi, goerliWallet);
-  const nftV2 = new Contract(GEN2NFT_ADDRESS, NFT_ABI.abi, goerliWallet);
+  const nftV1 = new Contract(GEN1NFT_ADDRESS, NFT_ABI.abi, sepoliaWallet);
+  const nftV2 = new Contract(GEN2NFT_ADDRESS, NFT_ABI.abi, sepoliaWallet);
 
-  const l2Provider = new Provider('https://testnet.era.zksync.dev');
+  const l2Provider = new Provider('https://sepolia.era.zksync.dev');
   // Get the current address of the zkSync L1 bridge.
   const zkSyncAddress = await l2Provider.getMainContractAddress();
   // Get the `Contract` object of the zkSync bridge.
-  const zkSyncContract = new Contract(zkSyncAddress, utils.ZKSYNC_MAIN_ABI, goerliWallet);
+  const zkSyncContract = new Contract(zkSyncAddress, utils.ZKSYNC_MAIN_ABI, sepoliaWallet);
   const mirrorInterface = new ethers.utils.Interface(MIRROR_ABI.abi);
 
   const wallet = getSingerWallet();
@@ -115,14 +114,14 @@ async function main() {
 
         const baseCost = await zkSyncContract.l2TransactionBaseCost(
           gasPrice,
-          gasLimit.mul(transaction.s1Amount),
+          gasLimit.mul(transaction.s1Amount).mul(2),
           utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
         );
 
         const tx = await nftV1.mintNotify(transaction.to, transaction.s1Amount, gasLimit.mul(transaction.s1Amount), {
           // Pass the necessary ETH `value` to cover the fee for the operation
           value: baseCost.mul(transaction.s1Amount),
-          gasPrice: 1000000000
+          gasPrice: 100000000000
         });
         // await tx.wait();
         await delay(500);
@@ -144,14 +143,14 @@ async function main() {
 
         const baseCost = await zkSyncContract.l2TransactionBaseCost(
           gasPrice,
-          gasLimit.mul(transaction.s2Amount),
+          gasLimit.mul(transaction.s2Amount).mul(2),
           utils.REQUIRED_L1_TO_L2_GAS_PER_PUBDATA_LIMIT
         );
 
         const tx = await nftV2.mintNotify(transaction.to, transaction.s2Amount, gasLimit.mul(transaction.s2Amount), {
           // Pass the necessary ETH `value` to cover the fee for the operation
           value: baseCost.mul(transaction.s2Amount),
-          gasPrice: 1000000000
+          gasPrice: 100000000000
         });
         await delay(500);
         // await tx.wait();
@@ -197,9 +196,11 @@ main()
   });
 
 function getSingerWallet() {
-  const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', 'zkTestnet')!;
 
-  const zkSyncProvider = new Provider('https://testnet.era.zksync.dev/'); // need to be changed to mainnet when mainnet lunch
+  console.log("")
+  const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepoliaZkTestnet')!;
+
+  const zkSyncProvider = new Provider('https://sepolia.era.zksync.dev'); // need to be changed to mainnet when mainnet lunch
 
   return new Wallet(deployerPrivateKey, zkSyncProvider);
 }

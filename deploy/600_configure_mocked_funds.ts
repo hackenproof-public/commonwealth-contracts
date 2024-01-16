@@ -37,72 +37,72 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
     usdcAddress,
     staking,
     deploymentConfig,
-    '1000000000000',
+    '3000000000000',
     fundRegistry,
     'MTF'
   );
-  await deployProject(
-    hre,
-    'Illuvium',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    metaverseFund,
-    '200000000000',
-    'ILV'
-  );
-  await deployProject(
-    hre,
-    'Star Atlas',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    metaverseFund,
-    '200000000000',
-    'ATLAS'
-  );
+  // await deployProject(
+  //   hre,
+  //   'Illuvium',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   metaverseFund,
+  //   '200000000000',
+  //   'ILV'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Star Atlas',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   metaverseFund,
+  //   '200000000000',
+  //   'ATLAS'
+  // );
 
-  const evergreenFund = await createFund(
-    hre,
-    'Evergreen Fund',
-    usdcAddress,
-    staking,
-    deploymentConfig,
-    '1000000000000',
-    fundRegistry,
-    'EGF'
-  );
-  await deployProject(
-    hre,
-    'Arbitrum',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    evergreenFund,
-    '200000000000',
-    'ARB'
-  );
+  // const evergreenFund = await createFund(
+  //   hre,
+  //   'Evergreen Fund',
+  //   usdcAddress,
+  //   staking,
+  //   deploymentConfig,
+  //   '1000000000000',
+  //   fundRegistry,
+  //   'EGF'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Arbitrum',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   evergreenFund,
+  //   '200000000000',
+  //   'ARB'
+  // );
 
-  const zeroKnowledgeFund = await createFund(
-    hre,
-    'Zero Knowledge Fund',
-    usdcAddress,
-    staking,
-    deploymentConfig,
-    '1000000000000',
-    fundRegistry,
-    'ZKF'
-  );
-  await deployProject(
-    hre,
-    'Starkware',
-    deploymentConfig.ownerAccount,
-    usdcAddress,
-    swapper,
-    zeroKnowledgeFund,
-    '200000000000',
-    'STARK'
-  );
+  // const zeroKnowledgeFund = await createFund(
+  //   hre,
+  //   'Zero Knowledge Fund',
+  //   usdcAddress,
+  //   staking,
+  //   deploymentConfig,
+  //   '1000000000000',
+  //   fundRegistry,
+  //   'ZKF'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Starkware',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   zeroKnowledgeFund,
+  //   '200000000000',
+  //   'STARK'
+  // );
 
 
   // const arbitrumEcosystemFund = await createFund(
@@ -157,6 +157,7 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   fundRegistry,
   //   'AIWF'
   // );
+
   // await deployProject(
   //   hre,
   //   'Paal AI',
@@ -222,15 +223,22 @@ async function createFund(
   const nft = (await deploy(hre, 'InvestmentNFT', nftParameters, true, false)) as InvestmentNFT;
   const fundParameters = [
     { name: 'owner', value: deploymentConfig.ownerAccount },
+    { name: 'unlocker', value: deploymentConfig.unlocker },
     { name: 'name', value: fundName },
     { name: 'currency', value: usdc },
     { name: 'investmentNft', value: nft.address },
     { name: 'stakingWlth', value: staking.address },
-    { name: 'treasuryWallet', value: deploymentConfig.investmentFundTreasuryWallet },
-    { name: 'genesisNftRevenueAddress', value: deploymentConfig.genesisNftRevenueAddress },
-    { name: 'lpPoolAddress', value: deploymentConfig.lpPoolAddress },
-    { name: 'burnAddress', value: deploymentConfig.burnAddress },
-    { name: 'communityFund', value: deploymentConfig.communityFundWallet },
+    {
+      name: 'feeDistributionAddresses_',
+      value: {
+        treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
+        lpPool: deploymentConfig.lpPoolAddress,
+        burn: deploymentConfig.burnAddress,
+        communityFund: deploymentConfig.communityFundWallet,
+        genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
+      }
+    },
+
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap }
   ];
@@ -333,8 +341,8 @@ async function configureProjectForFund(fundAddress: string, projectAddress: stri
 function getSingerWallet() {
   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', network.name)!;
 
-  const zkSyncProvider = new Provider('https://testnet.era.zksync.dev/'); // need to be changed to mainnet when mainnet lunch
-  const ethereumProvider = ethers.getDefaultProvider('goerli'); // need to be changed to mainnet when mainnet lunch
+  const zkSyncProvider = new Provider('https://sepolia.era.zksync.dev'); // need to be changed to mainnet when mainnet lunch
+  const ethereumProvider = ethers.getDefaultProvider('sepolia'); // need to be changed to mainnet when mainnet lunch
 
   return new Wallet(deployerPrivateKey, zkSyncProvider, ethereumProvider);
 }

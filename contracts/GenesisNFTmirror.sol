@@ -30,7 +30,7 @@ contract GenesisNFTmirror is OwnablePausable {
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
 
     modifier GovernorOrOwnerOnly() {
-        if (msg.sender == governor || msg.sender == owner()) revert GenesisNftMirror__OwnerZeroAddress();
+        if (msg.sender != governor && msg.sender != owner()) revert GenesisNftMirror__OwnerZeroAddress();
         _;
     }
 
@@ -50,7 +50,7 @@ contract GenesisNFTmirror is OwnablePausable {
         __OwnablePausable_init(_owner);
         if (_owner == address(0)) revert GenesisNftMirror__OwnerZeroAddress();
         if (_governor == address(0)) revert GenesisNftMirror__GovernorZeroAddress();
-        if (_tokenIds.length == _tokenOwners.length) revert GenesisNftMirror__TokenIdsOwnersLenghtsMismatch();
+        if (_tokenIds.length != _tokenOwners.length) revert GenesisNftMirror__TokenIdsOwnersLenghtsMismatch();
 
         _transferOwnership(_owner);
         governor = _governor;

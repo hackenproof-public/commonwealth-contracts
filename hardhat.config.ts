@@ -55,6 +55,16 @@ const config: HardhatUserConfig = {
       accounts: !!env.SEPOLIA_WALLET_PRIVATE_KEY ? [env.SEPOLIA_WALLET_PRIVATE_KEY] : []
     },
 
+    sepoliaZkTestnet: {
+      url: 'https://sepolia.era.zksync.dev',
+      ethNetwork: "https://rpc.ankr.com/eth_sepolia",
+      zksync: true,
+      chainId: 300,
+      gas: 21000000,
+      accounts: !!env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY ? [env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY] : [],
+      verifyURL: 'https://explorer.sepolia.era.zksync.dev/contract_verification'
+    },
+
     zkTestnet: {
       url: 'https://nd-105-631-085.p2pify.com/b1700d8005deaec26cf3547a83c89cce',
       ethNetwork: 'goerli',
@@ -96,7 +106,7 @@ const config: HardhatUserConfig = {
     }
   },
   zksolc: {
-    version: '1.3.16',
+    version: '1.3.18',
     settings: {}
   },
   mocha: {
