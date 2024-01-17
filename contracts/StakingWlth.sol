@@ -48,6 +48,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     address public token;
     address public usdc;
     uint256 public transactionFee;
+    address public treasury;
     address public communityFund;
     uint256 public maxDiscount;
     IDexQuoter public dexQuoter;
@@ -151,11 +152,10 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     /**
      * @inheritdoc IStakingWlth
      */
-    function unstake(address fund, uint256 amount) external nonReentrant {
-        _validateUnstake(_msgSender(), fund, amount);
+    function unstake(address fund, uint256 amountToUnstake) external nonReentrant {
+        _validateUnstake(_msgSender(), fund, amountToUnstake);
 
         uint256 penalty;
-        uint256 amountToUnstake = amount;
 
         if (_isFundInCRP(fund)) {
             _unstakeFromAllPositions(_msgSender(), fund, amountToUnstake);
@@ -173,7 +173,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             }
         }
 
-        uint256 fee = Math.mulDiv(((amount - penalty) * 99) / 100, transactionFee, BASIS_POINT_DIVISOR);
+        uint256 fee = Math.mulDiv(((amountToUnstake - penalty) * 99) / 100, transactionFee, BASIS_POINT_DIVISOR);
 
         if (penalty > 0) {
             IWlth(token).burn((((penalty * 99) / 100) * 99) / 100);
@@ -184,9 +184,77 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             IERC20Upgradeable(token).safeTransfer(communityFund, fee);
         }
 
-        emit TokensUnstaked(_msgSender(), fund, amount);
+        emit TokensUnstaked(_msgSender(), fund, amountToUnstake);
 
-        IERC20Upgradeable(token).safeTransfer(_msgSender(), (amount * 99) / 100 - fee - (penalty * 99) / 100);
+        IERC20Upgradeable(token).safeTransfer(_msgSender(), (amountToUnstake * 99) / 100 - fee - (penalty * 99) / 100);
+    }
+
+    function getUnstakeSimulation(address fund, uint256 amountToUnstake) external view returns (uint256, uint256) {
+        _validateUnstake(_msgSender(), fund, amountToUnstake);
+
+        uint256 penalty;
+        uint256 totalStake;
+        uint256[] memory stakeIds = stakesPerAccount[_msgSender()][fund];
+        uint256 stakingPositionsAmount = stakeIds.length;
+
+        Position[] memory stakingPositionsBuffer = new Position[](stakingPositionsAmount);
+
+        for (uint256 i; i < stakingPositionsAmount; ) {
+            Position memory pos = stakingPositions[stakeIds[i]];
+            stakingPositionsBuffer[i] = pos;
+            totalStake += pos.amountInWlth;
+            unchecked {
+                i++;
+            }
+        }
+
+        if (_isFundInCRP(fund)) {
+            _unstakeFromAllPositionsSimulation(
+                _msgSender(),
+                fund,
+                amountToUnstake,
+                stakingPositionsBuffer,
+                stakingPositionsAmount
+            );
+        } else {
+            uint256 unstaked = _unstakeEndedSimulation(
+                _msgSender(),
+                fund,
+                amountToUnstake,
+                stakingPositionsBuffer,
+                stakingPositionsAmount
+            );
+            if (unstaked < amountToUnstake) {
+                amountToUnstake -= unstaked;
+                unstaked = _unstakeUnlockedSimulation(
+                    _msgSender(),
+                    fund,
+                    amountToUnstake,
+                    stakingPositionsBuffer,
+                    stakingPositionsAmount
+                );
+                if (unstaked < amountToUnstake) {
+                    amountToUnstake -= unstaked;
+                    (, penalty) = _unstakeLockedSimulation(
+                        _msgSender(),
+                        fund,
+                        amountToUnstake,
+                        stakingPositionsBuffer,
+                        stakingPositionsAmount
+                    );
+                }
+            }
+        }
+
+        uint256 currentInvestment = _getCurrentInvestment(_msgSender(), fund);
+        uint256 discountAfterSimulation = _getDiscountForBuffer(
+            stakingPositionsBuffer,
+            stakingPositionsAmount,
+            currentInvestment,
+            block.timestamp
+        );
+
+        return (penalty, discountAfterSimulation);
     }
 
     /**
@@ -276,12 +344,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address fund,
         uint256 amountInUsdc,
         Period memory period,
-        uint256 timestamp,
-        bool isUnstake
+        uint256 timestamp
     ) external view returns (uint256) {
         if (!registeredFunds.contains(fund)) revert StakingWlth__InvestmentFundNotRegistered();
 
-        return _getEstimatedDiscount(account, fund, amountInUsdc, period, timestamp, isUnstake);
+        return _getEstimatedDiscount(account, fund, amountInUsdc, period, timestamp);
     }
 
     function getPenalty(address account, address fund, uint256 amount) external view returns (uint256) {
@@ -435,6 +502,19 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return totalCount;
     }
 
+    function _unstakeFromAllPositionsSimulation(
+        address account,
+        address fund,
+        uint256 amount,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsAmount
+    ) private view returns (uint256) {
+        (uint256[] memory ids, uint256[] memory staked) = _getStakedTokensFromNonEmptyPositions(account, fund);
+        (uint256 totalCount, uint256[] memory amountsToUnstake) = _getTokensToUnstake(amount, ids, staked);
+        _unstakeBuffer(ids, amountsToUnstake, stakingPositionsBuffer, stakingPositionsAmount);
+        return totalCount;
+    }
+
     function _unstakeEnded(address account, address fund, uint256 amount) private returns (uint256) {
         uint256 remainingAmount = amount;
         Position[] memory endedPosistions = _getFilteredPositions(account, fund, _isPositionEnded);
@@ -442,6 +522,35 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             Position memory pos = endedPosistions[i];
             uint256 toUnstake = Math.min(amount, pos.amountInWlth - pos.unstakedEnded);
             stakingPositions[pos.id].unstakedEnded += toUnstake;
+            remainingAmount -= toUnstake;
+            unchecked {
+                i++;
+            }
+        }
+        return (amount - remainingAmount);
+    }
+
+    function _unstakeEndedSimulation(
+        address account,
+        address fund,
+        uint256 amount,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount
+    ) private view returns (uint256) {
+        uint256 remainingAmount = amount;
+        Position[] memory endedPosistions = _getFilteredPositions(account, fund, _isPositionEnded);
+        for (uint256 i; i < endedPosistions.length && remainingAmount > 0; ) {
+            Position memory pos = endedPosistions[i];
+            uint256 toUnstake = Math.min(remainingAmount, pos.amountInWlth - pos.unstakedEnded);
+            for (uint j; j < stakingPositionsBufferAmount; ) {
+                if (stakingPositionsBuffer[j].id == pos.id) {
+                    stakingPositionsBuffer[j].unstakedEnded += toUnstake;
+                    break;
+                }
+                unchecked {
+                    j++;
+                }
+            }
             remainingAmount -= toUnstake;
             unchecked {
                 i++;
@@ -460,6 +569,22 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return totalToUnstake;
     }
 
+    function _unstakeUnlockedSimulation(
+        address account,
+        address fund,
+        uint256 amount,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount
+    ) private view returns (uint256) {
+        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getUnlockedTokens(account, fund);
+
+        uint256 toUnstake = Math.min(amount, totalCount);
+        (uint256 totalToUnstake, uint256[] memory amountsToUnstake) = _getTokensToUnstake(toUnstake, ids, counts);
+        _unstakeBuffer(ids, amountsToUnstake, stakingPositionsBuffer, stakingPositionsBufferAmount);
+
+        return totalToUnstake;
+    }
+
     function _unstakeLocked(address account, address fund, uint256 amount) private returns (uint256, uint256) {
         Position[] memory openPositions = _getOpenPositions(account, fund);
         (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getStakedTokensFromPositions(
@@ -469,6 +594,30 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 toUnstake = Math.min(amount, totalCount);
         (, uint256[] memory amountsToUnstake) = _getTokensToUnstake(toUnstake, ids, counts);
         (uint256 totalUnstaked, uint256 totalPenalty) = _unstakeWithPenalty(ids, amountsToUnstake);
+
+        return (totalUnstaked, totalPenalty);
+    }
+
+    function _unstakeLockedSimulation(
+        address account,
+        address fund,
+        uint256 amount,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsAmount
+    ) private view returns (uint256, uint256) {
+        Position[] memory openPositions = _getOpenPositions(account, fund);
+        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getStakedTokensFromPositions(
+            openPositions
+        );
+
+        uint256 toUnstake = Math.min(amount, totalCount);
+        (, uint256[] memory amountsToUnstake) = _getTokensToUnstake(toUnstake, ids, counts);
+        (uint256 totalUnstaked, uint256 totalPenalty) = _unstakeWithPenaltyFromBuffer(
+            ids,
+            amountsToUnstake,
+            stakingPositionsBuffer,
+            stakingPositionsAmount
+        );
 
         return (totalUnstaked, totalPenalty);
     }
@@ -634,6 +783,20 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         }
     }
 
+    function _unstakeBuffer(
+        uint256[] memory ids,
+        uint256[] memory toUnstake,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount
+    ) private pure {
+        for (uint256 i; i < ids.length; ) {
+            _reduceBufferedPosition(ids[i], toUnstake[i], stakingPositionsBuffer, stakingPositionsBufferAmount);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
     function _unstakeWithPenalty(uint256[] memory ids, uint256[] memory toUnstake) private returns (uint256, uint256) {
         uint256 totalUnstaked;
         uint256 totalPenalty;
@@ -678,8 +841,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address fund,
         uint256 amountInUsdc,
         Period memory period,
-        uint256 timestamp,
-        bool unstaked
+        uint256 timestamp
     ) private view returns (uint256) {
         uint256 investment = _getCurrentInvestment(account, fund);
         uint256 currentDiscount = _getDiscountForAccount(account, fund, timestamp, investment);
@@ -687,7 +849,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 newTargetDiscount = _calculateTargetDiscount(amountInUsdc, period.duration, investment);
         uint256 discountFromStake = _getDiscountFunction(_isFundInCRP(fund))(period, newTargetDiscount, timestamp);
 
-        return unstaked? currentDiscount - discountFromStake : currentDiscount + discountFromStake;
+        return currentDiscount + discountFromStake;
     }
 
     function _getDiscountForAccount(
@@ -895,12 +1057,98 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return result;
     }
 
+    function _getFilteredPositionsSimulation(
+        Position[] memory stakingPositionsBuffer,
+        function(Position memory) view returns (bool) pred
+    ) private view returns (Position[] memory) {
+        // uint256[] memory stakeIds = stakesPerAccount[account][fund];
+        Position[] memory positions = new Position[](stakingPositionsBuffer.length);
+        uint256 count;
+        for (uint256 i; i < stakingPositionsBuffer.length; ) {
+            Position memory pos = stakingPositionsBuffer[i];
+            if (pred(pos)) {
+                positions[count++] = pos;
+            }
+            unchecked {
+                i++;
+            }
+        }
+        Position[] memory result = new Position[](count);
+        for (uint256 i; i < count; ) {
+            result[i] = positions[i];
+            unchecked {
+                i++;
+            }
+        }
+        return result;
+    }
+
     function _getNonEmptyPositions(address account, address fund) private view returns (Position[] memory) {
         return _getFilteredPositions(account, fund, _isPositionNonEmpty);
     }
 
     function _getOpenPositions(address account, address fund) private view returns (Position[] memory) {
         return _getFilteredPositions(account, fund, _isPositionOpen);
+    }
+
+    function _getDiscountForBuffer(
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount,
+        uint256 investment,
+        uint256 timestamp
+    ) private view returns (uint256) {
+        uint256 totalDiscount;
+        for (uint256 i; i < stakingPositionsBufferAmount; ) {
+            totalDiscount += _getDiscountForPosition(stakingPositionsBuffer[i], timestamp, investment);
+            unchecked {
+                i++;
+            }
+        }
+        return Math.min(totalDiscount, maxDiscount);
+    }
+
+    function _reduceBufferedPosition(
+        uint256 id,
+        uint256 toReduce,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount
+    ) private pure {
+        for (uint i; i < stakingPositionsBufferAmount; ) {
+            if (stakingPositionsBuffer[i].id == id) {
+                Position memory posTemp = stakingPositionsBuffer[i];
+                uint256 newAmount = posTemp.amountInWlth - toReduce;
+
+                stakingPositionsBuffer[i].amountInUsdc = uint128(
+                    Math.mulDiv(posTemp.amountInUsdc, newAmount, posTemp.amountInWlth)
+                );
+                stakingPositionsBuffer[i].amountInWlth = uint128(newAmount);
+                break;
+            }
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    function _unstakeWithPenaltyFromBuffer(
+        uint256[] memory ids,
+        uint256[] memory toUnstake,
+        Position[] memory stakingPositionsBuffer,
+        uint256 stakingPositionsBufferAmount
+    ) private view returns (uint256, uint256) {
+        uint256 totalUnstaked;
+        uint256 totalPenalty;
+        for (uint256 i; i < ids.length; ) {
+            Position memory pos = stakingPositions[ids[i]];
+            (uint256 unstaked, uint256 penalty) = _getUnstakedAndPenalty(pos, toUnstake[i]);
+            totalUnstaked += unstaked;
+            totalPenalty += penalty;
+            _reduceBufferedPosition(ids[i], unstaked, stakingPositionsBuffer, stakingPositionsBufferAmount);
+            unchecked {
+                i++;
+            }
+        }
+        return (totalUnstaked, totalPenalty);
     }
 
     uint256[38] private __gap;

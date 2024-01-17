@@ -59,7 +59,8 @@ contract WhitelistedVesting is BaseVesting {
         if (!accessCheck()) revert WhitelistedVesting__UnauthorizedAccess();
         if (block.timestamp < vestingStartTimestamp) revert WhitelistedVesting__VestingNotStarted();
         if (amount > releaseableAmount()) revert WhitelistedVesting__NotEnoughTokensVested();
-        if (IERC20(tokenAddress).balanceOf(address(this)) < amount) revert WhitelistedVesting__NotEnoughTokensOnContract();
+        if (IERC20(tokenAddress).balanceOf(address(this)) < amount)
+            revert WhitelistedVesting__NotEnoughTokensOnContract();
 
         released += amount;
         amountReleasedByAddress[beneficiary] += amount;

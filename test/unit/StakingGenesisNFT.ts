@@ -79,7 +79,9 @@ describe('Staking Genesis NFT unit tests', () => {
     it('Should not allow owner to change number for a one in the past', async () => {
       const { stakingGenesisNft, owner } = await loadFixture(deployStakingGenesisNFT);
 
-      await expect(stakingGenesisNft.connect(owner).setFinalTimestamp(TIMESTAMP_IN_THE_PAST)).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__InvalidFinalTimestamp');
+      await expect(
+        stakingGenesisNft.connect(owner).setFinalTimestamp(TIMESTAMP_IN_THE_PAST)
+      ).to.be.revertedWithCustomError(stakingGenesisNft, 'StakingGenesisNft__InvalidFinalTimestamp');
     });
   });
 
@@ -101,14 +103,20 @@ describe('Staking Genesis NFT unit tests', () => {
       const timestampAfter = await time.latest();
 
       expect(timestampAfter).to.be.greaterThan(timestampBefore + 1);
-      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__StakingFinished');
+      await expect(stakingGenesisNft.connect(deployer).stake([], [])).to.be.revertedWithCustomError(
+        stakingGenesisNft,
+        'StakingGenesisNft__StakingFinished'
+      );
     });
 
     it('Should not allow to stake unowned tokens', async () => {
       const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(owner.address));
 
-      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__UnexpectedTokenId');
+      await expect(stakingGenesisNft.connect(deployer).stake(SOME_STAKE, [])).to.be.revertedWithCustomError(
+        stakingGenesisNft,
+        'StakingGenesisNft__UnexpectedTokenId'
+      );
     });
 
     it('Should allow to stake owned tokens', async () => {
@@ -259,7 +267,10 @@ describe('Staking Genesis NFT unit tests', () => {
       SOME_STAKE.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
       await stakingGenesisNft.connect(deployer).stake(SOME_STAKE.slice(1), []);
 
-      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWithCustomError(stakingGenesisNft,'StakingGenesisNft__NoTokensStaked');
+      await expect(stakingGenesisNft.connect(deployer).unstake(SOME_STAKE, [])).to.be.revertedWithCustomError(
+        stakingGenesisNft,
+        'StakingGenesisNft__NoTokensStaked'
+      );
     });
 
     it('Should not allow to unstake when paused', async () => {

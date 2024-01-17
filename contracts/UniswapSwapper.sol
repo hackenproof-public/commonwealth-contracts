@@ -43,7 +43,7 @@ contract UniswapSwapper is OwnablePausable, ISwapper, ReentrancyGuardUpgradeable
 
         TransferHelper.safeApprove(sourceToken, address(swapRouter), amountIn);
 
-        uint256 amountTargetToken = (1000 - slippageLimit) * amountIn / 1000;
+        uint256 amountTargetToken = ((1000 - slippageLimit) * amountIn) / 1000;
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: sourceToken,

@@ -29,5 +29,10 @@ interface ISwapper {
      * @param slippageLimit percentage of slippage
      * @return amountOut amount of targetToken acquired after the swap
      */
-    function swap(uint256 amountIn, address sourceToken, address targetToken, uint256 slippageLimit) external returns (uint256 amountOut);
+    function swap(
+        uint256 amountIn,
+        address sourceToken,
+        address targetToken,
+        uint256 slippageLimit
+    ) external returns (uint256 amountOut);
 }

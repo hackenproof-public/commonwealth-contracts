@@ -43,7 +43,7 @@ describe('GenesisNFTUpgrader unit tests', () => {
       const targetNft: FakeContract<GenesisNFTV1> = await smock.fake('GenesisNFTV1');
       await expect(
         deployProxy('GenesisNFTUpgrader', [constants.AddressZero, sourceNft.address, targetNft.address], deployer)
-      ).to.be.revertedWithCustomError(upgrader,'OwnablePausable__OwnerAccountZeroAddress');
+      ).to.be.revertedWithCustomError(upgrader, 'OwnablePausable__OwnerAccountZeroAddress');
     });
 
     it('Should revert deploying if source contract is zero address', async () => {

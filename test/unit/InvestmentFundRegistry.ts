@@ -54,7 +54,10 @@ describe('Investment fund registry unit tests', () => {
     it('Should revert adding investment fund if fund is zero address', async () => {
       const { investmentFundRegistry, owner } = await loadFixture(deployFixture);
 
-      await expect(investmentFundRegistry.connect(owner).addFund(constants.AddressZero)).to.be.revertedWithCustomError(investmentFundRegistry,'InvestmentFundRegistry__InvestmentFundZeroAddress');
+      await expect(investmentFundRegistry.connect(owner).addFund(constants.AddressZero)).to.be.revertedWithCustomError(
+        investmentFundRegistry,
+        'InvestmentFundRegistry__InvestmentFundZeroAddress'
+      );
     });
 
     it('Should revert adding investment fund if fund is already added', async () => {
@@ -64,7 +67,10 @@ describe('Investment fund registry unit tests', () => {
       investmentFund.supportsInterface.returns(true);
 
       await investmentFundRegistry.connect(owner).addFund(investmentFund.address);
-      await expect(investmentFundRegistry.connect(owner).addFund(investmentFund.address)).to.be.revertedWithCustomError(investmentFundRegistry,'InvestmentFundRegistry__InvestmentFundAlreadyAdded');
+      await expect(investmentFundRegistry.connect(owner).addFund(investmentFund.address)).to.be.revertedWithCustomError(
+        investmentFundRegistry,
+        'InvestmentFundRegistry__InvestmentFundAlreadyAdded'
+      );
     });
   });
 
@@ -119,7 +125,9 @@ describe('Investment fund registry unit tests', () => {
     it('Should revert removing fund if it does not exist', async () => {
       const { investmentFundRegistry, owner } = await loadFixture(deployFixture);
 
-      await expect(investmentFundRegistry.connect(owner).removeFund(constants.AddressZero)).to.be.revertedWithCustomError(investmentFundRegistry,'InvestmentFundRegistry__InvestmentFundNotAdded');
+      await expect(
+        investmentFundRegistry.connect(owner).removeFund(constants.AddressZero)
+      ).to.be.revertedWithCustomError(investmentFundRegistry, 'InvestmentFundRegistry__InvestmentFundNotAdded');
     });
   });
 });

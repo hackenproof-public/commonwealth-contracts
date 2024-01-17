@@ -110,7 +110,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__TokenZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__TokenZeroAddress');
     });
 
     it('Should revert deploying if Gen1 address is zero', async () => {
@@ -145,7 +145,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__GenesisNftSeries1ZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__GenesisNftSeries1ZeroAddress');
     });
 
     it('Should revert deploying if Gen2 address is zero', async () => {
@@ -180,7 +180,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__GenesisNftSeries2ZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__GenesisNftSeries2ZeroAddress');
     });
 
     it('Should revert deploying if staking Genesis NFT contract address is zero', async () => {
@@ -215,7 +215,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__StakingGenesisNftZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__StakingGenesisNftZeroAddress');
     });
   });
 
@@ -306,7 +306,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__NotOwnerOfGenesisNft');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__NotOwnerOfGenesisNft');
     });
 
     it('Should revert if address does not have any Genesis NFTs', async () => {
@@ -321,7 +321,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__AccessDenied');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__AccessDenied');
     });
 
     it('Should revert if vesting has not started yet', async () => {
@@ -333,7 +333,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__VestingNotStarted');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__VestingNotStarted');
     });
 
     it('Should revert if not enough tokens vested', async () => {
@@ -348,7 +348,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('44000'), owner.address)
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__NotEnoughTokensVested');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__NotEnoughTokensVested');
     });
 
     it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -364,7 +364,7 @@ describe('Genesis NFT Vesting unit tests', function () {
       await time.increaseTo(timestamp);
       await expect(
         genesisNFTVesting.connect(owner).releasePerNFT(true, 1, toWlth('1'), owner.address)
-      ).to.be.revertedWithCustomError(genesisNFTVesting,'GenesisNftVesting__InsufficientTokensOnContract');
+      ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNftVesting__InsufficientTokensOnContract');
     });
 
     it('Should release all tokens availabe for the specific Genesis NFT owned by beneficiary', async () => {

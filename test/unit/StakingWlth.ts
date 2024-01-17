@@ -14,7 +14,7 @@ import { getStakeIdFromTx, toUsdc, toWlth } from '../utils';
 chai.use(smock.matchers);
 const { expect } = chai;
 
-describe('Staking WLTH unit tests', () => {
+describe.only('Staking WLTH unit tests', () => {
   const SECONDS_IN_YEAR = 31536000;
   const ONE_YEAR = 1 * SECONDS_IN_YEAR;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;
@@ -121,7 +121,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(staking,'OwnablePausable__OwnerAccountZeroAddress');
+      ).to.be.revertedWithCustomError(staking, 'OwnablePausable__OwnerAccountZeroAddress');
     });
 
     it('Should revert deploying if token is zero address', async () => {
@@ -145,7 +145,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(staking,'StakingWlth__TokenZeroAddress');
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__TokenZeroAddress');
     });
 
     it('Should revert deploying if community fund is zero address', async () => {
@@ -170,7 +170,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(staking,'StakingWlth__CommunityFundZeroAddress');
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__CommunityFundZeroAddress');
     });
 
     it('Should revert deploying if durations and coefficients arrays lengths does not match', async () => {
@@ -195,7 +195,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(staking,'StakingWlth__DurationsCoeffecientsLenghtsMismatch');
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__DurationsCoeffecientsLenghtsMismatch');
     });
   });
 
@@ -286,21 +286,27 @@ describe('Staking WLTH unit tests', () => {
       quoter.quote.returns([stake.amount, 0, 0, 0]);
 
       await staking.connect(owner).unregisterFund(fund.address);
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.connect(user).stake(fund.address, stake.amount, stake.duration)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
 
     it('Should revert staking if target discount is equal to zero', async () => {
       const stake = { amount: toWlth('600'), duration: ONE_YEAR };
       quoter.quote.returns([0, 0, 0, 0]); // gives zero discount
 
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWithCustomError(staking,'StakingWlth__ZeroTargetDiscount');
+      await expect(
+        staking.connect(user).stake(fund.address, stake.amount, stake.duration)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__ZeroTargetDiscount');
     });
 
     it('Should revert staking if target discount exceeds maximum value', async () => {
       const stake = { amount: toWlth('601'), duration: ONE_YEAR }; // half of investment value + 1
       quoter.quote.returns([toUsdc('601'), 0, 0, 0]);
 
-      await expect(staking.connect(user).stake(fund.address, stake.amount, stake.duration)).to.be.revertedWithCustomError(staking,'StakingWlth__TargetDiscountAboveMaxValue');
+      await expect(
+        staking.connect(user).stake(fund.address, stake.amount, stake.duration)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__TargetDiscountAboveMaxValue');
     });
 
     it('Should revert staking if total target discount exceeds maximum value', async () => {
@@ -311,7 +317,9 @@ describe('Staking WLTH unit tests', () => {
       quoter.quote.returnsAtCall(1, [toUsdc('301'), 0, 0, 0]);
 
       await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
-      await expect(staking.connect(user).stake(fund.address, stake2.amount, stake2.duration)).to.be.revertedWithCustomError(staking,'StakingWlth__TargetDiscountAboveMaxValue');
+      await expect(
+        staking.connect(user).stake(fund.address, stake2.amount, stake2.duration)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__TargetDiscountAboveMaxValue');
     });
 
     it('Should return staked tokens in fund', async () => {
@@ -380,7 +388,9 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should revert if unstaking more tokens than available', async () => {
-      await expect(staking.connect(user).unstake(fund.address, stake1.amount.add(toWlth('1')))).to.be.revertedWithCustomError(staking,'StakingWlth__UnstakeExceedsStake');
+      await expect(
+        staking.connect(user).unstake(fund.address, stake1.amount.add(toWlth('1')))
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__UnstakeExceedsStake');
     });
 
     describe('when unstaked in Capital Raise Period', async () => {
@@ -415,6 +425,20 @@ describe('Staking WLTH unit tests', () => {
         );
       });
 
+      it('Should simulate not collect early unstaking penalty for any position', async () => {
+        const stake2 = { amount: toWlth('100'), period: TWO_YEARS };
+
+        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+
+        const toUnstake = toWlth('150');
+        await time.setNextBlockTimestamp(stake1Time + stake1.period / 2);
+        expect(await staking.connect(user).getUnstakeSimulation(fund.address, toUnstake)).to.deep.equal([
+          toWlth('0'),
+          BigNumber.from(1722)
+        ]);
+      });
+
       [
         { unstake: toWlth('150'), remaining: [toWlth('225'), toWlth('25')] }, // average lower than the smallest position
         { unstake: toWlth('300'), remaining: [toWlth('100'), 0] }, // average greater than the smallest position
@@ -436,6 +460,17 @@ describe('Staking WLTH unit tests', () => {
     });
 
     describe('when unstaked in Capital Deployment Period', async () => {
+      it('Should simulate not collect early unstaking penalty if unstaked from closed positions', async () => {
+        fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+
+        const timestampAfterStakingFinished = stake1.period * 2;
+        await time.increaseTo(stake1Time + timestampAfterStakingFinished);
+        expect(await staking.connect(user).getUnstakeSimulation(fund.address, stake1.amount)).to.deep.equal([
+          toWlth('0'),
+          BigNumber.from(2000)
+        ]);
+      });
+
       it('Should not collect early unstaking penalty if unstaked from closed positions', async () => {
         const expectedFee = toWlth('2.97');
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
@@ -525,6 +560,39 @@ describe('Staking WLTH unit tests', () => {
         expect(wlth.transfer.atCall(2)).to.have.been.calledWith(user.address, toWlth('176.418'));
       });
 
+      it('Should simulate early unstaking penalty if unstaked before staking is finished', async () => {
+        fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+
+        await time.increaseTo(stake1Time + stake1.period / 2);
+        expect(await staking.connect(user).getUnstakeSimulation(fund.address, stake1.amount)).to.deep.equal([
+          toWlth('120'),
+          BigNumber.from(0)
+        ]);
+      });
+
+      it('Should simulate proper unstaking penalty if positions are finished, unlocked and locked', async () => {
+        const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
+
+        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+        const stake2Id = getStakeIdFromTx(tx, staking.address);
+        const stake2Time = (await staking.getPositionDetails(stake2Id)).period.start.toNumber();
+
+        fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+
+        // user sells NFTs with $200
+        nft.getInvestmentValue.returns(toUsdc('1000'));
+
+        const timestampAfterStake1Finished = stake1Time + stake1.period + 1;
+        await time.increaseTo(timestampAfterStake1Finished);
+
+        // unstake from various positions: ended(300 WLTH), unlocked(50 WLTH) and locked(100 WLTH)
+        expect(await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('450'))).to.deep.equal([
+          toWlth('60'),
+          BigNumber.from(2400)
+        ]);
+      });
+
       it('Should collect proper unstaking penalty if positions are finished, unlocked and locked', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
@@ -542,11 +610,13 @@ describe('Staking WLTH unit tests', () => {
         await time.setNextBlockTimestamp(timestampAfterStake1Finished);
 
         // unstake from ended positions
+        await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('300'));
         await staking.connect(user).unstake(fund.address, toWlth('300'));
         expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultCommunityFund, toWlth('2.97'));
         expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, toWlth('294.03'));
 
         // unstake unlocked tokens
+        await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('50'));
         await staking.connect(user).unstake(fund.address, toWlth('50'));
         expect(wlth.transfer.atCall(2)).to.have.been.calledWith(defaultCommunityFund, toWlth('0.495'));
         expect(wlth.transfer.atCall(3)).to.have.been.calledWith(user.address, toWlth('49.005'));
@@ -555,6 +625,7 @@ describe('Staking WLTH unit tests', () => {
         await time.setNextBlockTimestamp(timestampAfterTwoYears);
 
         // unstake locked with penalty
+        await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('300'));
         await staking.connect(user).unstake(fund.address, toWlth('100'));
         expect(wlth.burn).to.have.been.calledWith(toWlth('39.204'));
         expect(wlth.transfer.atCall(4)).to.have.been.calledWith(defaultCommunityFund, toWlth('0.396'));
@@ -581,6 +652,27 @@ describe('Staking WLTH unit tests', () => {
 
         expect(wlth.transfer.atCall(0)).to.have.been.calledWith(defaultCommunityFund, toUsdc('4.455'));
         expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user.address, toUsdc('441.045'));
+      });
+
+      it('Should simulate no penalty if finished tokens cover maximum discount', async () => {
+        const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
+
+        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
+
+        fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
+
+        // user sells NFTs with $600 -> discount from stake 1 increases to maximum value
+        nft.getInvestmentValue.returns(toUsdc('600'));
+
+        const timestampAfterStake2Finished = stake1Time + stake1.period + 1;
+        await time.increaseTo(timestampAfterStake2Finished);
+
+        const toUnstake = toUsdc('450');
+        expect(await staking.connect(user).getUnstakeSimulation(fund.address, toUnstake)).to.deep.equal([
+          toWlth('0'),
+          BigNumber.from(8000)
+        ]);
       });
     });
   });
@@ -773,7 +865,9 @@ describe('Staking WLTH unit tests', () => {
     it('Should revert returning discount if fund not registered', async () => {
       const { staking, fund, user } = await setup();
 
-      await expect(staking.getDiscountInTimestamp(user.address, fund.address, Date.now())).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.getDiscountInTimestamp(user.address, fund.address, Date.now())
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
   });
 
@@ -1051,7 +1145,7 @@ describe('Staking WLTH unit tests', () => {
 
       await expect(
         staking.getDiscountFromPreviousInvestmentInTimestamp(user.address, fund.address, Date.now(), 100)
-      ).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
   });
 
@@ -1068,14 +1162,14 @@ describe('Staking WLTH unit tests', () => {
       const stakeTime = (await time.latest()) + 1000;
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
         800
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
       ).to.equal(800);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
       ).to.equal(800);
     });
 
@@ -1091,14 +1185,14 @@ describe('Staking WLTH unit tests', () => {
       const stakeTime = (await time.latest()) + 1000;
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
         0
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
       ).to.equal(400);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
       ).to.equal(800);
     });
 
@@ -1119,14 +1213,14 @@ describe('Staking WLTH unit tests', () => {
       await staking.connect(user).stake(fund.address, stake.amount, stake.period);
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime, false)).to.equal(
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
         0
       );
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
       ).to.equal(800);
       expect(
-        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR, false)
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
       ).to.equal(1600);
     });
   });
@@ -1264,19 +1358,26 @@ describe('Staking WLTH unit tests', () => {
     it('Should revert returning total unlocked tokens if fund not registered', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getReleasedTokens(user.address, fund.address)).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      await expect(staking.getReleasedTokens(user.address, fund.address)).to.be.revertedWithCustomError(
+        staking,
+        'StakingWlth__InvestmentFundNotRegistered'
+      );
     });
 
     it('Should revert returning tokens unlocked by position end', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getReleasedTokensFromEndedPositions(user.address, fund.address)).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.getReleasedTokensFromEndedPositions(user.address, fund.address)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
 
     it('Should revert returning tokens unlocked by investment size decrease', async () => {
       ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
 
-      await expect(staking.getReleasedTokensFromOpenPositions(user.address, fund.address)).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.getReleasedTokensFromOpenPositions(user.address, fund.address)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
   });
 
@@ -1495,7 +1596,9 @@ describe('Staking WLTH unit tests', () => {
       it(`Should revert if investment value is too low [value=${value}]`, async () => {
         nft.getInvestmentValue.returns(value);
 
-        await expect(staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.be.revertedWithCustomError(staking,'StakingWlth__InvestmentValueTooLow');
+        await expect(
+          staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)
+        ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentValueTooLow');
       });
     });
   });

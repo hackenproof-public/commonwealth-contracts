@@ -70,7 +70,7 @@ describe('Genesis NFT unit tests', () => {
           [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI],
           deployer
         )
-      ).to.be.revertedWithCustomError(genesisNft,'GenesisNft__OwnerAccountZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNft__OwnerAccountZeroAddress');
     });
 
     it('Should revert deployment if invalid royalty parameters', async () => {
@@ -128,7 +128,10 @@ describe('Genesis NFT unit tests', () => {
     it('Should revert setting owner if new owner is zero address', async () => {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(admin).setOwner(constants.AddressZero)).to.be.revertedWithCustomError(genesisNft,'GenesisNft__NewOwnerAccountZeroAddress');
+      await expect(genesisNft.connect(admin).setOwner(constants.AddressZero)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__NewOwnerAccountZeroAddress'
+      );
     });
   });
 
@@ -234,7 +237,10 @@ describe('Genesis NFT unit tests', () => {
     it('Should revert minting if recipient is zero address', async () => {
       const { genesisNft, owner } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(owner).mint(constants.AddressZero, 1)).to.be.revertedWithCustomError(genesisNft,'GenesisNft__RecipientZeroAddress');
+      await expect(genesisNft.connect(owner).mint(constants.AddressZero, 1)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__RecipientZeroAddress'
+      );
     });
   });
 
@@ -302,7 +308,9 @@ describe('Genesis NFT unit tests', () => {
       const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
 
       await genesisNft.connect(owner).pause();
-      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [defaultAmount])).to.be.revertedWith('Pausable: paused');
+      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [defaultAmount])).to.be.revertedWith(
+        'Pausable: paused'
+      );
 
       await genesisNft.connect(owner).unpause();
       await genesisNft.connect(owner).mintBatch([deployer.address], [defaultAmount]);
@@ -313,29 +321,41 @@ describe('Genesis NFT unit tests', () => {
     it('Should revert minting in batch if recipients and amount length mismatch', async () => {
       const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(owner).mintBatch([], [1])).to.be.revertedWithCustomError(genesisNft,'GenesisNft__RecipientsAmountsLengthsMismatch');
+      await expect(genesisNft.connect(owner).mintBatch([], [1])).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__RecipientsAmountsLengthsMismatch'
+      );
 
-      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [])).to.be.revertedWithCustomError(genesisNft,'GenesisNft__RecipientsAmountsLengthsMismatch');
+      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [])).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__RecipientsAmountsLengthsMismatch'
+      );
     });
 
     it('Should revert minting in batch if recipient is zero address', async () => {
       const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(owner).mintBatch([constants.AddressZero], [1])).to.be.revertedWithCustomError(genesisNft,'GenesisNft__RecipientZeroAddress');
+      await expect(genesisNft.connect(owner).mintBatch([constants.AddressZero], [1])).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__RecipientZeroAddress'
+      );
 
       await expect(
         genesisNft.connect(owner).mintBatch([deployer.address, constants.AddressZero], [1, 1])
-      ).to.be.revertedWithCustomError(genesisNft,'GenesisNft__RecipientZeroAddress');
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNft__RecipientZeroAddress');
     });
 
     it('Should revert minting in batch if amount is zero', async () => {
       const { genesisNft, deployer, owner } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [0])).to.be.revertedWithCustomError(genesisNft,'GenesisNft__ZeroTokenAmount');
+      await expect(genesisNft.connect(owner).mintBatch([deployer.address], [0])).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNft__ZeroTokenAmount'
+      );
 
       await expect(
         genesisNft.connect(owner).mintBatch([deployer.address, deployer.address], [1, 0])
-      ).to.be.revertedWithCustomError(genesisNft,'GenesisNft__ZeroTokenAmount');
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNft__ZeroTokenAmount');
     });
   });
 

@@ -22,14 +22,6 @@ async function main() {
   const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
   const S2_MIRROR_ADDRESS = '0xa29e14e8fdB519B51B33D67c78e053125B8f6C17';
 
-  // dev
-  // const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
-  // const wlthAddress = '0xe418b5F692D950b3318b9FCdeD88718505D05798';
-  // const GEN1NFT_ADDRESS = '0x23C801711748a0Ddd98399c30910Fb9f9F65AE32'; 
-  // const S1_MIRROR_ADDRESS = '0xa469275068a516E60679f85C3642987Aa7571877';
-  // const GEN2NFT_ADDRESS = '0x099016255f27f5482d642b7bFCD8a3050549E903'; 
-  // const S2_MIRROR_ADDRESS = '0x6BbC5caC9A37d2Be56768184B9969556E0194f63';
-
   const l1Provider = new ethers.providers.JsonRpcProvider(
     'https://eth-sepolia.g.alchemy.com/v2/kaJnbyOsoAMnNzsiCjwfcZR69GwHiUAZ'
   );

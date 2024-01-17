@@ -14,8 +14,7 @@ const deploySwapper: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'swapRouter', value: deploymentCofing.uniswapSwapRouterV2Address },
     { name: 'feeTier', value: deploymentCofing.zeroPointThreeFeeTier },
-    { name: 'dexQuoter', value: quoter },
-
+    { name: 'dexQuoter', value: quoter }
   ];
 
   await deploy(hre, 'UniswapSwapper', parameters, true);

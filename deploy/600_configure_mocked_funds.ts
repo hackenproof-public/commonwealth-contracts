@@ -104,7 +104,6 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   'STARK'
   // );
 
-
   // const arbitrumEcosystemFund = await createFund(
   //   hre,
   //   'Arbitrum Ecosystem Fund',
@@ -263,8 +262,7 @@ async function configureFund(fundAddress: string, nftAddress: string, registryAd
   const registry = await ethers.getContractAt('InvestmentFundRegistry', registryAddress, wallet);
   const staking = await ethers.getContractAt('StakingWlth', stakingAddress, wallet);
 
-
-  console.log(registry.address)
+  console.log(registry.address);
   await nft.addMinter(fundAddress);
   await registry.addFund(fundAddress);
   await staking.registerFund(fundAddress);

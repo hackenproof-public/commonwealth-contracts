@@ -36,7 +36,18 @@ describe('Project unit tests', () => {
     const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
     await project.connect(owner).setVesting(vesting.address);
 
-    return { project, vesting, deployer, wallet, owner, investmentFund, usdc, fundsAllocation, investmentFundSigner, swapper };
+    return {
+      project,
+      vesting,
+      deployer,
+      wallet,
+      owner,
+      investmentFund,
+      usdc,
+      fundsAllocation,
+      investmentFundSigner,
+      swapper
+    };
   };
 
   describe('Deployment', () => {
@@ -68,7 +79,7 @@ describe('Project unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(project,'Project__TokenZeroAddress');
+      ).to.be.revertedWithCustomError(project, 'Project__TokenZeroAddress');
     });
 
     it('Should revert deploying if investment fund is zero address', async () => {
@@ -84,7 +95,7 @@ describe('Project unit tests', () => {
           [defaultProjectName, owner.address, usdc.address, swapper.address, constants.AddressZero, fundsAllocation],
           deployer
         )
-      ).to.be.revertedWithCustomError(project,'Project__InvestmentFundZeroAddress');
+      ).to.be.revertedWithCustomError(project, 'Project__InvestmentFundZeroAddress');
     });
 
     it('Should revert deploying if swapper is zero address', async () => {
@@ -107,7 +118,7 @@ describe('Project unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(project,'Project__DexSwapperZeroAddress');
+      ).to.be.revertedWithCustomError(project, 'Project__DexSwapperZeroAddress');
     });
   });
 
@@ -132,7 +143,10 @@ describe('Project unit tests', () => {
     it('Should revert setting zero address as vesting contract', async () => {
       const { project, vesting, owner } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).setVesting(constants.AddressZero)).to.be.revertedWithCustomError(project,'Project__VestingZeroAddress');
+      await expect(project.connect(owner).setVesting(constants.AddressZero)).to.be.revertedWithCustomError(
+        project,
+        'Project__VestingZeroAddress'
+      );
     });
   });
 
@@ -157,19 +171,27 @@ describe('Project unit tests', () => {
     it('Should revert if amount is zero', async () => {
       const { project, investmentFundSigner } = await loadFixture(deployProject);
 
-      await expect(project.connect(investmentFundSigner).deployFunds(0)).to.be.revertedWithCustomError(project,'Project__AmountLessOrEqualZero');
+      await expect(project.connect(investmentFundSigner).deployFunds(0)).to.be.revertedWithCustomError(
+        project,
+        'Project__AmountLessOrEqualZero'
+      );
     });
 
     it('Should revert if amount exceeds avaliable funds for this project', async () => {
       const { project, investmentFundSigner, fundsAllocation } = await loadFixture(deployProject);
 
-      await expect(project.connect(investmentFundSigner).deployFunds(fundsAllocation.add(toUsdc('1')))).to.be.revertedWithCustomError(project,'Project__AmountExceedAvailableFunds');
+      await expect(
+        project.connect(investmentFundSigner).deployFunds(fundsAllocation.add(toUsdc('1')))
+      ).to.be.revertedWithCustomError(project, 'Project__AmountExceedAvailableFunds');
     });
 
     it('Should revert if by not investment funds assigned to this project', async () => {
       const { project, owner, fundsAllocation } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).deployFunds(fundsAllocation)).to.be.revertedWithCustomError(project,'Project__NotInvestmentFund');
+      await expect(project.connect(owner).deployFunds(fundsAllocation)).to.be.revertedWithCustomError(
+        project,
+        'Project__NotInvestmentFund'
+      );
     });
 
     it('Should revert if investment funds does not have enough USDC', async () => {
@@ -200,7 +222,7 @@ describe('Project unit tests', () => {
     it('Should revert if amount is zero', async () => {
       const { project, owner } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.revertedWithCustomError(
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.revertedWithCustomError(
         project,
         'Project__AmountLessOrEqualZero'
       );
@@ -224,7 +246,7 @@ describe('Project unit tests', () => {
         deployer
       );
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(1,0)).to.be.revertedWithCustomError(
+      await expect(project.connect(owner).sellVestedToInvestmentFund(1, 0)).to.be.revertedWithCustomError(
         project,
         'Project__VestingZeroAddress'
       );
@@ -233,7 +255,7 @@ describe('Project unit tests', () => {
     it('Should revert if vested contract do not release any tokens', async () => {
       const { project, owner } = await loadFixture(deployProject);
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.revertedWithCustomError(
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.revertedWithCustomError(
         project,
         'Project__AmountLessOrEqualZero'
       );
@@ -243,7 +265,7 @@ describe('Project unit tests', () => {
       const { project, owner, swapper } = await loadFixture(deployProject);
       swapper.swap.returns(false);
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0,0)).to.be.reverted;
+      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.reverted;
     });
 
     it('Should revert providing zero profit to investment fund', async () => {
@@ -294,7 +316,7 @@ describe('Project unit tests', () => {
 
       await investmentFund.connect(owner).addProject(owner.address);
       swapper.swap.returns(0);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(100,0)).to.be.reverted;
+      await expect(project.connect(owner).sellVestedToInvestmentFund(100, 0)).to.be.reverted;
     });
 
     it('Should revert providing profit if addres is not registered as project', async () => {
@@ -345,7 +367,7 @@ describe('Project unit tests', () => {
       await project.connect(owner).setVesting(vesting.address);
       usdc.balanceOf.returns(100);
       swapper.swap.returns(100);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(100,0)).to.be.reverted;
+      await expect(project.connect(owner).sellVestedToInvestmentFund(100, 0)).to.be.reverted;
     });
   });
 });

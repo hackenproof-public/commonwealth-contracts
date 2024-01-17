@@ -48,12 +48,8 @@ describe('Uniswap swapper unit tests', () => {
 
     const router: FakeContract<ISwapRouter> = await smock.fake('ISwapRouter');
     await expect(
-      deployProxy(
-        'UniswapSwapper',
-        [owner.address, constants.AddressZero, ZERO_POINT_THREE_FEE_TIER],
-        deployer
-      )
-    ).to.be.revertedWithCustomError(uniswapSwapper,'UniswapSwapper__DexSwapRouterZeroAddress');
+      deployProxy('UniswapSwapper', [owner.address, constants.AddressZero, ZERO_POINT_THREE_FEE_TIER], deployer)
+    ).to.be.revertedWithCustomError(uniswapSwapper, 'UniswapSwapper__DexSwapRouterZeroAddress');
   });
 
   it('Should emit swapped event', async () => {

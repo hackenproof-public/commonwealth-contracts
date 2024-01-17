@@ -66,6 +66,18 @@ interface IStakingWlth {
     function unstake(address fund, uint256 amount) external;
 
     /**
+     * @notice simulates unstake
+     * @param fund Address of investment fund
+     * @param amountToUnstake Amount of tokens to unstake
+     * @return penalty amount of WLTH slashed from unstake
+     * @return discount  discount for account as result of unstaking simulation
+     */
+    function getUnstakeSimulation(
+        address fund,
+        uint256 amountToUnstake
+    ) external view returns (uint256 penalty, uint256 discount);
+
+    /**
      * @notice Returns all accounts with active stakes in all registered funds
      * @return Accounts with active stakes
      */
@@ -141,15 +153,13 @@ interface IStakingWlth {
      * @param amountInUsdc USDC equivalent of staked amount
      * @param period Staking period
      * @param timestamp Timestamp to return discount on
-     * @param unstaked says if estimation is done for unstaking WLTH, effectively reducing discount due to WLTH stake reduction
      */
     function getEstimatedDiscount(
         address account,
         address fund,
         uint256 amountInUsdc,
         Period calldata period,
-        uint256 timestamp,
-        bool unstaked
+        uint256 timestamp
     ) external view returns (uint256);
 
     /**
