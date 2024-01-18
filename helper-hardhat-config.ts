@@ -211,7 +211,7 @@ const sepoliaZkTestnetStageConfig: networkConfigItem = {
   burnAddress: '0xd969736e88De00F2e8c964d23659674e2c58F6b4',
   nftVestingCadence: FIFTY_DAYS / 100,
   nftVestingDuration: FIFTY_DAYS,
-  nftVestingStartTimestamp: 1702222787
+  nftVestingStartTimestamp: 1705316133
 };
 
 export const networkConfig: networkConfigInfo = {

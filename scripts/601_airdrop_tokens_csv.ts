@@ -17,10 +17,10 @@ async function main() {
   // stage
   const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
   const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
-  const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
-  const S1_MIRROR_ADDRESS = '0x2EE589Dc10880F1F66b89B47A6Aafe85eE419107';
-  const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
-  const S2_MIRROR_ADDRESS = '0xa29e14e8fdB519B51B33D67c78e053125B8f6C17';
+  const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; 
+  const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
+  const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; 
+  const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
 
   const l1Provider = new ethers.providers.JsonRpcProvider(
     'https://eth-sepolia.g.alchemy.com/v2/kaJnbyOsoAMnNzsiCjwfcZR69GwHiUAZ'
@@ -113,7 +113,7 @@ async function main() {
         const tx = await nftV1.mintNotify(transaction.to, transaction.s1Amount, gasLimit.mul(transaction.s1Amount), {
           // Pass the necessary ETH `value` to cover the fee for the operation
           value: baseCost.mul(transaction.s1Amount),
-          gasPrice: 100000000000
+          gasPrice: gasPrice
         });
         // await tx.wait();
         await delay(500);
@@ -142,7 +142,7 @@ async function main() {
         const tx = await nftV2.mintNotify(transaction.to, transaction.s2Amount, gasLimit.mul(transaction.s2Amount), {
           // Pass the necessary ETH `value` to cover the fee for the operation
           value: baseCost.mul(transaction.s2Amount),
-          gasPrice: 100000000000
+          gasPrice: gasPrice
         });
         await delay(500);
         // await tx.wait();

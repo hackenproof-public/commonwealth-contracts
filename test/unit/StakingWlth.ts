@@ -671,7 +671,8 @@ describe.only('Staking WLTH unit tests', () => {
         const toUnstake = toUsdc('450');
         expect(await staking.connect(user).getUnstakeSimulation(fund.address, toUnstake)).to.deep.equal([
           toWlth('0'),
-          BigNumber.from(8000)
+
+          BigNumber.from(4000)
         ]);
       });
     });

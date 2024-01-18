@@ -62,6 +62,58 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   'ATLAS'
   // );
 
+  const aiWeb3Fund = await createFund(
+    hre,
+    'AI & Web3 Fund',
+    usdcAddress,
+    staking,
+    deploymentConfig,
+    '5000000000000',
+    fundRegistry,
+    'AIWF'
+  );
+
+  // await deployProject(
+  //   hre,
+  //   'Paal AI',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'PAAL'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Dynex',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'DNX'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Bittensor',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'TAO'
+  // );
+  // await deployProject(
+  //   hre,
+  //   'Worldcoin',
+  //   deploymentConfig.ownerAccount,
+  //   usdcAddress,
+  //   swapper,
+  //   aiWeb3Fund,
+  //   '200000000000',
+  //   'WLD'
+  // );
+
   // const evergreenFund = await createFund(
   //   hre,
   //   'Evergreen Fund',
@@ -104,16 +156,16 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   'STARK'
   // );
 
-  // const arbitrumEcosystemFund = await createFund(
-  //   hre,
-  //   'Arbitrum Ecosystem Fund',
-  //   usdcAddress,
-  //   staking,
-  //   deploymentConfig,
-  //   '1000000000000',
-  //   fundRegistry,
-  //   'AEF'
-  // );
+  const arbitrumEcosystemFund = await createFund(
+    hre,
+    'Arbitrum Ecosystem Fund',
+    usdcAddress,
+    staking,
+    deploymentConfig,
+    '1000000000000',
+    fundRegistry,
+    'AEF'
+  );
   // await deployProject(
   //   hre,
   //   'Radiant',
@@ -125,16 +177,16 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   'RXD'
   // );
 
-  // const zkSyncFund = await createFund(
-  //   hre,
-  //   'ZK Sync Fund',
-  //   usdcAddress,
-  //   staking,
-  //   deploymentConfig,
-  //   '1000000000000',
-  //   fundRegistry,
-  //   'ZKSF'
-  // );
+  const zkSyncFund = await createFund(
+    hre,
+    'ZK Sync Fund',
+    usdcAddress,
+    staking,
+    deploymentConfig,
+    '1000000000000',
+    fundRegistry,
+    'ZKSF'
+  );
   // await deployProject(
   //   hre,
   //   'Woo Network',
@@ -146,57 +198,7 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   'WOO'
   // );
 
-  // const aiWeb3Fund = await createFund(
-  //   hre,
-  //   'AI & Web3 Fund',
-  //   usdcAddress,
-  //   staking,
-  //   deploymentConfig,
-  //   '5000000000000',
-  //   fundRegistry,
-  //   'AIWF'
-  // );
-
-  // await deployProject(
-  //   hre,
-  //   'Paal AI',
-  //   deploymentConfig.ownerAccount,
-  //   usdcAddress,
-  //   swapper,
-  //   aiWeb3Fund,
-  //   '200000000000',
-  //   'PAAL'
-  // );
-  // await deployProject(
-  //   hre,
-  //   'Dynex',
-  //   deploymentConfig.ownerAccount,
-  //   usdcAddress,
-  //   swapper,
-  //   aiWeb3Fund,
-  //   '200000000000',
-  //   'DNX'
-  // );
-  // await deployProject(
-  //   hre,
-  //   'Bittensor',
-  //   deploymentConfig.ownerAccount,
-  //   usdcAddress,
-  //   swapper,
-  //   aiWeb3Fund,
-  //   '200000000000',
-  //   'TAO'
-  // );
-  // await deployProject(
-  //   hre,
-  //   'Worldcoin',
-  //   deploymentConfig.ownerAccount,
-  //   usdcAddress,
-  //   swapper,
-  //   aiWeb3Fund,
-  //   '200000000000',
-  //   'WLD'
-  // );
+ 
 };
 
 export default configureFunds;
@@ -255,7 +257,7 @@ async function configureFund(fundAddress: string, nftAddress: string, registryAd
   console.log(registryAddress);
   // const wallet = getSingerWallet();
 
-  const provider = new ethers.providers.JsonRpcProvider('https://devnet.neonevm.org');
+  const provider = new ethers.providers.JsonRpcProvider('https://sepolia.era.zksync.dev');
   const wallet = new ethers.Wallet('f1a503f2394a2445abc84a65e6a4e28c4496b65b0c6e28a63ad8b924cb1b7232', provider);
 
   const nft = await ethers.getContractAt('InvestmentNFT', nftAddress, wallet);
