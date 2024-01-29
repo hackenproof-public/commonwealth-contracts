@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { upgrade } from '../utils/deployment';
 
-const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const upgradeStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
 
   const staking = await getContractAddress(network.config.chainId!, 'StakingWlth');
@@ -11,5 +11,5 @@ const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   await upgrade(hre, 'StakingWlth', staking);
 };
 
-export default deployWlth;
-deployWlth.tags = ['upgrade', 'upgradeStakingWlth'];
+export default upgradeStakingWlth;
+upgradeStakingWlth.tags = ['upgrade', 'upgradeStakingWlth'];

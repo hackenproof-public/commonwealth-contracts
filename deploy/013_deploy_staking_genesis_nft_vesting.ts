@@ -5,7 +5,7 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
@@ -22,5 +22,5 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
   await deploy(hre, 'StakingGenNFTVesting', parameters);
 };
 
-export default deployGenesisNFTVesting;
-deployGenesisNFTVesting.tags = ['tge', 'stakingGenNFTVesting', 'all'];
+export default deployStakingGenNFTVesting;
+deployStakingGenNFTVesting.tags = ['tge', 'stakingGenNFTVesting', 'all'];

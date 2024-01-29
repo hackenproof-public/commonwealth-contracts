@@ -21,6 +21,19 @@ const FOUR_YEARS = 4 * SECONDS_IN_YEAR;
 export const zkNetworksIds = [280, 300, 324];
 export const environments = ['dev', 'stage', 'beta'] as const;
 export type environmentType = (typeof environments)[number];
+interface L2ToL1item {
+  [key: number]: { chainId: number; name: string };
+}
+
+export const l2Tol1: L2ToL1item = {
+  300: { chainId: 11155111, name: 'sepolia' },
+  280: {chainId: 5, name: 'goerli'}
+} as const;
+
+export const l1Tol2: L2ToL1item = {
+  11155111: { chainId: 300, name: 'sepoliaZkTestnet' },
+  5: { chainId: 280, name: 'zkTestnet' }
+} as const;
 
 export interface networkConfigItem {
   genesisNftName: string;
@@ -57,6 +70,7 @@ export interface networkConfigItem {
   burnAddress: string;
   genesisNftStakingAllocation: number;
   unlocker: string;
+  zkSyncGasPerPubdataLimit: number;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -100,7 +114,8 @@ const localConfig: networkConfigItem = {
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
   genesisNftStakingAllocation: 24000000,
-  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
+  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  zkSyncGasPerPubdataLimit: 800
 };
 
 const goerliConfig: networkConfigItem = {
@@ -134,7 +149,8 @@ const goerliConfig: networkConfigItem = {
   lpPoolAddress: '0x',
   burnAddress: '0x',
   genesisNftStakingAllocation: 24000000,
-  unlocker: '0x'
+  unlocker: '0x',
+  zkSyncGasPerPubdataLimit: 800
 };
 
 const zkSyncTestnet: networkConfigItem = {
@@ -168,7 +184,8 @@ const zkSyncTestnet: networkConfigItem = {
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
   genesisNftStakingAllocation: 24000000,
-  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
+  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  zkSyncGasPerPubdataLimit: 800
 };
 
 const zkTestnetDevConfig: networkConfigItem = {

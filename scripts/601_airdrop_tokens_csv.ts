@@ -5,7 +5,7 @@ import { Contract, Provider, utils, Wallet } from 'zksync-web3';
 import { toUsdc, toWlth } from '../test/utils';
 import { getEnvByNetwork } from './utils';
 
-import MIRROR_ABI from '../artifacts/contracts/GenesisNFTmirror.sol/GenesisNFTmirror.json';
+import MIRROR_ABI from '../artifacts/contracts/old/OldGenesisNFTMirror.sol/GenesisNFTmirror.json';
 import NFT_ABI from '../artifacts/contracts/GenesisNFTV1.sol/GenesisNFTV1.json';
 
 export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -15,12 +15,20 @@ async function main() {
   const delimiter = ';';
 
   // stage
-  const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
-  const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
-  const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; 
-  const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
-  const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; 
-  const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
+  // const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
+  // const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
+  // const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
+  // const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
+  // const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
+  // const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
+
+  // dev
+  const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
+  const wlthAddress = '0xe418b5F692D950b3318b9FCdeD88718505D05798';
+  const GEN1NFT_ADDRESS = '0x23C801711748a0Ddd98399c30910Fb9f9F65AE32';
+  const S1_MIRROR_ADDRESS = '0xa469275068a516E60679f85C3642987Aa7571877';
+  const GEN2NFT_ADDRESS = '0x099016255f27f5482d642b7bFCD8a3050549E903';
+  const S2_MIRROR_ADDRESS = '0x6BbC5caC9A37d2Be56768184B9969556E0194f63';
 
   const l1Provider = new ethers.providers.JsonRpcProvider(
     'https://eth-sepolia.g.alchemy.com/v2/kaJnbyOsoAMnNzsiCjwfcZR69GwHiUAZ'
@@ -156,7 +164,7 @@ async function main() {
         console.log(`transferred ${transaction.wlthAmount} WLTH to ${transaction.to}`);
       }
       if (transaction.usdcAmount > 0) {
-        const usdcTx = await usdc.connect(wallet).transfer(transaction.to, toUsdc(transaction.usdcAmount.toString()));
+        const usdcTx = await usdc.connect(wallet).mint(transaction.to, toUsdc(transaction.usdcAmount.toString()));
         await delay(500);
         // await usdcTx.waitFinalize();
         console.log(`transferred ${transaction.usdcAmount} USDC to ${transaction.to}`);
@@ -188,8 +196,7 @@ main()
   });
 
 function getSingerWallet() {
-
-  console.log("")
+  console.log('');
   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepoliaZkTestnet')!;
 
   const zkSyncProvider = new Provider('https://sepolia.era.zksync.dev'); // need to be changed to mainnet when mainnet lunch

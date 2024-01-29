@@ -5,7 +5,7 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { upgrade } from '../utils/deployment';
 
-const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const upgradeWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
@@ -19,5 +19,5 @@ const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   await upgrade(hre, 'Wlth', wlth);
 };
 
-export default deployWlth;
-deployWlth.tags = ['upgrade', 'upgrade', 'upgradeWlth'];
+export default upgradeWlth;
+upgradeWlth.tags = ['upgrade', 'upgrade', 'upgradeWlth'];
