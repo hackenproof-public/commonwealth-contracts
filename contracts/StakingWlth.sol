@@ -16,7 +16,7 @@ import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
 import {IStateMachine} from "./interfaces/IStateMachine.sol";
 import {IWlth} from "./interfaces/IWlth.sol";
 import {LibFund} from "./libraries/LibFund.sol";
-import {BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
+import {BASIS_POINT_DIVISOR, EXTRA_EIGHTEEN_ZEROS} from "./libraries/Constants.sol";
 
 error StakingWlth__TokenZeroAddress();
 error StakingWlth__UsdcTokenZeroAddress();
@@ -126,7 +126,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 totalTargetDiscount = _getTotalTargetDiscount(_msgSender(), fund);
 
         (uint256 amountInUsdc, , , ) = dexQuoter.quote(token, usdc, amount);
-        uint256 discountFromStake = _calculateTargetDiscount(amountInUsdc, duration, investment);
+        uint256 discountFromStake = _calculateTargetDiscount(amountInUsdc, duration, investment) / EXTRA_EIGHTEEN_ZEROS;
 
         if (discountFromStake <= 0) revert StakingWlth__ZeroTargetDiscount();
         if (totalTargetDiscount + discountFromStake > maxDiscount) revert StakingWlth__TargetDiscountAboveMaxValue();
@@ -846,7 +846,8 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 investment = _getCurrentInvestment(account, fund);
         uint256 currentDiscount = _getDiscountForAccount(account, fund, timestamp, investment);
 
-        uint256 newTargetDiscount = _calculateTargetDiscount(amountInUsdc, period.duration, investment);
+        uint256 newTargetDiscount = _calculateTargetDiscount(amountInUsdc, period.duration, investment) /
+            EXTRA_EIGHTEEN_ZEROS;
         uint256 discountFromStake = _getDiscountFunction(_isFundInCRP(fund))(period, newTargetDiscount, timestamp);
 
         return currentDiscount + discountFromStake;
@@ -874,7 +875,8 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 timestamp,
         uint256 investment
     ) private view returns (uint256) {
-        uint256 targetDiscount = _calculateTargetDiscount(pos.amountInUsdc, pos.period.duration, investment);
+        uint256 targetDiscount = _calculateTargetDiscount(pos.amountInUsdc, pos.period.duration, investment) /
+            EXTRA_EIGHTEEN_ZEROS;
         function(Period memory, uint256, uint256) pure returns (uint256) func = _getDiscountFunction(pos.isCRP);
         return func(pos.period, targetDiscount, timestamp);
     }
@@ -890,7 +892,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                 i++;
             }
         }
-        return discount;
+        return discount / EXTRA_EIGHTEEN_ZEROS;
     }
 
     function _getTotalTargetDiscountForPositions(
@@ -905,7 +907,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                 i++;
             }
         }
-        return discount;
+        return discount / EXTRA_EIGHTEEN_ZEROS;
     }
 
     function _calculateTargetDiscount(
@@ -915,7 +917,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     ) private view returns (uint256) {
         uint256 amountForMaxDiscount = _getStakeForMaxDiscountInUsdc(investment, period);
         if (amountForMaxDiscount > 0) {
-            return Math.mulDiv(amountInUsdc, maxDiscount, amountForMaxDiscount);
+            return Math.mulDiv(amountInUsdc * EXTRA_EIGHTEEN_ZEROS, maxDiscount, amountForMaxDiscount);
         } else {
             return uint256(type(uint128).max);
         }
@@ -1040,32 +1042,6 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 count;
         for (uint256 i; i < stakeIds.length; ) {
             Position memory pos = stakingPositions[stakeIds[i]];
-            if (pred(pos)) {
-                positions[count++] = pos;
-            }
-            unchecked {
-                i++;
-            }
-        }
-        Position[] memory result = new Position[](count);
-        for (uint256 i; i < count; ) {
-            result[i] = positions[i];
-            unchecked {
-                i++;
-            }
-        }
-        return result;
-    }
-
-    function _getFilteredPositionsSimulation(
-        Position[] memory stakingPositionsBuffer,
-        function(Position memory) view returns (bool) pred
-    ) private view returns (Position[] memory) {
-        // uint256[] memory stakeIds = stakesPerAccount[account][fund];
-        Position[] memory positions = new Position[](stakingPositionsBuffer.length);
-        uint256 count;
-        for (uint256 i; i < stakingPositionsBuffer.length; ) {
-            Position memory pos = stakingPositionsBuffer[i];
             if (pred(pos)) {
                 positions[count++] = pos;
             }
