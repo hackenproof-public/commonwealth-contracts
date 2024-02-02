@@ -88,7 +88,7 @@ export async function deployEvm<Type extends Contract>(
 
   const contractParams = extractDeploymentParams(deploymentParams);
 
-  // if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
+  if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
     console.log(`Deploying ${contractName} contract...`);
 
     let contract;
@@ -107,7 +107,7 @@ export async function deployEvm<Type extends Contract>(
     await verifyContract(chainId, contract, contractParams, proxy);
 
     return <Type>contract;
-  // }
+  }
 }
 
 export async function deployZkSync<Type extends Contract>(
@@ -124,7 +124,7 @@ export async function deployZkSync<Type extends Contract>(
 
   const contractParams = extractDeploymentParams(deploymentParams);
 
-  // if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
+  if (chainId === 31337 || (await confirmYesOrNo('Do you want to deploy contract? [y/N] '))) {
     console.log(`Deploying ${contractName} contract...`);
 
     let contract;
@@ -143,7 +143,7 @@ export async function deployZkSync<Type extends Contract>(
     await verifyContract(chainId, contract, contractParams, proxy);
 
     return <Type>contract;
-  // }
+  }
 }
 
 async function deployEvmContract<Type extends Contract>(
@@ -418,7 +418,7 @@ export function ask(question: string): Promise<string> {
 }
 
 async function verifyContract(chainId: number, contract: Contract, contractParams: any[], proxy: boolean) {
-  // if (chainId !== 31337 && (await confirmYesOrNo('\nDo you want to verify contract? [y/n] '))) {
+  if (chainId !== 31337 && (await confirmYesOrNo('\nDo you want to verify contract? [y/n] '))) {
     if (proxy) {
       const implementationAddress = await getImplementationAddress(ethers.provider, contract.address);
       console.log('Implementation address: ', implementationAddress);
@@ -426,5 +426,5 @@ async function verifyContract(chainId: number, contract: Contract, contractParam
     } else {
       await verify(contract.address, contractParams);
     }
-  // }
+  }
 }

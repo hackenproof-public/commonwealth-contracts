@@ -1,103 +1,120 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "../interfaces/IStakingGenesisNFTVesting.sol";
 
-error BaseVesting__TokenZeroAddress();
-error BaseVesting__GenesisNftZeroAddress();
-error BaseVesting__VestingNotStarted();
-error BaseVesting__NotEnoughTokensVested();
-error BaseVesting__NotEnoughTokensOnContract();
+error StakingGenesisNFTVesting__OwnerZeroAddress();
+error StakingGenesisNFTVesting__WlthZeroAddress();
+error StakingGenesisNFTVesting__DistributionNotStarted();
+error StakingGenesisNFTVesting__NotEnoughTokens();
+error StakingGenesisNFTVesting__NoRewardsForUser(address account);
+error StakingGenesisNFTVesting__RewardsTooHigh(uint256 allocation, uint256 totalRewards);
 
-contract StakingGenNFTVesting is ReentrancyGuard, Ownable {
+contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, Ownable {
     using SafeERC20 for IERC20;
-    using Math for uint256;
 
-    /**
-     * @notice Vested token address
-     */
-    address public token;
+    IERC20 private immutable i_wlth;
 
-    /**
-     * @notice Total token allocation during vesting schedule
-     */
-    uint256 public allocation;
+    uint256 private immutable i_allocation;
 
-    /**
-     * @notice Number of already released tokens
-     */
-    uint256 public released;
+    uint256 public immutable i_distributionStartTimestamp;
 
-    /**
-     * @notice Vesting start block's timestamp
-     */
-    uint256 public vestingStartTimestamp;
+    uint256 private s_releasedAmount;
 
-    /**
-     * @notice Staking Genesis NFT contract address
-     */
-    address public stakingGenNftAddress;
+    uint256 private s_totalRewards;
 
-    /**
-     * @notice check for vested WLTH tokens by given beneficiary
-     */
-    mapping(address => uint256) public amountClaimedByWallet;
+    mapping(address => bool) public s_userClaimed;
 
-    /**
-     * @notice Emitted when token released from vesting contract
-     * @param beneficiary Wallet that released tokens
-     * @param token Token address
-     * @param amount Amount released
-     */
-    event Released(address indexed beneficiary, address indexed token, uint256 indexed amount);
+    mapping(address => uint256) public s_series1Rewards;
 
-    constructor(
-        address owner_,
-        address token_,
-        uint256 allocation_,
-        uint256 vestingStartTimestamp_,
-        address stakingGenNftAddress_
-    ) {
-        if (stakingGenNftAddress_ == address(0)) revert BaseVesting__TokenZeroAddress();
-        if (token_ == address(0)) revert BaseVesting__GenesisNftZeroAddress();
+    mapping(address => uint256) public s_series2Rewards;
 
-        stakingGenNftAddress = stakingGenNftAddress_;
-        token = token_;
-        allocation = allocation_;
-        vestingStartTimestamp = vestingStartTimestamp_;
-        _transferOwnership(owner_);
+    event Released(address indexed beneficiary, uint256 indexed amount);
+
+    constructor(address _owner, address _wlth, uint256 _allocation, uint256 _distributionStartTimestamp) {
+        if (_owner == address(0)) revert StakingGenesisNFTVesting__OwnerZeroAddress();
+        if (_wlth == address(0)) revert StakingGenesisNFTVesting__WlthZeroAddress();
+
+        i_wlth = IERC20(_wlth);
+        i_allocation = _allocation;
+        i_distributionStartTimestamp = _distributionStartTimestamp;
+        _transferOwnership(_owner);
     }
 
-    /**
-     * @dev Release the tokens from this contract to the beneficiary
-     */
-    function release(uint256 amount, address beneficiary) public virtual {
-        address tokenAddress = token;
-        if (block.timestamp < vestingStartTimestamp) revert BaseVesting__VestingNotStarted();
-        if (amount > releaseableAmount(beneficiary)) revert BaseVesting__NotEnoughTokensVested();
-        if (IERC20(tokenAddress).balanceOf(address(this)) < amount) revert BaseVesting__NotEnoughTokensOnContract();
+    function release() external override {
+        if (block.timestamp < i_distributionStartTimestamp) revert StakingGenesisNFTVesting__DistributionNotStarted();
 
-        released += amount;
-        amountClaimedByWallet[beneficiary] += amount;
+        uint256 amount = releaseableAmount(msg.sender);
+        if (amount == 0) revert StakingGenesisNFTVesting__NoRewardsForUser(msg.sender);
+        if (amount > i_wlth.balanceOf(address(this))) revert StakingGenesisNFTVesting__NotEnoughTokens();
 
-        IERC20(tokenAddress).safeTransfer(beneficiary, amount);
+        s_releasedAmount += amount;
+        s_userClaimed[msg.sender] = true;
 
-        emit Released(beneficiary, tokenAddress, amount);
+        i_wlth.safeTransfer(msg.sender, amount);
+
+        emit Released(msg.sender, amount);
     }
 
-    /**
-     * @dev Returns amount of tokens available to release for actual block timestamp
-     */
-    function releaseableAmount(address beneficiary) public view returns (uint256) {
-        return
-            (IStakingGenesisNFT(stakingGenNftAddress).getRewardSmall(beneficiary) +
-                IStakingGenesisNFT(stakingGenNftAddress).getRewardLarge(beneficiary)) *
-            1e18 -
-            amountClaimedByWallet[beneficiary];
+    function setRewards(Rewards[] memory _rewards) external override onlyOwner {
+        uint256 rewards = s_totalRewards;
+        for (uint256 i; i < _rewards.length; ) {
+            s_series1Rewards[_rewards[i].account] = _rewards[i].series1Rewards;
+            s_series2Rewards[_rewards[i].account] = _rewards[i].series2Rewards;
+
+            rewards += _rewards[i].series1Rewards + _rewards[i].series2Rewards;
+
+            if (rewards > i_allocation) revert StakingGenesisNFTVesting__RewardsTooHigh(i_allocation, rewards);
+
+            unchecked {
+                i++;
+            }
+        }
+
+        s_totalRewards = rewards;
+    }
+
+    function emergencyWithdraw(address _account) external override onlyOwner {
+        i_wlth.safeTransfer(_account, i_wlth.balanceOf(address(this)));
+    }
+
+    function releaseableAmount(address _account) public view override returns (uint256) {
+        return s_userClaimed[_account] ? 0 : s_series1Rewards[_account] + s_series2Rewards[_account];
+    }
+
+    function wlth() external view override returns (address) {
+        return address(i_wlth);
+    }
+
+    function allocation() external view override returns (uint256) {
+        return i_allocation;
+    }
+
+    function distributionStartTimestamp() external view override returns (uint256) {
+        return i_distributionStartTimestamp;
+    }
+
+    function releasedAmount() external view override returns (uint256) {
+        return s_releasedAmount;
+    }
+
+    function totalRewards() external view override returns (uint256) {
+        return s_totalRewards;
+    }
+
+    function userClaimed(address _account) external view override returns (bool) {
+        return s_userClaimed[_account];
+    }
+
+    function series1Rewards(address _account) external view override returns (uint256) {
+        return s_series1Rewards[_account];
+    }
+
+    function series2Rewards(address _account) external view override returns (uint256) {
+        return s_series2Rewards[_account];
     }
 }

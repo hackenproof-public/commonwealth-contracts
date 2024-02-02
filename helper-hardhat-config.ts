@@ -27,7 +27,7 @@ interface L2ToL1item {
 
 export const l2Tol1: L2ToL1item = {
   300: { chainId: 11155111, name: 'sepolia' },
-  280: {chainId: 5, name: 'goerli'}
+  280: { chainId: 5, name: 'goerli' }
 } as const;
 
 export const l1Tol2: L2ToL1item = {

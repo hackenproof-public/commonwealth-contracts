@@ -5,8 +5,8 @@ import { Contract, Provider, utils, Wallet } from 'zksync-web3';
 import { toUsdc, toWlth } from '../test/utils';
 import { getEnvByNetwork } from './utils';
 
-import MIRROR_ABI from '../artifacts/contracts/old/OldGenesisNFTMirror.sol/GenesisNFTmirror.json';
 import NFT_ABI from '../artifacts/contracts/GenesisNFTV1.sol/GenesisNFTV1.json';
+import MIRROR_ABI from '../artifacts/contracts/old/OldGenesisNFTMirror.sol/GenesisNFTmirror.json';
 
 export const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 

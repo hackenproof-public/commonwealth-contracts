@@ -127,7 +127,7 @@ describe('GenesisNFTMirror', () => {
         );
       });
 
-      it("Should revert when a token has already an owner", async () => {
+      it('Should revert when a token has already an owner', async () => {
         const { governor, user1, user2, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
         const tokenIds = [1];
 

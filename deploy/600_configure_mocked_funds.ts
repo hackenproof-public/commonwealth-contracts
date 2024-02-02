@@ -197,8 +197,6 @@ const configureFunds: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   //   '200000000000',
   //   'WOO'
   // );
-
- 
 };
 
 export default configureFunds;

@@ -9,18 +9,16 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
   const deploymentCofing = getDeploymentConfig();
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
-  const stakingGenesisNft = await getContractAddress(network.config.chainId!, 'StakingGenesisNFT');
 
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'wlth', value: wlth },
     { name: 'allocation', value: deploymentCofing.genesisNftStakingAllocation },
-    { name: 'vestingStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp },
-    { name: 'stakingGenNFT', value: stakingGenesisNft }
+    { name: 'distributionStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp }
   ];
 
-  await deploy(hre, 'StakingGenNFTVesting', parameters);
+  await deploy(hre, 'StakingGenesisNFTVesting', parameters);
 };
 
 export default deployStakingGenNFTVesting;
-deployStakingGenNFTVesting.tags = ['tge', 'stakingGenNFTVesting', 'all'];
+deployStakingGenNFTVesting.tags = ['tge', 'stakingGenesisNFTVesting', 'all'];
