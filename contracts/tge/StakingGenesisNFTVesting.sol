@@ -21,17 +21,17 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, Ownable {
 
     uint256 private immutable i_allocation;
 
-    uint256 public immutable i_distributionStartTimestamp;
+    uint256 private immutable i_distributionStartTimestamp;
 
     uint256 private s_releasedAmount;
 
     uint256 private s_totalRewards;
 
-    mapping(address => bool) public s_userClaimed;
+    mapping(address => bool) private s_userClaimed;
 
-    mapping(address => uint256) public s_series1Rewards;
+    mapping(address => uint256) private s_series1Rewards;
 
-    mapping(address => uint256) public s_series2Rewards;
+    mapping(address => uint256) private s_series2Rewards;
 
     event Released(address indexed beneficiary, uint256 indexed amount);
 

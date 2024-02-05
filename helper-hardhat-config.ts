@@ -1,3 +1,6 @@
+import { BigNumber } from 'ethers';
+import { parseEther } from 'ethers/lib/utils';
+
 export const developmentChains = [31337];
 
 const SECONDS_IN_DAY = 86400;
@@ -68,7 +71,7 @@ export interface networkConfigItem {
   genesisNftRevenueAddress: string;
   lpPoolAddress: string;
   burnAddress: string;
-  genesisNftStakingAllocation: number;
+  genesisNftStakingAllocation: BigNumber;
   unlocker: string;
   zkSyncGasPerPubdataLimit: number;
 }
@@ -113,7 +116,7 @@ const localConfig: networkConfigItem = {
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
-  genesisNftStakingAllocation: 24000000,
+  genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   zkSyncGasPerPubdataLimit: 800
 };
@@ -148,7 +151,7 @@ const goerliConfig: networkConfigItem = {
   genesisNftRevenueAddress: '0x',
   lpPoolAddress: '0x',
   burnAddress: '0x',
-  genesisNftStakingAllocation: 24000000,
+  genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0x',
   zkSyncGasPerPubdataLimit: 800
 };
@@ -183,7 +186,7 @@ const zkSyncTestnet: networkConfigItem = {
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
-  genesisNftStakingAllocation: 24000000,
+  genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   zkSyncGasPerPubdataLimit: 800
 };
