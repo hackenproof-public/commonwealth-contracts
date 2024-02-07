@@ -7,7 +7,6 @@ import {IGeneisNFTMirror} from "./interfaces/IGenesisNFTMirror.sol";
 import {IGenesisNFTLock} from "./interfaces/IGenesisNFTLock.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
-import "hardhat/console.sol";
 
 error GenesisNFTLock__NotEnoughGas();
 error GenesisNFTLock__OwnerZeroAddress();

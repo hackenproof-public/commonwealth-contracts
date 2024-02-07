@@ -191,7 +191,6 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
 
     function getUnstakeSimulation(address fund, uint256 amountToUnstake) external view returns (uint256, uint256) {
         _validateUnstake(_msgSender(), fund, amountToUnstake);
-
         uint256 penalty;
         uint256 totalStake;
         uint256[] memory stakeIds = stakesPerAccount[_msgSender()][fund];
@@ -671,12 +670,13 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
                 for (uint256 i; i < openPositions.length; ) {
                     Position memory pos = openPositions[i];
                     ids[i] = pos.id;
-                    uint256 workingTokens = Math.mulDiv(
-                        pos.amountInWlth,
-                        remainingDiscountToHandle,
-                        totalDiscountOfOpen
-                    );
-                    uint256 unlockedTokens = pos.amountInWlth - workingTokens;
+
+                    uint256 workingTokens = totalDiscountOfOpen > 0
+                        ? Math.mulDiv(pos.amountInWlth, remainingDiscountToHandle, totalDiscountOfOpen)
+                        : 0;
+                    uint256 unlockedTokens = pos.amountInWlth > workingTokens
+                        ? pos.amountInWlth - workingTokens
+                        : pos.amountInWlth;
                     unlocked[i] = unlockedTokens;
                     totalUnlocked += unlockedTokens;
                     unchecked {

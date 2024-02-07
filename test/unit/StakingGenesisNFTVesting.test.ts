@@ -13,7 +13,7 @@ type Rewards = {
   series2Rewards: BigNumber;
 };
 
-describe.only('StakingGenesisNFTVesting', () => {
+describe('StakingGenesisNFTVesting', () => {
   const deployStakingGenesisNFTVesting = async () => {
     const [deployer, owner, user1, user2, emergencyAddress] = await ethers.getSigners();
     const ONE_DAY_IN_SECONDS = 86400;
