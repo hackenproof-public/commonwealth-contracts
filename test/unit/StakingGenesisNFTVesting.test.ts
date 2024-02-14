@@ -1,7 +1,7 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { BigNumber } from 'ethers';
+import { BigNumber, Wallet } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
@@ -15,7 +15,7 @@ type Rewards = {
 
 describe('StakingGenesisNFTVesting', () => {
   const deployStakingGenesisNFTVesting = async () => {
-    const [deployer, owner, user1, user2, emergencyAddress] = await ethers.getSigners();
+    const [deployer, owner, user1, user2] = await ethers.getSigners();
     const ONE_DAY_IN_SECONDS = 86400;
 
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
@@ -23,9 +23,12 @@ describe('StakingGenesisNFTVesting', () => {
     const allocation = parseEther('1000');
     const distributionStartTimestamp = (await time.latest()) + ONE_DAY_IN_SECONDS;
 
+    const emergencyWithdrawalUnlockTimestamp =
+      (await ethers.provider.getBlock('latest')).timestamp + 365 * ONE_DAY_IN_SECONDS;
+
     const stakingGenesisNFTVesting = (await deploy(
       'StakingGenesisNFTVesting',
-      [owner.address, wlth.address, allocation, distributionStartTimestamp],
+      [owner.address, wlth.address, allocation, distributionStartTimestamp, emergencyWithdrawalUnlockTimestamp],
       deployer
     )) as StakingGenesisNFTVesting;
 
@@ -54,44 +57,75 @@ describe('StakingGenesisNFTVesting', () => {
       allocation,
       distributionStartTimestamp,
       stakingGenesisNFTVesting,
-      rewards
+      rewards,
+      emergencyWithdrawalUnlockTimestamp
     };
   };
   describe('Deployment', () => {
     it('Should deploy the contract with initial params', async () => {
-      const { owner, stakingGenesisNFTVesting, wlth, allocation, distributionStartTimestamp } = await loadFixture(
-        deployStakingGenesisNFTVesting
-      );
+      const {
+        owner,
+        stakingGenesisNFTVesting,
+        wlth,
+        allocation,
+        distributionStartTimestamp,
+        emergencyWithdrawalUnlockTimestamp
+      } = await loadFixture(deployStakingGenesisNFTVesting);
 
       expect(await stakingGenesisNFTVesting.owner()).to.equal(owner.address);
       expect(await stakingGenesisNFTVesting.wlth()).to.equal(wlth.address);
       expect(await stakingGenesisNFTVesting.allocation()).to.equal(allocation);
       expect(await stakingGenesisNFTVesting.distributionStartTimestamp()).to.equal(distributionStartTimestamp);
+      expect(await stakingGenesisNFTVesting.emergencyWithdrawalUnlockTimestamp()).to.equal(
+        emergencyWithdrawalUnlockTimestamp
+      );
     });
 
     it("Should revert if the owner's address is the zero address", async () => {
-      const { stakingGenesisNFTVesting, deployer, wlth, allocation, distributionStartTimestamp } = await loadFixture(
-        deployStakingGenesisNFTVesting
-      );
+      const {
+        stakingGenesisNFTVesting,
+        deployer,
+        wlth,
+        allocation,
+        distributionStartTimestamp,
+        emergencyWithdrawalUnlockTimestamp
+      } = await loadFixture(deployStakingGenesisNFTVesting);
 
       await expect(
         deploy(
           'StakingGenesisNFTVesting',
-          [ethers.constants.AddressZero, wlth.address, allocation, distributionStartTimestamp],
+          [
+            ethers.constants.AddressZero,
+            wlth.address,
+            allocation,
+            distributionStartTimestamp,
+            emergencyWithdrawalUnlockTimestamp
+          ],
           deployer
         )
       ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__OwnerZeroAddress');
     });
 
     it("Should revert if the wlth's address is the zero address", async () => {
-      const { stakingGenesisNFTVesting, deployer, owner, allocation, distributionStartTimestamp } = await loadFixture(
-        deployStakingGenesisNFTVesting
-      );
+      const {
+        stakingGenesisNFTVesting,
+        deployer,
+        owner,
+        allocation,
+        distributionStartTimestamp,
+        emergencyWithdrawalUnlockTimestamp
+      } = await loadFixture(deployStakingGenesisNFTVesting);
 
       await expect(
         deploy(
           'StakingGenesisNFTVesting',
-          [owner.address, ethers.constants.AddressZero, allocation, distributionStartTimestamp],
+          [
+            owner.address,
+            ethers.constants.AddressZero,
+            allocation,
+            distributionStartTimestamp,
+            emergencyWithdrawalUnlockTimestamp
+          ],
           deployer
         )
       ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__WlthZeroAddress');
@@ -251,20 +285,41 @@ describe('StakingGenesisNFTVesting', () => {
   });
 
   describe('Emergency withdraw', () => {
-    it('Should withdraw', async () => {
-      const { owner, stakingGenesisNFTVesting, wlth, allocation } = await loadFixture(deployStakingGenesisNFTVesting);
-      wlth.balanceOf.returns(allocation);
-      await stakingGenesisNFTVesting.connect(owner).emergencyWithdraw(owner.address);
+    describe('Success', () => {
+      it('Should withdraw', async () => {
+        const { owner, stakingGenesisNFTVesting, wlth, allocation, emergencyWithdrawalUnlockTimestamp } =
+          await loadFixture(deployStakingGenesisNFTVesting);
+        const emergencyWithdrawalAccount = Wallet.createRandom().address;
+        wlth.balanceOf.returns(allocation);
 
-      expect(wlth.transfer).to.have.been.calledWith(owner.address, allocation);
+        await time.increaseTo(emergencyWithdrawalUnlockTimestamp);
+
+        await expect(stakingGenesisNFTVesting.connect(owner).emergencyWithdraw(emergencyWithdrawalAccount))
+          .to.emit(stakingGenesisNFTVesting, 'EmergencyWithdrawal')
+          .withArgs(emergencyWithdrawalAccount, allocation);
+
+        expect(wlth.transfer).to.have.been.calledWith(emergencyWithdrawalAccount, allocation);
+      });
     });
 
-    it('Should revert if the caller is not the owner', async () => {
-      const { user1, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+    describe('Reverts', () => {
+      it('Should revert if the caller is not the owner', async () => {
+        const { user1, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
 
-      await expect(stakingGenesisNFTVesting.connect(user1).emergencyWithdraw(user1.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
+        await expect(stakingGenesisNFTVesting.connect(user1).emergencyWithdraw(user1.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+      it('Should revert if the emergency withdrawal locked', async () => {
+        const { owner, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).emergencyWithdraw(owner.address)
+        ).to.be.revertedWithCustomError(
+          stakingGenesisNFTVesting,
+          'StakingGenesisNFTVesting__EmergencyWithdrawalLocked'
+        );
+      });
     });
   });
 });

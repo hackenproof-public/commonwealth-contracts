@@ -10,12 +10,12 @@ error GenesisNftMirror__OwnerZeroAddress();
 error GenesisNftMirror__GovernorZeroAddress();
 error GenesisNftMirror__AccessDenied();
 error GenesisNFTMirror__TokenAlreadyAssigned(uint256 tokenId);
-error GenesisNFTMirror__TokenNotAssigned(uint256 tokenId);
 error GenesisNFTMirror__NotTokenOwner(uint256 tokenId, address account);
 error GenesisNFTMirror__IndexOutOfBounds();
 error GenesisNFTMirror__OwnerIndexOutOfBounds();
 error GenesisNFTMirror__TokensLimitReached();
 error GenesisNFTMirror_NotTokenOwner(uint256 tokenId, address account);
+error GenesisNFTMirror__NoTokensAssigned(address account);
 
 /**
  * @title GenesisNFTMirror
@@ -23,8 +23,8 @@ error GenesisNFTMirror_NotTokenOwner(uint256 tokenId, address account);
  */
 contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
     event TokenMoved(uint256 indexed tokenId, address indexed to);
-    event TokensAssigned(uint256[] indexed tokenId, address indexed to);
-    event TokensUnasigned(uint256[] indexed tokenId, address indexed from);
+    event TokensAssigned(uint256[] tokenId, address indexed to);
+    event TokensUnassigned(uint256[] tokenId, address indexed from);
 
     uint256 public constant TOKENS_LIMIT = 160;
 
@@ -58,7 +58,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
     }
 
     /**
-     * @dev Initializes the contract.
+     * @notice Initializes the contract.
      * @param _owner Address of the owner.
      * @param _governor Address of the governor.
      * @param _name Name of the NFT mirror.
@@ -90,8 +90,11 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
         for (uint256 i; i < _tokenIds.length; ) {
             bool tokenExist = s_tokenExist[_tokenIds[i]];
             address tokenOwner = s_tokenOwner[_tokenIds[i]];
+            if (tokenOwner == _account) {
+                revert GenesisNFTMirror__TokenAlreadyAssigned(_tokenIds[i]);
+            }
             if (tokenExist && tokenOwner != _account && tokenOwner != address(0)) {
-                revert GenesisNFTMirror__NotTokenOwner(_tokenIds[i], _account);
+                revert GenesisNFTMirror__NotTokenOwner(_tokenIds[i], tokenOwner);
             }
 
             s_ownedTokens[_account][accountBalance] = _tokenIds[i];
@@ -122,9 +125,13 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
         address _account
     ) external override onlyGovernorOrOwner tokensLimit(_tokenIds.length) {
         uint256 currentBalance = s_balances[_account];
+        if (currentBalance == 0) {
+            revert GenesisNFTMirror__NoTokensAssigned(_account);
+        }
         for (uint256 i; i < _tokenIds.length; ) {
-            if (s_tokenOwner[_tokenIds[i]] != _account) {
-                revert GenesisNFTMirror_NotTokenOwner(_tokenIds[i], msg.sender);
+            address tokenOwner = s_tokenOwner[_tokenIds[i]];
+            if (tokenOwner != _account) {
+                revert GenesisNFTMirror_NotTokenOwner(_tokenIds[i], _account);
             }
 
             uint256 lastTokenIndex = balanceOf(_account) - 1;
@@ -146,11 +153,9 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
             }
         }
 
-        if (currentBalance > 0) {
-            s_balances[_account] = currentBalance - _tokenIds.length;
-        }
+        s_balances[_account] = currentBalance - _tokenIds.length;
 
-        emit TokensUnasigned(_tokenIds, _account);
+        emit TokensUnassigned(_tokenIds, _account);
     }
 
     /**

@@ -4,7 +4,6 @@ import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { GenesisNFTMirror } from '../../typechain-types';
-
 describe('GenesisNFTMirror', () => {
   const deployGenesisNFTMirror = async () => {
     const [deployer, owner, governor, user1, user2] = await ethers.getSigners();
@@ -134,8 +133,8 @@ describe('GenesisNFTMirror', () => {
         await genesisNFTLock.connect(governor).assign(tokenIds, user1.address);
 
         await expect(genesisNFTLock.connect(governor).assign(tokenIds, user2.address))
-          .to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTMirror__TokenAlreadyAssigned')
-          .withArgs(tokenIds[0]);
+          .to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTMirror__NotTokenOwner')
+          .withArgs(tokenIds[0], user1.address);
       });
 
       it('Should revert when the token is already assign to the user', async () => {

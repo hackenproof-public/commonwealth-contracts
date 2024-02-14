@@ -61,7 +61,7 @@ describe('GenesisNFTLock unit tests', () => {
     });
 
     it('Should revert when owner address is zero address', async () => {
-      const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
+      const { genesisNFTLock, deployer, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
         await loadFixture(deployGensisNFTLock);
 
       await expect(
@@ -74,8 +74,9 @@ describe('GenesisNFTLock unit tests', () => {
     });
 
     it('Should revert when genesis nft series 1 address is zero address', async () => {
-      const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
-        await loadFixture(deployGensisNFTLock);
+      const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries2 } = await loadFixture(
+        deployGensisNFTLock
+      );
 
       await expect(
         deployProxy(

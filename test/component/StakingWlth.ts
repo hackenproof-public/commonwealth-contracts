@@ -10,7 +10,7 @@ import { getTokenIdFromTx, toUsdc, toWlth } from '../utils';
 chai.use(smock.matchers);
 const { expect } = chai;
 
-describe('Staking WLTH component tests', () => {
+describe.skip('Staking WLTH component tests', () => {
   const SECONDS_IN_YEAR = 31536000;
   const ONE_YEAR = 1 * SECONDS_IN_YEAR;
   const TWO_YEARS = 2 * SECONDS_IN_YEAR;

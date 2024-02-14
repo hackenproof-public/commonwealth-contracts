@@ -7,6 +7,7 @@ import {IGeneisNFTMirror} from "./interfaces/IGenesisNFTMirror.sol";
 import {IGenesisNFTLock} from "./interfaces/IGenesisNFTLock.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IZkSync} from "@matterlabs/zksync-contracts/l1/contracts/zksync/interfaces/IZkSync.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 error GenesisNFTLock__NotEnoughGas();
 error GenesisNFTLock__OwnerZeroAddress();
@@ -23,7 +24,7 @@ error GenesisNFTLock__TokensEmptyIds();
  * @title GenesisNFTLock
  * @notice Contract representing the locking functionality for NFTs.
  */
-contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgradeable {
+contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgradeable, ReentrancyGuardUpgradeable {
     event ZkSyncNotified(
         OperationType operationType,
         uint8 indexed sieries,
@@ -85,10 +86,11 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         if (_series2Nft == address(0)) revert GenesisNFTLock__NFTSeries2ZeroAddress();
         if (_zkSyncGasPerPubdataLimit == 0) revert GenesisNFTLock__GasPerPubDataLimitZero();
 
-        __OwnablePausable_init(_owner);
         s_series1Nft = _series1Nft;
         s_series2Nft = _series2Nft;
         s_zkSyncGasPerPubdataLimit = _zkSyncGasPerPubdataLimit;
+        __OwnablePausable_init(_owner);
+        __ReentrancyGuard_init();
     }
 
     /**
@@ -98,17 +100,17 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         uint256[] memory _ids,
         address _account,
         uint256 _gasLimit
-    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) {
+    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
         if (_ids.length == 0) {
             revert GenesisNFTLock__TokensEmptyIds();
         }
         uint256 nextLockTokenIndex = s_series1LockedTokens[_account].length;
-        IERC721Upgradeable series1Nft = IERC721Upgradeable(s_series1Nft);
+        IERC721Upgradeable nft = IERC721Upgradeable(s_series1Nft);
         for (uint256 i; i < _ids.length; ) {
             s_series1LockedTokenOwner[_ids[i]] = _account;
             s_series1LockedTokens[_account].push(_ids[i]);
             s_series1LockedTokenIndex[_account][_ids[i]] = nextLockTokenIndex;
-            series1Nft.safeTransferFrom(_account, address(this), _ids[i]);
+            nft.safeTransferFrom(_account, address(this), _ids[i]);
 
             unchecked {
                 nextLockTokenIndex++;
@@ -125,8 +127,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
     function unlockSeries1Tokens(
         uint256[] memory _ids,
         uint256 _gasLimit
-    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) {
-        IERC721Upgradeable series1Nft = IERC721Upgradeable(s_series1Nft);
+    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
+        IERC721Upgradeable nft = IERC721Upgradeable(s_series1Nft);
         if (_ids.length == 0) {
             revert GenesisNFTLock__TokensEmptyIds();
         }
@@ -149,7 +151,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
             delete s_series1LockedTokenIndex[msg.sender][_ids[i]];
             delete s_series1LockedTokenOwner[_ids[i]];
 
-            series1Nft.safeTransferFrom(address(this), msg.sender, _ids[i]);
+            nft.safeTransferFrom(address(this), msg.sender, _ids[i]);
 
             unchecked {
                 i++;
@@ -166,17 +168,17 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         uint256[] memory _ids,
         address _accouunt,
         uint256 _gasLimit
-    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) {
+    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
         if (_ids.length == 0) {
             revert GenesisNFTLock__TokensEmptyIds();
         }
         uint256 nextLockTokenIndex = s_series2LockedTokens[_accouunt].length;
-        IERC721Upgradeable series2Nft = IERC721Upgradeable(s_series2Nft);
+        IERC721Upgradeable nft = IERC721Upgradeable(s_series2Nft);
         for (uint256 i; i < _ids.length; ) {
             s_series2LockedTokenOwner[_ids[i]] = _accouunt;
             s_series2LockedTokens[_accouunt].push(_ids[i]);
             s_series2LockedTokenIndex[_accouunt][_ids[i]] = nextLockTokenIndex;
-            series2Nft.safeTransferFrom(_msgSender(), address(this), _ids[i]);
+            nft.safeTransferFrom(_msgSender(), address(this), _ids[i]);
             unchecked {
                 nextLockTokenIndex++;
                 i++;
@@ -192,8 +194,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
     function unlockSeries2Tokens(
         uint256[] memory _ids,
         uint256 _gasLimit
-    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) {
-        IERC721Upgradeable series2Nft = IERC721Upgradeable(s_series2Nft);
+    ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
+        IERC721Upgradeable nft = IERC721Upgradeable(s_series2Nft);
         if (_ids.length == 0) {
             revert GenesisNFTLock__TokensEmptyIds();
         }
@@ -216,7 +218,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
             delete s_series2LockedTokenIndex[msg.sender][_ids[i]];
             delete s_series2LockedTokenOwner[_ids[i]];
 
-            series2Nft.safeTransferFrom(address(this), msg.sender, _ids[i]);
+            nft.safeTransferFrom(address(this), msg.sender, _ids[i]);
 
             unchecked {
                 i++;

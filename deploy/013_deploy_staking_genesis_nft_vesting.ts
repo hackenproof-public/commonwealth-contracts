@@ -14,7 +14,11 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'wlth', value: wlth },
     { name: 'allocation', value: deploymentCofing.genesisNftStakingAllocation },
-    { name: 'distributionStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp }
+    { name: 'distributionStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp },
+    {
+      name: 'emergencyWithdrawalUnlockTimestamp',
+      value: deploymentCofing.stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp
+    }
   ];
 
   await deploy(hre, 'StakingGenesisNFTVesting', parameters);

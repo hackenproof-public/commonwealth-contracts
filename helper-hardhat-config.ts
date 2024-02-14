@@ -74,6 +74,9 @@ export interface networkConfigItem {
   genesisNftStakingAllocation: BigNumber;
   unlocker: string;
   zkSyncGasPerPubdataLimit: number;
+  stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp: number;
+  genesisNftVestingAllocation: BigNumber;
+  genesisNftVestingEmergencyWithdrawalUnlockTimestamp: number;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -118,7 +121,10 @@ const localConfig: networkConfigItem = {
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
   genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  zkSyncGasPerPubdataLimit: 800
+  zkSyncGasPerPubdataLimit: 800,
+  stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600,
+  genesisNftVestingAllocation: parseEther('24000000'),
+  genesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600
 };
 
 const goerliConfig: networkConfigItem = {
@@ -153,7 +159,10 @@ const goerliConfig: networkConfigItem = {
   burnAddress: '0x',
   genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0x',
-  zkSyncGasPerPubdataLimit: 800
+  zkSyncGasPerPubdataLimit: 800,
+  stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600,
+  genesisNftVestingAllocation: parseEther('24000000'),
+  genesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600
 };
 
 const zkSyncTestnet: networkConfigItem = {
@@ -188,7 +197,10 @@ const zkSyncTestnet: networkConfigItem = {
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
   genesisNftStakingAllocation: parseEther('24000000'),
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  zkSyncGasPerPubdataLimit: 800
+  zkSyncGasPerPubdataLimit: 800,
+  stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600,
+  genesisNftVestingAllocation: parseEther('24000000'),
+  genesisNftVestingEmergencyWithdrawalUnlockTimestamp: 1700049600
 };
 
 const zkTestnetDevConfig: networkConfigItem = {
