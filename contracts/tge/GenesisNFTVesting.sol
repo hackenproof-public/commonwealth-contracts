@@ -329,7 +329,6 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
         uint256 _actualTimestamp
     ) public view override returns (uint256) {
         if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
-                                    100                 50                          20
         uint256 cadencesAmount = (_actualTimestamp - i_vestingStartTimestamp) / i_cadence;
         if (_series1) {
             uint256 claimed = s_amountClaimedBySeries1TokenId[_tokenId];
