@@ -354,6 +354,26 @@ describe('Staking Genesis NFT unit tests', () => {
           (SOME_STAKE.length - unstaked.length + SOME_OTHER_STAKE.length) * DAILY_REWARD_LARGE * 2
       );
     });
+
+    it('Should revert when more tokens then the unstake limit', async () => {
+      const { stakingGenesisNft, deployer, smallGenesisNFT, largeGenesisNFT } = await loadFixture(
+        deployStakingGenesisNFT
+      );
+
+      const tokensLarge = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+      const tokensSmall = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
+      ];
+      tokensSmall.forEach((id) => smallGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+      tokensLarge.forEach((id) => largeGenesisNFT.ownerOf.whenCalledWith(id).returns(deployer.address));
+
+      await stakingGenesisNft.connect(deployer).stake(tokensSmall, tokensLarge);
+
+      await expect(stakingGenesisNft.connect(deployer).unstake(tokensSmall, tokensSmall)).to.be.revertedWithCustomError(
+        stakingGenesisNft,
+        'StakingGenesisNFT__UnstakeLimitReached'
+      );
+    });
   });
 
   describe('#getStakedTokensSmall', () => {

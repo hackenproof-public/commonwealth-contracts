@@ -15,6 +15,7 @@ error StakingGenesisNft__InvalidFinalTimestamp();
 error StakingGenesisNft__StakingFinished();
 error StakingGenesisNft__NoTokensStaked();
 error StakingGenesisNft__UnexpectedTokenId();
+error StakingGenesisNFT__UnstakeLimitReached();
 
 /**
  * @title Staking Genesis NFT
@@ -22,6 +23,7 @@ error StakingGenesisNft__UnexpectedTokenId();
 contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStakingGenesisNFT {
     uint256 private constant DAILY_REWARD_SMALL = 5;
     uint256 private constant DAILY_REWARD_LARGE = 27;
+    uint256 private constant UNSTAKE_LIMIT = 50;
 
     uint256 public rewardPeriod; // in seconds
     IERC721Upgradeable public smallNft;
@@ -97,6 +99,9 @@ contract StakingGenesisNFT is ERC721HolderUpgradeable, OwnablePausable, IStaking
     }
 
     function unstake(uint256[] calldata tokenIdsSmall, uint256[] calldata tokenIdsLarge) external whenNotPaused {
+        if (tokenIdsSmall.length + tokenIdsLarge.length > UNSTAKE_LIMIT)
+            revert StakingGenesisNFT__UnstakeLimitReached();
+
         uint256 smallReward = _removeStakedToken(
             tokenIdsSmall,
             stakedSmallKeys[_msgSender()],
