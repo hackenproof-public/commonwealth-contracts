@@ -174,6 +174,16 @@ describe('GenesisNFTMirror', () => {
         expect(await genesisNFTLock.totalSupply()).to.equal(tokenIds.length);
 
         expect(await genesisNFTLock.tokenByIndex(0)).to.equal(tokenIds[0]);
+        const owners = await genesisNFTLock.ownersOf(tokenIds.concat([4]));
+
+        expect(owners[0][0]).to.equal(tokenIds[0]);
+        expect(owners[0][1]).to.equal(user1.address);
+        expect(owners[1][0]).to.equal(tokenIds[1]);
+        expect(owners[1][1]).to.equal(user1.address);
+        expect(owners[2][0]).to.equal(tokenIds[2]);
+        expect(owners[2][1]).to.equal(user1.address);
+        expect(owners[3][0]).to.equal(4);
+        expect(owners[3][1]).to.equal(constants.AddressZero);
       });
 
       it('Should assign other tokens to the second user', async () => {
@@ -216,6 +226,21 @@ describe('GenesisNFTMirror', () => {
         expect(await genesisNFTLock.isTokenExisted(user2TokenIds[2])).to.equal(true);
 
         expect(await genesisNFTLock.totalSupply()).to.equal(user1TokenIds.length + user2TokenIds.length);
+
+        const owners = await genesisNFTLock.ownersOf(user1TokenIds.concat(user2TokenIds));
+
+        expect(owners[0][0]).to.equal(user1TokenIds[0]);
+        expect(owners[0][1]).to.equal(user1.address);
+        expect(owners[1][0]).to.equal(user1TokenIds[1]);
+        expect(owners[1][1]).to.equal(user1.address);
+        expect(owners[2][0]).to.equal(user1TokenIds[2]);
+        expect(owners[2][1]).to.equal(user1.address);
+        expect(owners[3][0]).to.equal(user2TokenIds[0]);
+        expect(owners[3][1]).to.equal(user2.address);
+        expect(owners[4][0]).to.equal(user2TokenIds[1]);
+        expect(owners[4][1]).to.equal(user2.address);
+        expect(owners[5][0]).to.equal(user2TokenIds[2]);
+        expect(owners[5][1]).to.equal(user2.address);
       });
 
       it('Should assign next tokens to the user', async () => {

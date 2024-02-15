@@ -7,6 +7,14 @@ pragma solidity ^0.8.18;
  */
 interface IGeneisNFTMirror {
     /**
+     * @dev Struct for storing tokens' owners information.
+     */
+    struct TokenOwner {
+        uint256 tokenId; // Token id of the owner.
+        address account; // Address of the account owning the token.
+    }
+
+    /**
      * @notice Assigns specified token IDs to a given account.
      * @param _tokenIds Array of token IDs to be assigned.
      * @param _account Address of the account to which tokens will be assigned.
@@ -49,6 +57,13 @@ interface IGeneisNFTMirror {
      * @return The address of the governor.
      */
     function governor() external view returns (address);
+
+    /**
+     * @notice Gets the owners of a specific tokens.
+     * @param _tokensIds IDs of the tokens for which the owners are queried.
+     * @return The addresses and tokens ids of the owners of the tokens.
+     */
+    function ownersOf(uint256[] memory _tokensIds) external view returns (TokenOwner[] memory);
 
     /**
      * @notice Gets the balance of tokens owned by a specific address.

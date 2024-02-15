@@ -199,6 +199,18 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
     /**
      * @inheritdoc IGeneisNFTMirror
      */
+    function ownersOf(uint256[] memory _tokensIds) public view override returns (TokenOwner[] memory) {
+        TokenOwner[] memory owners = new TokenOwner[](_tokensIds.length);
+        for (uint256 i; i < _tokensIds.length; i++) {
+            owners[i] = TokenOwner(_tokensIds[i], s_tokenOwner[_tokensIds[i]]);
+        }
+
+        return owners;
+    }
+
+    /**
+     * @inheritdoc IGeneisNFTMirror
+     */
     function balanceOf(address _owner) public view override returns (uint256) {
         return s_balances[_owner];
     }
