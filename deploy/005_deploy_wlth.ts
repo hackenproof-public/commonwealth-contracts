@@ -8,11 +8,10 @@ const deployWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const parameters = [
     { name: 'name', value: deploymentCofing.wlthName },
-    { name: 'symbol', value: deploymentCofing.wlthSymbol },
-    { name: 'owner', value: deploymentCofing.ownerAccount }
+    { name: 'symbol', value: deploymentCofing.wlthSymbol }
   ];
 
-  await deploy(hre, 'Wlth', parameters, true);
+  await deploy(hre, 'Wlth', parameters, false);
 };
 
 export default deployWlth;

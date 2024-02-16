@@ -1,51 +1,34 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {IWlth} from "./interfaces/IWlth.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title WLTH contract
  */
-contract Wlth is ERC20Upgradeable, AccessControlEnumerableUpgradeable, IWlth {
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+contract Wlth is ERC20, IWlth {
     /**
-     * @notice Number of burned tokens
+     * @notice Amount of burned tokens
      */
-    uint256 public burned;
+    uint256 private s_burned;
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    /**
-     * @dev Initializes the contract
-     * @param name Token name
-     * @param symbol Token symbol
-     * @param owner Address with default admin role
-     */
-    function initialize(string memory name, string memory symbol, address owner) public initializer {
-        __Context_init();
-        __ERC20_init(name, symbol);
-        __ERC165_init();
-        __AccessControl_init();
-        __AccessControlEnumerable_init();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, owner);
-
-        // TODO Token distribution will be defined according to token allocation table
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         _mint(_msgSender(), 1e9 * 1e18); // 1 billion WLTH
     }
 
     /**
      * @inheritdoc IWlth
      */
-    function burn(uint256 amount) external virtual override onlyRole(BURNER_ROLE) {
-        _burn(_msgSender(), amount);
-        burned += amount;
+    function burn(uint256 _amount) external override {
+        _burn(_msgSender(), _amount);
+        s_burned += _amount;
     }
 
-    uint256[49] private __gap;
+    /**
+     * @inheritdoc IWlth
+     */
+    function burned() external view override returns (uint256) {
+        return s_burned;
+    }
 }
