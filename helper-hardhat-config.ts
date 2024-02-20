@@ -30,12 +30,14 @@ interface L2ToL1item {
 
 export const l2Tol1: L2ToL1item = {
   300: { chainId: 11155111, name: 'sepolia' },
-  280: { chainId: 5, name: 'goerli' }
+  280: { chainId: 5, name: 'goerli' },
+  324: { chainId: 1, name: 'ethereum' }
 } as const;
 
 export const l1Tol2: L2ToL1item = {
   11155111: { chainId: 300, name: 'sepoliaZkTestnet' },
-  5: { chainId: 280, name: 'zkTestnet' }
+  5: { chainId: 280, name: 'zkTestnet' },
+  1: { chainId: 324, name: 'zkSync' }
 } as const;
 
 export interface networkConfigItem {

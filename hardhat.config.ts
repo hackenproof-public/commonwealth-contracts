@@ -44,6 +44,16 @@ const config: HardhatUserConfig = {
       chainId: 1,
       accounts: !!env.ETHEREUM_WALLET_PRIVATE_KEY ? [env.ETHEREUM_WALLET_PRIVATE_KEY] : []
     },
+
+    zkSync: {
+      url: env.ZKSYNC_RPC_URL || '',
+      ethNetwork: env.ETHEREUM_RPC_URL || '',
+      zksync: true,
+      chainId: 324,
+      gas: 21000000,
+      accounts: !!env.ZKSYNC_WALLET_PRIVATE_KEY ? [env.ZKSYNC_WALLET_PRIVATE_KEY] : [],
+      verifyURL: env.ZKSYNC_VERIFY_URL || ''
+    },
     goerli: {
       url: env.GOERLI_RPC_URL || '',
       chainId: 5,
@@ -56,23 +66,23 @@ const config: HardhatUserConfig = {
     },
 
     sepoliaZkTestnet: {
-      url: 'https://sepolia.era.zksync.dev',
-      ethNetwork: "https://rpc.ankr.com/eth_sepolia",
+      url: env.SEPOLIAZKTESTNET_RPC_URL || '',
+      ethNetwork: env.SEPOLIA_RPC_URL || '',
       zksync: true,
       chainId: 300,
       gas: 21000000,
-      accounts: !!env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY ? [env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY] : [],
-      verifyURL: 'https://explorer.sepolia.era.zksync.dev/contract_verification'
+      accounts: !!env.SEPOLIAZKTESTNET_WALLET_PRIVATE_KEY ? [env.SEPOLIAZKTESTNET_WALLET_PRIVATE_KEY] : [],
+      verifyURL: env.SEPOLIAZKTESTNET_VERIFY_URL || ''
     },
 
     zkTestnet: {
-      url: 'https://nd-105-631-085.p2pify.com/b1700d8005deaec26cf3547a83c89cce',
-      ethNetwork: 'goerli',
+      url: env.ZKTESTNET_RPC_URL || '',
+      ethNetwork: env.ETHEREUM_RPC_URL || '',
       zksync: true,
       chainId: 280,
       gas: 21000000,
-      accounts: !!env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY ? [env.ZK_SYNC_TESTNET_WALLET_PRIVATE_KEY] : [],
-      verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification'
+      accounts: !!env.ZKTESTNET_WALLET_PRIVATE_KEY ? [env.ZKTESTNET_WALLET_PRIVATE_KEY] : [],
+      verifyURL: env.ZKTESTNET_VERIFY_URL || ''
     },
 
     localhost: {
@@ -106,7 +116,7 @@ const config: HardhatUserConfig = {
     }
   },
   zksolc: {
-    version: '1.3.18',
+    version: '1.3.23',
     settings: {}
   },
   mocha: {

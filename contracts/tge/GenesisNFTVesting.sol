@@ -247,7 +247,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, Reentran
         i_wlth.safeTransfer(_wallet, i_wlth.balanceOf(address(this)));
     }
 
-       /**
+    /**
      * @inheritdoc IGenesisNFTVesting
      */
     function unvestedAmountPerNFT(
