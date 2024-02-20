@@ -21,58 +21,74 @@ describe('GenesisNFTMirror', () => {
   };
 
   describe('Deployment', () => {
-    it('Should deploy the contran with initial params', async () => {
-      const { owner, governor, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
+    describe('Success', () => {
+      it('Should deploy the contran with initial params', async () => {
+        const { owner, governor, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
 
-      expect(await genesisNFTLock.name()).to.equal(name);
-      expect(await genesisNFTLock.symbol()).to.equal(symbol);
-      expect(await genesisNFTLock.owner()).to.equal(owner.address);
-      expect(await genesisNFTLock.governor()).to.equal(governor.address);
+        expect(await genesisNFTLock.name()).to.equal(name);
+        expect(await genesisNFTLock.symbol()).to.equal(symbol);
+        expect(await genesisNFTLock.owner()).to.equal(owner.address);
+        expect(await genesisNFTLock.governor()).to.equal(governor.address);
+      });
     });
 
-    it('Should revert when owner address is zero address', async () => {
-      const { deployer, governor, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
+    describe('Reverts', () => {
+      it('Should revert when owner address is zero address', async () => {
+        const { deployer, governor, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
 
-      await expect(
-        deployProxy('GenesisNFTMirror', [constants.AddressZero, governor.address, name, symbol], deployer)
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNftMirror__OwnerZeroAddress');
-    });
+        await expect(
+          deployProxy('GenesisNFTMirror', [constants.AddressZero, governor.address, name, symbol], deployer)
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNftMirror__OwnerZeroAddress');
+      });
 
-    it('Shuold revert when governor address is zero address', async () => {
-      const { deployer, owner, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
+      it('Should revert when governor address is zero address', async () => {
+        const { deployer, owner, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
 
-      await expect(
-        deployProxy('GenesisNFTMirror', [owner.address, constants.AddressZero, name, symbol], deployer)
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNftMirror__GovernorZeroAddress');
+        await expect(
+          deployProxy('GenesisNFTMirror', [owner.address, constants.AddressZero, name, symbol], deployer)
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNftMirror__GovernorZeroAddress');
+      });
+
+      it('Should revert when initialize again', async () => {
+        const { deployer, owner, governor, genesisNFTLock, name, symbol } = await loadFixture(deployGenesisNFTMirror);
+
+        await expect(genesisNFTLock.initialize(owner.address, governor.address, name, symbol)).to.be.revertedWith(
+          'Initializable: contract is already initialized'
+        );
+      });
     });
   });
 
   describe('Governor change', () => {
-    it("Should change goverorn's address", async () => {
-      const { governor, owner, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
-      const newGovernor = ethers.Wallet.createRandom();
+    describe('Success', () => {
+      it("Should change goverorn's address", async () => {
+        const { governor, owner, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
+        const newGovernor = ethers.Wallet.createRandom();
 
-      await genesisNFTLock.connect(owner).changeGovernor(newGovernor.address);
+        await genesisNFTLock.connect(owner).changeGovernor(newGovernor.address);
 
-      expect(await genesisNFTLock.governor()).to.equal(newGovernor.address);
+        expect(await genesisNFTLock.governor()).to.equal(newGovernor.address);
+      });
     });
 
-    it("Should revert when new governor's address is zero address", async () => {
-      const { governor, owner, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
+    describe('Success', () => {
+      it("Should revert when new governor's address is zero address", async () => {
+        const { governor, owner, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
 
-      await expect(genesisNFTLock.connect(owner).changeGovernor(constants.AddressZero)).to.be.revertedWithCustomError(
-        genesisNFTLock,
-        'GenesisNftMirror__GovernorZeroAddress'
-      );
-    });
+        await expect(genesisNFTLock.connect(owner).changeGovernor(constants.AddressZero)).to.be.revertedWithCustomError(
+          genesisNFTLock,
+          'GenesisNftMirror__GovernorZeroAddress'
+        );
+      });
 
-    it('Should revert when not the owner', async () => {
-      const { user1, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
-      const newGovernor = ethers.Wallet.createRandom();
+      it('Should revert when not the owner', async () => {
+        const { user1, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
+        const newGovernor = ethers.Wallet.createRandom();
 
-      await expect(genesisNFTLock.connect(user1).changeGovernor(newGovernor.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
+        await expect(genesisNFTLock.connect(user1).changeGovernor(newGovernor.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
     });
   });
 

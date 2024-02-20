@@ -62,6 +62,28 @@ interface IGenesisNFTVesting {
     function releasePerNFT(bool _isSeries1, uint256 _tokenId, uint256 _amount, address _beneficiary) external;
 
     /**
+     * @notice Sets the lost status for a specific NFT.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     */
+    function setLostToken(bool _series1, uint256 _tokenId) external;
+
+    /**
+     * @notice Resets the lost status for a specific NFT.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     */
+    function resetLostToken(bool _series1, uint256 _tokenId) external;
+
+    /**
+     * @notice Performs emergency withdrawal of rewards for a specific NFT.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     * @param _to Address to which the rewards will be withdrawn.
+     */
+    function emergencyWithdraw(bool _series1, uint256 _tokenId, address _to) external;
+
+    /**
      * @notice Returns the releasable amount for a specific NFT.
      * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
      * @param _tokenId The token ID of the NFT.
@@ -155,4 +177,12 @@ interface IGenesisNFTVesting {
      * @return The total amount claimed by the NFT.
      */
     function amountClaimedBySeries2TokenId(uint256 _tokenId) external view returns (uint256);
+
+    /**
+     * @notice Checks whether a specific NFT is marked as lost.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     * @return True if the NFT is marked as lost, false otherwise.
+     */
+    function lostToken(bool _series1, uint256 _tokenId) external view returns (bool);
 }

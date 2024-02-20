@@ -5,7 +5,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IGeneisNFTMirror} from "../interfaces/IGenesisNFTMirror.sol";
 import {IGenesisNFTVesting} from "../interfaces/IGenesisNFTVesting.sol";
-import {IEmergencyWithdrawal} from "../interfaces/IEmergencyWithdrawal.sol";
+import {ILeftoversWithdrawal} from "../interfaces/ILeftoversWithdrawal.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -21,9 +21,12 @@ error GenesisNFTVesting__NotEnoughTokensVested();
 error GenesisNFTVesting__InsufficientWlthBalance();
 error GenesisNFTVesting__NothingToRelease();
 error GenesisNFTVesting__NFTNotExisted(uint256 series, uint256 tokenId);
-error GenesisNFTVesting__EmergencyWithdrawalLocked();
+error GenesisNFTVesting__LeftoversWithdrawalLocked();
+error GenesisNFTVesting__TokenAlreadyLost(uint256 series, uint256 tokenId);
+error GenesisNFTVesting__TokenNotLost(uint256 series, uint256 tokenId);
+error GenesisNFTVesting__TokenLost(uint256 series, uint256 tokenId);
 
-contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, ReentrancyGuard, Ownable {
+contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     /**
@@ -79,7 +82,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     /**
      * @notice Timestamp when emergency withdrawal is unlocked.
      */
-    uint256 private i_emergencyWithdrawalUnlockTimestamp;
+    uint256 private i_leftoversUnlockTimestamp;
 
     /**
      * @notice Total amount of rewards released.
@@ -102,10 +105,47 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     mapping(uint256 => uint256) private s_amountClaimedBySeries2TokenId;
 
     /**
+     * @notice Mapping to track the status of lost tokens.
+     */
+    mapping(uint256 => mapping(uint256 => bool)) private s_lostTokens;
+
+    /**
      * @notice Event emitted when rewards are released.
      */
-    event Released(address indexed beneficiary, uint256 amount, uint256 tokenId);
+    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId);
 
+    /**
+     * @notice Event emitted when a token is marked as lost.
+     */
+    event LostTokenSet(uint256 indexed tokenId, uint256 indexed series);
+
+    /**
+     * @notice Event emitted when a token is unmarked as lost.
+     */
+    event LostTokenReseted(uint256 indexed tokenId, uint256 indexed series);
+
+    /**
+     * @notice Event emitted when an emergency withdrawal is performed.
+     */
+    event EmergencyWithdrawalPerformed(
+        uint256 indexed series,
+        uint256 indexed tokenId,
+        address indexed to,
+        uint256 amount
+    );
+
+    /**
+     * @notice Constructor for GenesisNFTVesting contract.
+     * @param _owner The address of the contract owner.
+     * @param _genesisNftSeries1Mirror The address of the Genesis NFT Mirror contract for Series 1.
+     * @param _genesisNftSeries2Mirror The address of the Genesis NFT Mirror contract for Series 2.
+     * @param _wlth The address of the WLTH token contract.
+     * @param _duration The duration of the vesting period.
+     * @param _cadence The cadence of vesting (time interval between releases).
+     * @param _vestingStartTimestamp The timestamp when vesting starts.
+     * @param _allocation The allocation amount for rewards.
+     * @param _leftoversUnlockTimestamp The timestamp when emergency withdrawal is unlocked.
+     */
     constructor(
         address _owner,
         address _genesisNftSeries1Mirror,
@@ -115,7 +155,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
         uint256 _cadence,
         uint256 _vestingStartTimestamp,
         uint256 _allocation,
-        uint _emergencyWithdrawalUnlockTimestamp
+        uint _leftoversUnlockTimestamp
     ) {
         if (_owner == address(0)) revert GenesisNFTVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert GenesisNFTVesting__WlthZeroAddress();
@@ -129,7 +169,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
         i_cadence = _cadence;
         i_vestingStartTimestamp = _vestingStartTimestamp;
         i_allocation = _allocation;
-        i_emergencyWithdrawalUnlockTimestamp = _emergencyWithdrawalUnlockTimestamp;
+        i_leftoversUnlockTimestamp = _leftoversUnlockTimestamp;
 
         _transferOwnership(_owner);
     }
@@ -138,8 +178,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
      * @inheritdoc IGenesisNFTVesting
      */
     function releaseAllAvailable(
-        uint256[] memory _series1TokenIds,
-        uint256[] memory _series2TokenIds,
+        uint256[] calldata _series1TokenIds,
+        uint256[] calldata _series2TokenIds,
         address _beneficiary
     ) external override {
         if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
@@ -151,7 +191,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function setupBonus(uint256[] memory _series1tokenIds) external override onlyOwner {
+    function setupBonus(uint256[] calldata _series1tokenIds) external override onlyOwner {
         for (uint i; i < _series1tokenIds.length; ) {
             s_bonusValue[_series1tokenIds[i]] = true;
             unchecked {
@@ -161,6 +201,53 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     }
 
     /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function setLostToken(bool _series1, uint256 _tokenId) external override onlyOwner {
+        if (s_lostTokens[_series1 ? 1 : 2][_tokenId])
+            revert GenesisNFTVesting__TokenAlreadyLost(_series1 ? 1 : 2, _tokenId);
+
+        s_lostTokens[_series1 ? 1 : 2][_tokenId] = true;
+
+        emit LostTokenSet(_tokenId, _series1 ? 1 : 2);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function resetLostToken(bool _series1, uint256 _tokenId) external override onlyOwner {
+        if (!s_lostTokens[_series1 ? 1 : 2][_tokenId])
+            revert GenesisNFTVesting__TokenNotLost(_series1 ? 1 : 2, _tokenId);
+        s_lostTokens[_series1 ? 1 : 2][_tokenId] = false;
+
+        emit LostTokenReseted(_tokenId, _series1 ? 1 : 2);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function emergencyWithdraw(bool _series1, uint256 _tokenId, address _to) external override onlyOwner {
+        if (!s_lostTokens[_series1 ? 1 : 2][_tokenId])
+            revert GenesisNFTVesting__TokenNotLost(_series1 ? 1 : 2, _tokenId);
+
+        uint256 amount = releasableAmountPerNFT(_series1, _tokenId, block.timestamp);
+        emit EmergencyWithdrawalPerformed(_series1 ? 1 : 2, _tokenId, _to, amount);
+
+        releasePerNFT(_series1, _tokenId, amount, _to);
+    }
+
+    /**
+     * @inheritdoc ILeftoversWithdrawal
+     */
+    function withdrawLeftovers(address _wallet) external override onlyOwner {
+        if (i_leftoversUnlockTimestamp > block.timestamp) revert GenesisNFTVesting__LeftoversWithdrawalLocked();
+
+        emit LeftoversWithdrawn(_wallet, i_wlth.balanceOf(address(this)));
+
+        i_wlth.safeTransfer(_wallet, i_wlth.balanceOf(address(this)));
+    }
+
+       /**
      * @inheritdoc IGenesisNFTVesting
      */
     function unvestedAmountPerNFT(
@@ -184,8 +271,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
      * @inheritdoc IGenesisNFTVesting
      */
     function releasableAmount(
-        uint256[] memory _series1TokenIds,
-        uint256[] memory _series2TokenIds,
+        uint256[] calldata _series1TokenIds,
+        uint256[] calldata _series2TokenIds,
         uint256 _actualTimestamp,
         address _beneficiary
     ) external view override returns (uint256) {
@@ -197,18 +284,6 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
         amount += releasableAmountForSeries(_series2TokenIds, _beneficiary, false, _actualTimestamp);
 
         return amount;
-    }
-
-    /**
-     * @inheritdoc IEmergencyWithdrawal
-     */
-    function emergencyWithdraw(address _wallet) external override onlyOwner {
-        if (i_emergencyWithdrawalUnlockTimestamp > block.timestamp)
-            revert GenesisNFTVesting__EmergencyWithdrawalLocked();
-
-        emit EmergencyWithdrawal(_wallet, i_wlth.balanceOf(address(this)));
-
-        i_wlth.safeTransfer(_wallet, i_wlth.balanceOf(address(this)));
     }
 
     /**
@@ -282,10 +357,17 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     }
 
     /**
-     * @inheritdoc IEmergencyWithdrawal
+     * @inheritdoc ILeftoversWithdrawal
      */
-    function emergencyWithdrawalUnlockTimestamp() external view override returns (uint256) {
-        return i_emergencyWithdrawalUnlockTimestamp;
+    function leftoversUnlockTimestamp() external view override returns (uint256) {
+        return i_leftoversUnlockTimestamp;
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function lostToken(bool _series1, uint256 _tokenId) public view override returns (bool) {
+        return s_lostTokens[_series1 ? 1 : 2][_tokenId];
     }
 
     /**
@@ -293,12 +375,14 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
      */
     function releasePerNFT(bool _series1, uint256 _tokenId, uint256 _amount, address _beneficiary) public override {
         if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
+        if (s_lostTokens[_series1 ? 1 : 2][_tokenId] && msg.sender != owner())
+            revert GenesisNFTVesting__TokenLost(_series1 ? 1 : 2, _tokenId);
         if (
             !(
                 _series1
                     ? i_genesisNftSeries1Mirror.ownerOf(_tokenId) == _beneficiary
                     : i_genesisNftSeries2Mirror.ownerOf(_tokenId) == _beneficiary
-            )
+            ) && msg.sender != owner()
         ) {
             revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _tokenId, _beneficiary);
         }
@@ -376,7 +460,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
         return s_bonusValue[_tokenId] ? BONUS : 0;
     }
 
-    function releaseAllForSeries(uint256[] memory _ids, address _beneficiary, bool _series1) private {
+    function releaseAllForSeries(uint256[] calldata _ids, address _beneficiary, bool _series1) private {
         for (uint i; i < _ids.length; ) {
             releasePerNFT(_series1, _ids[i], releasableAmountPerNFT(_series1, _ids[i], block.timestamp), _beneficiary);
 
@@ -387,7 +471,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IEmergencyWithdrawal, Reentran
     }
 
     function releasableAmountForSeries(
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         address _beneficiary,
         bool _series1,
         uint256 _actualTimestamp

@@ -67,8 +67,8 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
     function initialize(
         address _owner,
         address _governor,
-        string memory _name,
-        string memory _symbol
+        string calldata _name,
+        string calldata _symbol
     ) public initializer {
         if (_owner == address(0)) revert GenesisNftMirror__OwnerZeroAddress();
         if (_governor == address(0)) revert GenesisNftMirror__GovernorZeroAddress();
@@ -83,7 +83,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
      * @inheritdoc IGeneisNFTMirror
      */
     function assign(
-        uint256[] memory _tokenIds,
+        uint256[] calldata _tokenIds,
         address _account
     ) external override onlyGovernorOrOwner tokensLimit(_tokenIds.length) {
         uint256 accountBalance = s_balances[_account];
@@ -121,7 +121,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
      * @inheritdoc IGeneisNFTMirror
      */
     function unassign(
-        uint256[] memory _tokenIds,
+        uint256[] calldata _tokenIds,
         address _account
     ) external override onlyGovernorOrOwner tokensLimit(_tokenIds.length) {
         uint256 currentBalance = s_balances[_account];
@@ -199,7 +199,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
     /**
      * @inheritdoc IGeneisNFTMirror
      */
-    function ownersOf(uint256[] memory _tokensIds) public view override returns (TokenOwner[] memory) {
+    function ownersOf(uint256[] calldata _tokensIds) public view override returns (TokenOwner[] memory) {
         TokenOwner[] memory owners = new TokenOwner[](_tokensIds.length);
         for (uint256 i; i < _tokensIds.length; i++) {
             owners[i] = TokenOwner(_tokensIds[i], s_tokenOwner[_tokensIds[i]]);

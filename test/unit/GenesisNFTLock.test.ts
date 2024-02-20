@@ -47,142 +47,209 @@ describe('GenesisNFTLock unit tests', () => {
   };
 
   describe('Deployment', () => {
-    it('Should deploy the contract with initial params', async () => {
-      const { genesisNFTLock, owner, genesisNftSeries1, genesisNftSeries2, zkSyncGasPerPubDataLimit } =
-        await loadFixture(deployGensisNFTLock);
+    describe('Success', () => {
+      it('Should deploy the contract with initial params', async () => {
+        const { genesisNFTLock, owner, genesisNftSeries1, genesisNftSeries2, zkSyncGasPerPubDataLimit } =
+          await loadFixture(deployGensisNFTLock);
 
-      expect(await genesisNFTLock.owner()).to.be.equal(owner.address);
-      expect(await genesisNFTLock.series1Nft()).to.be.equal(genesisNftSeries1.address);
-      expect(await genesisNFTLock.series2Nft()).to.be.equal(genesisNftSeries2.address);
-      expect(await genesisNFTLock.zkSyncGasPerPubdataLimit()).to.be.equal(zkSyncGasPerPubDataLimit);
-      expect(await genesisNFTLock.zkSyncBridge()).to.be.equal(constants.AddressZero);
-      expect(await genesisNFTLock.zkSyncGenesisNFT1Mirror()).to.be.equal(constants.AddressZero);
-      expect(await genesisNFTLock.zkSyncGenesisNFT2Mirror()).to.be.equal(constants.AddressZero);
+        expect(await genesisNFTLock.owner()).to.be.equal(owner.address);
+        expect(await genesisNFTLock.series1Nft()).to.be.equal(genesisNftSeries1.address);
+        expect(await genesisNFTLock.series2Nft()).to.be.equal(genesisNftSeries2.address);
+        expect(await genesisNFTLock.zkSyncGasPerPubdataLimit()).to.be.equal(zkSyncGasPerPubDataLimit);
+        expect(await genesisNFTLock.zkSyncBridge()).to.be.equal(constants.AddressZero);
+        expect(await genesisNFTLock.zkSyncGenesisNFT1Mirror()).to.be.equal(constants.AddressZero);
+        expect(await genesisNFTLock.zkSyncGenesisNFT2Mirror()).to.be.equal(constants.AddressZero);
+      });
     });
 
-    it('Should revert when owner address is zero address', async () => {
-      const { genesisNFTLock, deployer, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
-        await loadFixture(deployGensisNFTLock);
+    describe('Reverts', () => {
+      it('Should revert when owner address is zero address', async () => {
+        const { genesisNFTLock, deployer, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
+          await loadFixture(deployGensisNFTLock);
 
-      await expect(
-        deployProxy(
-          'GenesisNFTLock',
-          [constants.AddressZero, genesisNftSeries1.address, genesisNftSeries2.address, zkSyncGasPerPubDataLimit],
-          deployer
-        )
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__OwnerZeroAddress');
-    });
+        await expect(
+          deployProxy(
+            'GenesisNFTLock',
+            [constants.AddressZero, genesisNftSeries1.address, genesisNftSeries2.address, zkSyncGasPerPubDataLimit],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__OwnerZeroAddress');
+      });
 
-    it('Should revert when genesis nft series 1 address is zero address', async () => {
-      const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries2 } = await loadFixture(
-        deployGensisNFTLock
-      );
+      it('Should revert when genesis nft series 1 address is zero address', async () => {
+        const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries2 } = await loadFixture(
+          deployGensisNFTLock
+        );
 
-      await expect(
-        deployProxy(
-          'GenesisNFTLock',
-          [owner.address, constants.AddressZero, genesisNftSeries2.address, zkSyncGasPerPubDataLimit],
-          deployer
-        )
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__NFTSeries1ZeroAddress');
-    });
+        await expect(
+          deployProxy(
+            'GenesisNFTLock',
+            [owner.address, constants.AddressZero, genesisNftSeries2.address, zkSyncGasPerPubDataLimit],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__NFTSeries1ZeroAddress');
+      });
 
-    it('Should revert when genesis nft series 2 address is zero address', async () => {
-      const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
-        await loadFixture(deployGensisNFTLock);
+      it('Should revert when genesis nft series 2 address is zero address', async () => {
+        const { genesisNFTLock, deployer, owner, zkSyncGasPerPubDataLimit, genesisNftSeries1, genesisNftSeries2 } =
+          await loadFixture(deployGensisNFTLock);
 
-      await expect(
-        deployProxy(
-          'GenesisNFTLock',
-          [owner.address, genesisNftSeries1.address, constants.AddressZero, zkSyncGasPerPubDataLimit],
-          deployer
-        )
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__NFTSeries2ZeroAddress');
-    });
+        await expect(
+          deployProxy(
+            'GenesisNFTLock',
+            [owner.address, genesisNftSeries1.address, constants.AddressZero, zkSyncGasPerPubDataLimit],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__NFTSeries2ZeroAddress');
+      });
 
-    it('Should revert when zk sync gas per pub data limit is zero', async () => {
-      const { genesisNFTLock, deployer, owner, genesisNftSeries1, genesisNftSeries2 } = await loadFixture(
-        deployGensisNFTLock
-      );
+      it('Should revert when zk sync gas per pub data limit is zero', async () => {
+        const { genesisNFTLock, deployer, owner, genesisNftSeries1, genesisNftSeries2 } = await loadFixture(
+          deployGensisNFTLock
+        );
 
-      await expect(
-        deployProxy(
-          'GenesisNFTLock',
-          [owner.address, genesisNftSeries1.address, genesisNftSeries2.address, 0],
-          deployer
-        )
-      ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__GasPerPubDataLimitZero');
+        await expect(
+          deployProxy(
+            'GenesisNFTLock',
+            [owner.address, genesisNftSeries1.address, genesisNftSeries2.address, 0],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__GasPerPubDataLimitZero');
+      });
+
+      it('Should revert when initialize agian', async () => {
+        const { genesisNFTLock, deployer, owner, genesisNftSeries1, genesisNftSeries2, zkSyncGasPerPubDataLimit } =
+          await loadFixture(deployGensisNFTLock);
+
+        await expect(
+          genesisNFTLock.initialize(
+            owner.address,
+            genesisNftSeries1.address,
+            genesisNftSeries2.address,
+            zkSyncGasPerPubDataLimit
+          )
+        ).to.be.revertedWith('Initializable: contract is already initialized');
+      });
     });
   });
 
   describe('Set zk sync bridge', () => {
-    it('Should set zk sync bridge', async () => {
-      const { genesisNFTLock, owner, zkSyncBridge } = await loadFixture(deployGensisNFTLock);
+    describe('Success', () => {
+      it('Should set zk sync bridge', async () => {
+        const { genesisNFTLock, owner, zkSyncBridge } = await loadFixture(deployGensisNFTLock);
 
-      await genesisNFTLock.connect(owner).setZkSyncBridge(zkSyncBridge.address);
-      expect(await genesisNFTLock.zkSyncBridge()).to.be.equal(zkSyncBridge.address);
+        await genesisNFTLock.connect(owner).setZkSyncBridge(zkSyncBridge.address);
+        expect(await genesisNFTLock.zkSyncBridge()).to.be.equal(zkSyncBridge.address);
+      });
     });
 
-    it("Should revert when set with zero address as zk sync bridge's address", async () => {
-      const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
+    describe('Reverts', () => {
+      it("Should revert when set with zero address as zk sync bridge's address", async () => {
+        const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
 
-      await expect(genesisNFTLock.connect(owner).setZkSyncBridge(constants.AddressZero)).to.revertedWithCustomError(
-        genesisNFTLock,
-        'GenesisNFTLock__ZkSyncBridgeZeroAddress'
-      );
+        await expect(genesisNFTLock.connect(owner).setZkSyncBridge(constants.AddressZero)).to.revertedWithCustomError(
+          genesisNFTLock,
+          'GenesisNFTLock__ZkSyncBridgeZeroAddress'
+        );
+      });
+
+      it('Should revert when not called by the owner', async () => {
+        const { genesisNFTLock, zkSyncBridge } = await loadFixture(deployGensisNFTLock);
+
+        await expect(genesisNFTLock.setZkSyncBridge(zkSyncBridge.address)).to.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
     });
   });
 
   describe("Set zk sync genesis nft series 1's mirror", () => {
-    it('Should set zk sync genesis nft series 1 mirror', async () => {
-      const { genesisNFTLock, owner, genesisNFT1Mirror } = await loadFixture(deployGensisNFTLock);
+    describe('Success', () => {
+      it('Should set zk sync genesis nft series 1 mirror', async () => {
+        const { genesisNFTLock, owner, genesisNFT1Mirror } = await loadFixture(deployGensisNFTLock);
 
-      await genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(genesisNFT1Mirror.address);
-      expect(await genesisNFTLock.zkSyncGenesisNFT1Mirror()).to.be.equal(genesisNFT1Mirror.address);
+        await genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(genesisNFT1Mirror.address);
+        expect(await genesisNFTLock.zkSyncGenesisNFT1Mirror()).to.be.equal(genesisNFT1Mirror.address);
+      });
     });
 
-    it("Should revert when set with zero address as zk sync genesis nft series 1's mirror address", async () => {
-      const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
+    describe('Reverts', () => {
+      it("Should revert when set with zero address as zk sync genesis nft series 1's mirror address", async () => {
+        const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
 
-      await expect(
-        genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(constants.AddressZero)
-      ).to.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__ZkSyncMirrorZeroAddress');
+        await expect(
+          genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(constants.AddressZero)
+        ).to.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__ZkSyncMirrorZeroAddress');
+      });
+
+      it('Should revert when not called by the owner', async () => {
+        const { genesisNFTLock, genesisNFT1Mirror } = await loadFixture(deployGensisNFTLock);
+
+        await expect(genesisNFTLock.setZkSyncGenesisNFT1Mirror(genesisNFT1Mirror.address)).to.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
     });
   });
 
   describe("Set zk sync genesis nft series 2's mirror", () => {
-    it('Should set zk sync genesis nft series 2 mirror', async () => {
-      const { genesisNFTLock, owner, genesisNFT2Mirror } = await loadFixture(deployGensisNFTLock);
+    describe('Success', () => {
+      it('Should set zk sync genesis nft series 2 mirror', async () => {
+        const { genesisNFTLock, owner, genesisNFT2Mirror } = await loadFixture(deployGensisNFTLock);
 
-      await genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(genesisNFT2Mirror.address);
-      expect(await genesisNFTLock.zkSyncGenesisNFT2Mirror()).to.be.equal(genesisNFT2Mirror.address);
+        await genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(genesisNFT2Mirror.address);
+        expect(await genesisNFTLock.zkSyncGenesisNFT2Mirror()).to.be.equal(genesisNFT2Mirror.address);
+      });
     });
 
-    it("Should revert when set with zero address as zk sync genesis nft series 2's mirror address", async () => {
-      const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
+    describe('Reverts', () => {
+      it("Should revert when set with zero address as zk sync genesis nft series 2's mirror address", async () => {
+        const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
 
-      await expect(
-        genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(constants.AddressZero)
-      ).to.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__ZkSyncMirrorZeroAddress');
+        await expect(
+          genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(constants.AddressZero)
+        ).to.revertedWithCustomError(genesisNFTLock, 'GenesisNFTLock__ZkSyncMirrorZeroAddress');
+      });
+
+      it('Should revert when not called by the owner', async () => {
+        const { genesisNFTLock, genesisNFT2Mirror } = await loadFixture(deployGensisNFTLock);
+
+        await expect(genesisNFTLock.setZkSyncGenesisNFT2Mirror(genesisNFT2Mirror.address)).to.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
     });
   });
 
   describe('Set zk sync gas per pub data limit', () => {
-    it('Should set zk sync gas per pub data limit', async () => {
-      const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
-      const newGasPerPubDataLimit = 1000;
+    describe('Success', () => {
+      it('Should set zk sync gas per pub data limit', async () => {
+        const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
+        const newGasPerPubDataLimit = 1000;
 
-      await genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(newGasPerPubDataLimit);
-      expect(await genesisNFTLock.zkSyncGasPerPubdataLimit()).to.be.equal(newGasPerPubDataLimit);
+        await genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(newGasPerPubDataLimit);
+        expect(await genesisNFTLock.zkSyncGasPerPubdataLimit()).to.be.equal(newGasPerPubDataLimit);
+      });
     });
 
-    it('Should revert when set with zero as zk sync gas per pub data limit', async () => {
-      const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
+    describe('Revets', () => {
+      it('Should revert when set with zero as zk sync gas per pub data limit', async () => {
+        const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
 
-      await expect(genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(0)).to.revertedWithCustomError(
-        genesisNFTLock,
-        'GenesisNFTLock__GasPerPubDataLimitZero'
-      );
+        await expect(genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(0)).to.revertedWithCustomError(
+          genesisNFTLock,
+          'GenesisNFTLock__GasPerPubDataLimitZero'
+        );
+      });
+
+      it('Should revert when not called by the owner', async () => {
+        const { genesisNFTLock } = await loadFixture(deployGensisNFTLock);
+        const newGasPerPubDataLimit = 1000;
+
+        await expect(genesisNFTLock.setZkSyncGasPerPubdataLimit(newGasPerPubDataLimit)).to.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
     });
   });
 
@@ -295,76 +362,78 @@ describe('GenesisNFTLock unit tests', () => {
         };
       };
 
-      it('Should lock series 1 tokens', async () => {
-        const { genesisNFTLock, zkSyncTransactionGasLimit, user1, bridgeTransactionHash } = await loadFixture(setup);
-        const tokenIds = [1, 2, 3];
+      describe('Success', () => {
+        it('Should lock series 1 tokens', async () => {
+          const { genesisNFTLock, zkSyncTransactionGasLimit, user1, bridgeTransactionHash } = await loadFixture(setup);
+          const tokenIds = [1, 2, 3];
 
-        await expect(
-          genesisNFTLock.connect(user1).lockSeries1Tokens(tokenIds, user1.address, zkSyncTransactionGasLimit, {
-            value: zkSyncTransactionGasLimit
-          })
-        )
-          .to.emit(genesisNFTLock, 'ZkSyncNotified')
-          .withArgs(0, 1, tokenIds, user1.address, bridgeTransactionHash);
+          await expect(
+            genesisNFTLock.connect(user1).lockSeries1Tokens(tokenIds, user1.address, zkSyncTransactionGasLimit, {
+              value: zkSyncTransactionGasLimit
+            })
+          )
+            .to.emit(genesisNFTLock, 'ZkSyncNotified')
+            .withArgs(0, 1, tokenIds, user1.address, bridgeTransactionHash);
 
-        expect(await genesisNFTLock.series1LockedTokens(user1.address)).to.deep.eq(tokenIds);
-        expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
-      });
-
-      it('Should second user lock series 1 tokens', async () => {
-        const { genesisNFTLock, zkSyncTransactionGasLimit, user1, user2, bridgeTransactionHash } = await loadFixture(
-          setup
-        );
-        const user1TokenIds = [1, 2, 3];
-        const user2TokensIds = [4, 5, 6];
-
-        await genesisNFTLock.lockSeries1Tokens(user1TokenIds, user1.address, zkSyncTransactionGasLimit, {
-          value: zkSyncTransactionGasLimit
+          expect(await genesisNFTLock.series1LockedTokens(user1.address)).to.deep.eq(tokenIds);
+          expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
         });
 
-        await expect(
-          genesisNFTLock.connect(user2).lockSeries1Tokens(user2TokensIds, user2.address, zkSyncTransactionGasLimit, {
+        it('Should second user lock series 1 tokens', async () => {
+          const { genesisNFTLock, zkSyncTransactionGasLimit, user1, user2, bridgeTransactionHash } = await loadFixture(
+            setup
+          );
+          const user1TokenIds = [1, 2, 3];
+          const user2TokensIds = [4, 5, 6];
+
+          await genesisNFTLock.lockSeries1Tokens(user1TokenIds, user1.address, zkSyncTransactionGasLimit, {
             value: zkSyncTransactionGasLimit
-          })
-        )
-          .to.emit(genesisNFTLock, 'ZkSyncNotified')
-          .withArgs(0, 1, user2TokensIds, user2.address, bridgeTransactionHash);
+          });
 
-        expect(await genesisNFTLock.series1LockedTokens(user2.address)).to.deep.eq(user2TokensIds);
-        expect(await genesisNFTLock.series1LockedTokenOwner(4)).to.be.eq(user2.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(5)).to.be.eq(user2.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(6)).to.be.eq(user2.address);
+          await expect(
+            genesisNFTLock.connect(user2).lockSeries1Tokens(user2TokensIds, user2.address, zkSyncTransactionGasLimit, {
+              value: zkSyncTransactionGasLimit
+            })
+          )
+            .to.emit(genesisNFTLock, 'ZkSyncNotified')
+            .withArgs(0, 1, user2TokensIds, user2.address, bridgeTransactionHash);
 
-        expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
-      });
+          expect(await genesisNFTLock.series1LockedTokens(user2.address)).to.deep.eq(user2TokensIds);
+          expect(await genesisNFTLock.series1LockedTokenOwner(4)).to.be.eq(user2.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(5)).to.be.eq(user2.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(6)).to.be.eq(user2.address);
 
-      it('Should lock next tokens', async () => {
-        const { genesisNFTLock, zkSyncTransactionGasLimit, user1, bridgeTransactionHash } = await loadFixture(setup);
-        const tokenIds = [1, 2, 3];
-        await genesisNFTLock.connect(user1).lockSeries1Tokens(tokenIds, user1.address, zkSyncTransactionGasLimit, {
-          value: zkSyncTransactionGasLimit
+          expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
         });
-        const nextTokenIds = [4, 5, 6];
 
-        await expect(
-          genesisNFTLock.connect(user1).lockSeries1Tokens(nextTokenIds, user1.address, zkSyncTransactionGasLimit, {
+        it('Should lock next tokens', async () => {
+          const { genesisNFTLock, zkSyncTransactionGasLimit, user1, bridgeTransactionHash } = await loadFixture(setup);
+          const tokenIds = [1, 2, 3];
+          await genesisNFTLock.connect(user1).lockSeries1Tokens(tokenIds, user1.address, zkSyncTransactionGasLimit, {
             value: zkSyncTransactionGasLimit
-          })
-        )
-          .to.emit(genesisNFTLock, 'ZkSyncNotified')
-          .withArgs(0, 1, nextTokenIds, user1.address, bridgeTransactionHash);
+          });
+          const nextTokenIds = [4, 5, 6];
 
-        expect(await genesisNFTLock.series1LockedTokens(user1.address)).to.deep.eq(tokenIds.concat(nextTokenIds));
-        expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(4)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(5)).to.be.eq(user1.address);
-        expect(await genesisNFTLock.series1LockedTokenOwner(6)).to.be.eq(user1.address);
+          await expect(
+            genesisNFTLock.connect(user1).lockSeries1Tokens(nextTokenIds, user1.address, zkSyncTransactionGasLimit, {
+              value: zkSyncTransactionGasLimit
+            })
+          )
+            .to.emit(genesisNFTLock, 'ZkSyncNotified')
+            .withArgs(0, 1, nextTokenIds, user1.address, bridgeTransactionHash);
+
+          expect(await genesisNFTLock.series1LockedTokens(user1.address)).to.deep.eq(tokenIds.concat(nextTokenIds));
+          expect(await genesisNFTLock.series1LockedTokenOwner(1)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(2)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(3)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(4)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(5)).to.be.eq(user1.address);
+          expect(await genesisNFTLock.series1LockedTokenOwner(6)).to.be.eq(user1.address);
+        });
       });
     });
   });

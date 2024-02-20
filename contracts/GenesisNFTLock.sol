@@ -97,7 +97,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
      * @inheritdoc IGenesisNFTLock
      */
     function lockSeries1Tokens(
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         address _account,
         uint256 _gasLimit
     ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
@@ -125,7 +125,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
      * @inheritdoc IGenesisNFTLock
      */
     function unlockSeries1Tokens(
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         uint256 _gasLimit
     ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
         IERC721Upgradeable nft = IERC721Upgradeable(s_series1Nft);
@@ -165,7 +165,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
      * @inheritdoc IGenesisNFTLock
      */
     function lockSeries2Tokens(
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         address _accouunt,
         uint256 _gasLimit
     ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
@@ -192,7 +192,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
      * @inheritdoc IGenesisNFTLock
      */
     function unlockSeries2Tokens(
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         uint256 _gasLimit
     ) external payable override enoughGas(msg.value, _gasLimit) tokensLimit(_ids.length) nonReentrant {
         IERC721Upgradeable nft = IERC721Upgradeable(s_series2Nft);
@@ -283,7 +283,7 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
     function _notifyZkSync(
         OperationType _operationType,
         uint8 _series,
-        uint256[] memory _ids,
+        uint256[] calldata _ids,
         address _recipient,
         uint256 _value,
         uint256 _gasLimit
