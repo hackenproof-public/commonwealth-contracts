@@ -439,4 +439,40 @@ describe('StakingGenesisNFTVesting', () => {
       });
     });
   });
+
+  describe('Surplus withdraw', () => {
+    describe('Success', () => {
+      it('Should withdraw surplus', async () => {
+        const { owner, stakingGenesisNFTVesting, wlth, allocation } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        const surplus = parseEther('1000');
+        const surplusWithdrawalAccount = Wallet.createRandom().address;
+        wlth.balanceOf.returns(allocation.add(surplus));
+
+        await expect(stakingGenesisNFTVesting.connect(owner).withdrawSurplus(surplusWithdrawalAccount))
+          .to.emit(stakingGenesisNFTVesting, 'SurplusWithdrawn')
+          .withArgs(surplusWithdrawalAccount, surplus);
+
+        expect(wlth.transfer).to.have.been.calledWith(surplusWithdrawalAccount, allocation);
+      });
+    });
+
+    describe('Reverts', () => {
+      it('Should revert if the caller is not the owner', async () => {
+        const { user1, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        await expect(stakingGenesisNFTVesting.connect(user1).withdrawSurplus(user1.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+      it('Should revert if the no surplus', async () => {
+        const { owner, stakingGenesisNFTVesting, wlth, allocation } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        wlth.balanceOf.returns(allocation);
+        await expect(stakingGenesisNFTVesting.connect(owner).withdrawSurplus(owner.address))
+          .to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__NoSurplus')
+          .withArgs(allocation, 0, allocation);
+      });
+    });
+  });
 });

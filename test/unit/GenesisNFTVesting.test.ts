@@ -1296,4 +1296,42 @@ describe('Genesis NFT Vesting unit tests', function () {
       });
     });
   });
+
+  describe('Surplus withdraw', () => {
+    describe('Success', () => {
+      it('Should withdraw surplus from the contract', async () => {
+        const { genesisNFTVesting, owner, wlth, allocation } = await loadFixture(deployGenesisNFTVesting);
+
+        const surplusWithdrawalAddress = Wallet.createRandom().address;
+        const surplus = parseEther('1000');
+        wlth.balanceOf.whenCalledWith(genesisNFTVesting.address).returns(allocation.add(surplus));
+
+        await expect(genesisNFTVesting.connect(owner).withdrawSurplus(surplusWithdrawalAddress))
+          .to.emit(genesisNFTVesting, 'SurplusWithdrawn')
+          .withArgs(surplusWithdrawalAddress, surplus);
+
+        expect(wlth.transfer).to.have.been.calledWith(surplusWithdrawalAddress, surplus);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not owner', async () => {
+        const { genesisNFTVesting, user1 } = await loadFixture(deployGenesisNFTVesting);
+
+        await expect(genesisNFTVesting.connect(user1).withdrawSurplus(user1.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it('Should revert when no surplus', async () => {
+        const { genesisNFTVesting, owner, wlth, allocation } = await loadFixture(deployGenesisNFTVesting);
+
+        const surplusWithdrawalAddress = Wallet.createRandom().address;
+        wlth.balanceOf.whenCalledWith(genesisNFTVesting.address).returns(allocation);
+
+        await expect(genesisNFTVesting.connect(owner).withdrawSurplus(surplusWithdrawalAddress))
+          .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NoSurplus')
+          .withArgs(allocation, 0, allocation);
+      });
+    });
+  });
 });

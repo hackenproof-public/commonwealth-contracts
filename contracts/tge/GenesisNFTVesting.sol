@@ -5,7 +5,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IGeneisNFTMirror} from "../interfaces/IGenesisNFTMirror.sol";
 import {IGenesisNFTVesting} from "../interfaces/IGenesisNFTVesting.sol";
-import {ILeftoversWithdrawal} from "../interfaces/ILeftoversWithdrawal.sol";
+import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -25,8 +25,9 @@ error GenesisNFTVesting__LeftoversWithdrawalLocked();
 error GenesisNFTVesting__TokenAlreadyLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__TokenNotLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__TokenLost(uint256 series, uint256 tokenId);
+error GenesisNFTVesting__NoSurplus(uint256 balance, uint256 released, uint256 allocation);
 
-contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, ReentrancyGuard, Ownable {
+contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     /**
@@ -237,7 +238,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, Reentran
     }
 
     /**
-     * @inheritdoc ILeftoversWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function withdrawLeftovers(address _wallet) external override onlyOwner {
         if (i_leftoversUnlockTimestamp > block.timestamp) revert GenesisNFTVesting__LeftoversWithdrawalLocked();
@@ -245,6 +246,23 @@ contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, Reentran
         emit LeftoversWithdrawn(_wallet, i_wlth.balanceOf(address(this)));
 
         i_wlth.safeTransfer(_wallet, i_wlth.balanceOf(address(this)));
+    }
+
+    /**
+     * @inheritdoc IWithdrawal
+     */
+    function withdrawSurplus(address _wallet) external override onlyOwner {
+        uint256 balance = i_wlth.balanceOf(address(this));
+        uint256 alreadyReleased = s_released;
+
+        if (balance + alreadyReleased <= i_allocation)
+            revert GenesisNFTVesting__NoSurplus(balance, alreadyReleased, i_allocation);
+
+        uint256 surplus = balance + alreadyReleased - i_allocation;
+
+        emit SurplusWithdrawn(_wallet, surplus);
+
+        i_wlth.safeTransfer(_wallet, surplus);
     }
 
     /**
@@ -357,7 +375,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, ILeftoversWithdrawal, Reentran
     }
 
     /**
-     * @inheritdoc ILeftoversWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function leftoversUnlockTimestamp() external view override returns (uint256) {
         return i_leftoversUnlockTimestamp;

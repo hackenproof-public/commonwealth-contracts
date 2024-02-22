@@ -6,7 +6,7 @@ import {IStakingGenesisNFT} from "../interfaces/IStakingGenesisNFT.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IStakingGenesisNFTVesting} from "../interfaces/IStakingGenesisNFTVesting.sol";
-import {ILeftoversWithdrawal} from "../interfaces/ILeftoversWithdrawal.sol";
+import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 
 error StakingGenesisNFTVesting__OwnerZeroAddress();
 error StakingGenesisNFTVesting__WlthZeroAddress();
@@ -18,12 +18,13 @@ error StakingGenesisNFTVesting__LeftoversWithdrawalLocked();
 error StakingGenesisNFTVesting__WalletLost(address wallet);
 error StakingGenesisNFTVesting__WalletAlreadyLost(address wallet);
 error StakingGenesisNFTVesting__WalletNotLost(address wallet);
+error StakingGenesisNFTVesting__NoSurplus(uint256 balance, uint256 released, uint256 allocation);
 
 /**
  * @title StakingGenesisNFTVesting
  * @notice This contract manages the vesting of rewards for Staking Genesis NFTs.
  */
-contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, ILeftoversWithdrawal, Ownable {
+contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Ownable {
     using SafeERC20 for IERC20;
 
     /**
@@ -189,13 +190,30 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, ILeftoversWithdr
     }
 
     /**
-     * @inheritdoc ILeftoversWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function withdrawLeftovers(address _account) external override onlyOwner {
         if (block.timestamp < i_leftoversUnlockTimestamp) revert StakingGenesisNFTVesting__LeftoversWithdrawalLocked();
         emit LeftoversWithdrawn(_account, i_wlth.balanceOf(address(this)));
 
         i_wlth.safeTransfer(_account, i_wlth.balanceOf(address(this)));
+    }
+
+    /**
+     * @inheritdoc IWithdrawal
+     */
+    function withdrawSurplus(address _wallet) external override onlyOwner {
+        uint256 balance = i_wlth.balanceOf(address(this));
+        uint256 alreadyReleased = s_releasedAmount;
+
+        if (balance + alreadyReleased <= i_allocation)
+            revert StakingGenesisNFTVesting__NoSurplus(balance, alreadyReleased, i_allocation);
+
+        uint256 surplus = balance + alreadyReleased - i_allocation;
+
+        emit SurplusWithdrawn(_wallet, surplus);
+
+        i_wlth.safeTransfer(_wallet, surplus);
     }
 
     /**
@@ -262,7 +280,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, ILeftoversWithdr
     }
 
     /**
-     * @inheritdoc ILeftoversWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function leftoversUnlockTimestamp() external view override returns (uint256) {
         return i_leftoversUnlockTimestamp;

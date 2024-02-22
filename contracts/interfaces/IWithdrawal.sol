@@ -2,20 +2,31 @@
 pragma solidity ^0.8.18;
 
 /**
- * @title ILeftoversWithdrawal
- * @notice An interface for contracts that allow leftovers withdrawal functionality.
+ * @title IWithdrawal
+ * @notice An interface for contracts that allow withdrawal functionality.
  */
-interface ILeftoversWithdrawal {
+interface IWithdrawal {
     /**
      * @notice Event emitted when leftover tokens are withdrawn.
      */
     event LeftoversWithdrawn(address indexed account, uint256 indexed amount);
 
     /**
+     * @notice Event emitted when surplus tokens are withdrawn.
+     */
+    event SurplusWithdrawn(address indexed account, uint256 indexed amount);
+
+    /**
      * @notice Withdraws any leftover tokens to a specific account.
      * @param _account Address of the account to withdraw leftover tokens for.
      */
     function withdrawLeftovers(address _account) external;
+
+    /**
+     * @notice Withdraws any surplus tokens to a specific account.
+     * @param _account Address of the account to withdraw surplus tokens for.
+     */
+    function withdrawSurplus(address _account) external;
 
     /**
      * @notice Returns the timestamp when leftover tokens can be unlocked.
