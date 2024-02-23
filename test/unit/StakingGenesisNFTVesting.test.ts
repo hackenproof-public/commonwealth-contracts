@@ -23,11 +23,11 @@ describe('StakingGenesisNFTVesting', () => {
     const allocation = parseEther('1000');
     const distributionStartTimestamp = (await time.latest()) + ONE_DAY_IN_SECONDS;
 
-    const leftoversUnlockTimestamp = (await ethers.provider.getBlock('latest')).timestamp + 365 * ONE_DAY_IN_SECONDS;
+    const leftoversUnlockDelay = 365 * ONE_DAY_IN_SECONDS;
 
     const stakingGenesisNFTVesting = (await deploy(
       'StakingGenesisNFTVesting',
-      [owner.address, wlth.address, allocation, distributionStartTimestamp, leftoversUnlockTimestamp],
+      [owner.address, wlth.address, allocation, distributionStartTimestamp, leftoversUnlockDelay],
       deployer
     )) as StakingGenesisNFTVesting;
 
@@ -57,25 +57,19 @@ describe('StakingGenesisNFTVesting', () => {
       distributionStartTimestamp,
       stakingGenesisNFTVesting,
       rewards,
-      leftoversUnlockTimestamp
+      leftoversUnlockDelay
     };
   };
   describe('Deployment', () => {
     it('Should deploy the contract with initial params', async () => {
-      const {
-        owner,
-        stakingGenesisNFTVesting,
-        wlth,
-        allocation,
-        distributionStartTimestamp,
-        leftoversUnlockTimestamp
-      } = await loadFixture(deployStakingGenesisNFTVesting);
+      const { owner, stakingGenesisNFTVesting, wlth, allocation, distributionStartTimestamp, leftoversUnlockDelay } =
+        await loadFixture(deployStakingGenesisNFTVesting);
 
       expect(await stakingGenesisNFTVesting.owner()).to.equal(owner.address);
       expect(await stakingGenesisNFTVesting.wlth()).to.equal(wlth.address);
       expect(await stakingGenesisNFTVesting.allocation()).to.equal(allocation);
       expect(await stakingGenesisNFTVesting.distributionStartTimestamp()).to.equal(distributionStartTimestamp);
-      expect(await stakingGenesisNFTVesting.leftoversUnlockTimestamp()).to.equal(leftoversUnlockTimestamp);
+      expect(await stakingGenesisNFTVesting.leftoversUnlockDelay()).to.equal(leftoversUnlockDelay);
     });
 
     describe('Reverts', () => {
@@ -86,19 +80,13 @@ describe('StakingGenesisNFTVesting', () => {
           wlth,
           allocation,
           distributionStartTimestamp,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay
         } = await loadFixture(deployStakingGenesisNFTVesting);
 
         await expect(
           deploy(
             'StakingGenesisNFTVesting',
-            [
-              ethers.constants.AddressZero,
-              wlth.address,
-              allocation,
-              distributionStartTimestamp,
-              leftoversUnlockTimestamp
-            ],
+            [ethers.constants.AddressZero, wlth.address, allocation, distributionStartTimestamp, leftoversUnlockDelay],
             deployer
           )
         ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__OwnerZeroAddress');
@@ -111,19 +99,13 @@ describe('StakingGenesisNFTVesting', () => {
           owner,
           allocation,
           distributionStartTimestamp,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay
         } = await loadFixture(deployStakingGenesisNFTVesting);
 
         await expect(
           deploy(
             'StakingGenesisNFTVesting',
-            [
-              owner.address,
-              ethers.constants.AddressZero,
-              allocation,
-              distributionStartTimestamp,
-              leftoversUnlockTimestamp
-            ],
+            [owner.address, ethers.constants.AddressZero, allocation, distributionStartTimestamp, leftoversUnlockDelay],
             deployer
           )
         ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__WlthZeroAddress');
@@ -232,6 +214,23 @@ describe('StakingGenesisNFTVesting', () => {
         const { stakingGenesisNFTVesting, user1 } = await loadFixture(deployStakingGenesisNFTVesting);
 
         await expect(stakingGenesisNFTVesting.connect(user1).release()).to.be.revertedWithCustomError(
+          stakingGenesisNFTVesting,
+          'StakingGenesisNFTVesting__DistributionNotStarted'
+        );
+      });
+      it("Should revert if distribution hasn't set", async () => {
+        const { owner, deployer, wlth, allocation, leftoversUnlockDelay, distributionStartTimestamp } =
+          await loadFixture(deployStakingGenesisNFTVesting);
+
+        const stakingGenesisNFTVesting = await deploy(
+          'StakingGenesisNFTVesting',
+          [owner.address, wlth.address, allocation, 0, leftoversUnlockDelay],
+          deployer
+        );
+
+        await time.increaseTo(distributionStartTimestamp);
+
+        await expect(stakingGenesisNFTVesting.connect(owner).release()).to.be.revertedWithCustomError(
           stakingGenesisNFTVesting,
           'StakingGenesisNFTVesting__DistributionNotStarted'
         );
@@ -400,16 +399,60 @@ describe('StakingGenesisNFTVesting', () => {
     });
   });
 
-  describe('Leftovers withdraw', () => {
+  describe("Set distribution's start timestamp", () => {
     describe('Success', () => {
-      it('Should withdraw', async () => {
-        const { owner, stakingGenesisNFTVesting, wlth, allocation, leftoversUnlockTimestamp } = await loadFixture(
+      it('Should set the distribution start timestamp', async () => {
+        const { owner, deployer, wlth, allocation, leftoversUnlockDelay, distributionStartTimestamp } =
+          await loadFixture(deployStakingGenesisNFTVesting);
+
+        const stakingGenesisNFTVesting = await deploy(
+          'StakingGenesisNFTVesting',
+          [owner.address, wlth.address, allocation, 0, leftoversUnlockDelay],
+          deployer
+        );
+        await expect(stakingGenesisNFTVesting.connect(owner).setDistributionStartTimestamp(distributionStartTimestamp))
+          .to.emit(stakingGenesisNFTVesting, 'DistributionStartTimestampSet')
+          .withArgs(distributionStartTimestamp);
+
+        expect(await stakingGenesisNFTVesting.distributionStartTimestamp()).to.equal(distributionStartTimestamp);
+      });
+    });
+
+    describe('Reverts', () => {
+      it('Should revert if the caller is not the owner', async () => {
+        const { user1, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        await expect(stakingGenesisNFTVesting.connect(user1).setDistributionStartTimestamp(1000)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it('Should revert if the distribution has already started', async () => {
+        const { owner, stakingGenesisNFTVesting, distributionStartTimestamp } = await loadFixture(
           deployStakingGenesisNFTVesting
         );
+
+        await time.increaseTo(distributionStartTimestamp);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).setDistributionStartTimestamp(1000)
+        ).to.be.revertedWithCustomError(
+          stakingGenesisNFTVesting,
+          'StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet'
+        );
+      });
+    });
+  });
+
+  describe('Leftovers withdrawal', () => {
+    describe('Success', () => {
+      it('Should withdraw', async () => {
+        const { owner, stakingGenesisNFTVesting, wlth, allocation, leftoversUnlockDelay, distributionStartTimestamp } =
+          await loadFixture(deployStakingGenesisNFTVesting);
         const leftoversWithdrawalAccount = Wallet.createRandom().address;
         wlth.balanceOf.returns(allocation);
 
-        await time.increaseTo(leftoversUnlockTimestamp);
+        await time.increaseTo(distributionStartTimestamp + leftoversUnlockDelay);
 
         await expect(stakingGenesisNFTVesting.connect(owner).withdrawLeftovers(leftoversWithdrawalAccount))
           .to.emit(stakingGenesisNFTVesting, 'LeftoversWithdrawn')
@@ -427,8 +470,12 @@ describe('StakingGenesisNFTVesting', () => {
           'Ownable: caller is not the owner'
         );
       });
-      it('Should revert if the emergency withdrawal locked', async () => {
-        const { owner, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+      it('Should revert if the leftovers withdrawal locked', async () => {
+        const { owner, stakingGenesisNFTVesting, distributionStartTimestamp } = await loadFixture(
+          deployStakingGenesisNFTVesting
+        );
+
+        await time.increaseTo(distributionStartTimestamp);
 
         await expect(
           stakingGenesisNFTVesting.connect(owner).withdrawLeftovers(owner.address)
@@ -436,6 +483,29 @@ describe('StakingGenesisNFTVesting', () => {
           stakingGenesisNFTVesting,
           'StakingGenesisNFTVesting__LeftoversWithdrawalLocked'
         );
+      });
+
+      it("Should revert when distribution hasn't set", async () => {
+        const { owner, deployer, wlth, allocation, leftoversUnlockDelay, distributionStartTimestamp } =
+          await loadFixture(deployStakingGenesisNFTVesting);
+
+        const stakingGenesisNFTVesting = await deploy(
+          'StakingGenesisNFTVesting',
+          [owner.address, wlth.address, allocation, 0, leftoversUnlockDelay],
+          deployer
+        );
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).withdrawLeftovers(owner.address)
+        ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__DistributionNotStarted');
+      });
+
+      it("Should revert when distribution hasn't started", async () => {
+        const { owner, stakingGenesisNFTVesting } = await loadFixture(deployStakingGenesisNFTVesting);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).withdrawLeftovers(owner.address)
+        ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__DistributionNotStarted');
       });
     });
   });

@@ -29,8 +29,8 @@ interface IWithdrawal {
     function withdrawSurplus(address _account) external;
 
     /**
-     * @notice Returns the timestamp when leftover tokens can be unlocked.
-     * @return Timestamp when leftover tokens can be unlocked.
+     * @notice Returns the delay when leftover tokens can be unlocked after the vesting is ended.
+     * @return Deley when leftover tokens can be unlocked after the vesting is ended.
      */
-    function leftoversUnlockTimestamp() external view returns (uint256);
+    function leftoversUnlockDelay() external view returns (uint256);
 }

@@ -14,6 +14,7 @@ error StakingGenesisNFTVesting__DistributionNotStarted();
 error StakingGenesisNFTVesting__NotEnoughTokens();
 error StakingGenesisNFTVesting__NoRewardsForUser(address account);
 error StakingGenesisNFTVesting__RewardsTooHigh(uint256 allocation, uint256 totalRewards);
+error StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet();
 error StakingGenesisNFTVesting__LeftoversWithdrawalLocked();
 error StakingGenesisNFTVesting__WalletLost(address wallet);
 error StakingGenesisNFTVesting__WalletAlreadyLost(address wallet);
@@ -38,14 +39,14 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     uint256 private immutable i_allocation;
 
     /**
-     * @notice Timestamp when reward distribution starts.
-     */
-    uint256 private immutable i_distributionStartTimestamp;
-
-    /**
      * @notice Timestamp when leftovers withdrawal is unlocked.
      */
-    uint256 private i_leftoversUnlockTimestamp;
+    uint256 private i_leftoversUnlockDelay;
+
+    /**
+     * @notice Timestamp when reward distribution starts.
+     */
+    uint256 private s_distributionStartTimestamp;
 
     /**
      * @notice Total amount of rewards released.
@@ -103,27 +104,41 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     event EmergencyWithdrawalPerformed(address indexed from, address indexed to);
 
     /**
+     * @notice Event emitted when distribution start timestamp is set.
+     */
+    event DistributionStartTimestampSet(uint256 timestamp);
+
+    /**
+     * @notice Modifier to check if the reward distribution has started.
+     */
+    modifier distributionStarted() {
+        if (s_distributionStartTimestamp == 0 || block.timestamp < s_distributionStartTimestamp)
+            revert StakingGenesisNFTVesting__DistributionNotStarted();
+        _;
+    }
+
+    /**
      * @notice Contract constructor.
      * @param _owner Address of the owner of the contract.
      * @param _wlth Address of the WLTH token contract.
      * @param _allocation Allocation amount for rewards.
      * @param _distributionStartTimestamp Timestamp when reward distribution starts.
-     * @param _leftoversUnlockTimestamp Timestamp when leftover tokens can be withdrawn.
+     * @param _leftoversUnlockDelay Delay when leftover tokens can be withdrawn after the distribution is started.
      */
     constructor(
         address _owner,
         address _wlth,
         uint256 _allocation,
         uint256 _distributionStartTimestamp,
-        uint256 _leftoversUnlockTimestamp
+        uint256 _leftoversUnlockDelay
     ) {
         if (_owner == address(0)) revert StakingGenesisNFTVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert StakingGenesisNFTVesting__WlthZeroAddress();
 
         i_wlth = IERC20(_wlth);
         i_allocation = _allocation;
-        i_distributionStartTimestamp = _distributionStartTimestamp;
-        i_leftoversUnlockTimestamp = _leftoversUnlockTimestamp;
+        i_leftoversUnlockDelay = _leftoversUnlockDelay;
+        s_distributionStartTimestamp = _distributionStartTimestamp;
         _transferOwnership(_owner);
     }
 
@@ -181,6 +196,16 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     /**
      * @inheritdoc IStakingGenesisNFTVesting
      */
+    function setDistributionStartTimestamp(uint256 _timestamp) external override onlyOwner {
+        if (s_distributionStartTimestamp != 0) revert StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet();
+        s_distributionStartTimestamp = _timestamp;
+
+        emit DistributionStartTimestampSet(_timestamp);
+    }
+
+    /**
+     * @inheritdoc IStakingGenesisNFTVesting
+     */
     function emergencyWithdraw(address _from, address _to) external override onlyOwner {
         if (!s_walletAccessLost[_from]) revert StakingGenesisNFTVesting__WalletNotLost(_from);
 
@@ -192,8 +217,9 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     /**
      * @inheritdoc IWithdrawal
      */
-    function withdrawLeftovers(address _account) external override onlyOwner {
-        if (block.timestamp < i_leftoversUnlockTimestamp) revert StakingGenesisNFTVesting__LeftoversWithdrawalLocked();
+    function withdrawLeftovers(address _account) external override onlyOwner distributionStarted {
+        if (block.timestamp < s_distributionStartTimestamp + i_leftoversUnlockDelay)
+            revert StakingGenesisNFTVesting__LeftoversWithdrawalLocked();
         emit LeftoversWithdrawn(_account, i_wlth.balanceOf(address(this)));
 
         i_wlth.safeTransfer(_account, i_wlth.balanceOf(address(this)));
@@ -234,7 +260,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
      * @inheritdoc IStakingGenesisNFTVesting
      */
     function distributionStartTimestamp() external view override returns (uint256) {
-        return i_distributionStartTimestamp;
+        return s_distributionStartTimestamp;
     }
 
     /**
@@ -282,8 +308,8 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     /**
      * @inheritdoc IWithdrawal
      */
-    function leftoversUnlockTimestamp() external view override returns (uint256) {
-        return i_leftoversUnlockTimestamp;
+    function leftoversUnlockDelay() external view override returns (uint256) {
+        return i_leftoversUnlockDelay;
     }
 
     /**
@@ -293,9 +319,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
         return s_walletAccessLost[_wallet];
     }
 
-    function release(address _from, address _to) private {
-        if (block.timestamp < i_distributionStartTimestamp) revert StakingGenesisNFTVesting__DistributionNotStarted();
-
+    function release(address _from, address _to) private distributionStarted {
         uint256 amount = releaseableAmount(_from);
         if (amount == 0) revert StakingGenesisNFTVesting__NoRewardsForUser(_from);
         if (amount > i_wlth.balanceOf(address(this))) revert StakingGenesisNFTVesting__NotEnoughTokens();

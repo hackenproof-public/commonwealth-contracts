@@ -33,6 +33,12 @@ interface IStakingGenesisNFTVesting {
     function setLostWallet(address _wallet) external;
 
     /**
+     * @notice Sets the distribution start timestamp.
+     * @param _timestamp Timestamp when reward distribution starts.
+     */
+    function setDistributionStartTimestamp(uint256 _timestamp) external;
+
+    /**
      * @notice Resets the wallet address which was set as lost.
      * @param _wallet Address of the wallet to reset.
      */
