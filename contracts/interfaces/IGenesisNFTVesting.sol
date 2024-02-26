@@ -7,6 +7,31 @@ pragma solidity ^0.8.18;
  */
 interface IGenesisNFTVesting {
     /**
+     * @notice Event emitted when rewards are released.
+     */
+    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId);
+
+    /**
+     * @notice Event emitted when a token is marked as lost.
+     */
+    event LostTokenSet(uint256 indexed tokenId, uint256 indexed series);
+
+    /**
+     * @notice Event emitted when a token is unmarked as lost.
+     */
+    event LostTokenReseted(uint256 indexed tokenId, uint256 indexed series);
+
+    /**
+     * @notice Event emitted when an emergency withdrawal is performed.
+     */
+    event EmergencyWithdrawalPerformed(
+        uint256 indexed series,
+        uint256 indexed tokenId,
+        address indexed to,
+        uint256 amount
+    );
+
+    /**
      * @notice Releases all available vested rewards for a beneficiary's NFTs.
      * @param _series1TokenIds Array of Series 1 NFT token IDs.
      * @param _series2TokenIds Array of Series 2 NFT token IDs.
@@ -15,7 +40,8 @@ interface IGenesisNFTVesting {
     function releaseAllAvailable(
         uint256[] memory _series1TokenIds,
         uint256[] memory _series2TokenIds,
-        address _beneficiary
+        address _beneficiary,
+        bool gamified
     ) external;
 
     /**
@@ -28,28 +54,22 @@ interface IGenesisNFTVesting {
      * @notice Returns the unvested amount per NFT based on the given parameters.
      * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
      * @param _tokenId The token ID of the NFT.
-     * @param _actualTimestamp The actual timestamp for calculation.
      * @return The unvested amount per NFT.
      */
-    function unvestedAmountPerNFT(
-        bool _series1,
-        uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) external view returns (uint256);
+    function unvestedAmountPerNFT(bool _series1, uint256 _tokenId) external view returns (uint256);
 
     /**
      * @notice Returns the total releasable amount for a beneficiary's NFTs.
      * @param _series1TokenIds Array of Series 1 NFT token IDs.
      * @param _series2TokenIds Array of Series 2 NFT token IDs.
-     * @param _actualTimestamp The actual timestamp for calculation.
      * @param _beneficiary Address of the beneficiary.
      * @return The total releasable amount.
      */
     function releasableAmount(
         uint256[] memory _series1TokenIds,
         uint256[] memory _series2TokenIds,
-        uint256 _actualTimestamp,
-        address _beneficiary
+        address _beneficiary,
+        bool gamified
     ) external view returns (uint256);
 
     /**
@@ -59,7 +79,13 @@ interface IGenesisNFTVesting {
      * @param _amount The amount to be released.
      * @param _beneficiary Address of the beneficiary.
      */
-    function releasePerNFT(bool _isSeries1, uint256 _tokenId, uint256 _amount, address _beneficiary) external;
+    function releasePerNFT(
+        bool _isSeries1,
+        uint256 _tokenId,
+        uint256 _amount,
+        address _beneficiary,
+        bool gamified
+    ) external;
 
     /**
      * @notice Sets the lost status for a specific NFT.
@@ -84,30 +110,26 @@ interface IGenesisNFTVesting {
     function emergencyWithdraw(bool _series1, uint256 _tokenId, address _to) external;
 
     /**
+     * @notice Sets vesting start timestamp (one-time use)
+     * @param _timestamp desired vesting start timestamp
+     */
+    function setVestingStartTimestamp(uint256 _timestamp) external;
+
+    /**
      * @notice Returns the releasable amount for a specific NFT.
      * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
      * @param _tokenId The token ID of the NFT.
-     * @param _actualTimestamp The actual timestamp for calculation.
      * @return The releasable amount per NFT.
      */
-    function releasableAmountPerNFT(
-        bool _series1,
-        uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) external view returns (uint256);
+    function releasableAmountPerNFT(bool _series1, uint256 _tokenId, bool gamified) external view returns (uint256);
 
     /**
      * @notice Returns the vested amount for a specific NFT.
      * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
      * @param _tokenId The token ID of the NFT.
-     * @param _actualTimestamp The actual timestamp for calculation.
      * @return The vested amount per NFT.
      */
-    function vestedAmountPerNFT(
-        bool _series1,
-        uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) external view returns (uint256);
+    function vestedAmountPerNFT(bool _series1, uint256 _tokenId) external view returns (uint256);
 
     /**
      * @notice Returns the address of the contract managing Series 1 Genesis NFTs.

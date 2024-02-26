@@ -6,7 +6,6 @@ import { deploy } from '../../scripts/utils';
 import { SimpleVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
-// TODO: fix timestamp manipulation crashes next tests issue
 describe('Simple vesting unit tests', () => {
   const TWENTY_FOUR_BILIONS = '24000000';
   const SECONDS_IN_YEAR = 31536000;
@@ -17,7 +16,7 @@ describe('Simple vesting unit tests', () => {
   const allocation = toWlth(TWENTY_FOUR_BILIONS);
   const duration = TWO_YEARS;
   const cadence = ONE_MONTH;
-  const allocationGroupId = 1;
+  const leftoversUnlockDelay = SECONDS_IN_YEAR;
 
   const deploySimpleVesting = async () => {
     const referenceTimestamp = (await ethers.provider.getBlock('latest')).timestamp;
@@ -27,18 +26,11 @@ describe('Simple vesting unit tests', () => {
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
     const simpleVesting: SimpleVesting = await deploy(
       'SimpleVesting',
-      [
-        owner.address,
-        wlth.address,
-        allocationGroupId,
-        allocation,
-        duration,
-        cadence,
-        vestingStartTimestamp,
-        beneficiary.address
-      ],
+      [owner.address, wlth.address, beneficiary.address, allocation, duration, cadence, leftoversUnlockDelay, 0],
       deployer
     );
+
+    await simpleVesting.connect(owner).setVestingStartTimestamp(vestingStartTimestamp);
 
     return {
       owner,
@@ -49,7 +41,8 @@ describe('Simple vesting unit tests', () => {
       allocation,
       duration,
       cadence,
-      vestingStartTimestamp
+      vestingStartTimestamp,
+      leftoversUnlockDelay
     };
   };
 
@@ -58,7 +51,7 @@ describe('Simple vesting unit tests', () => {
       const { simpleVesting, wlth, beneficiary, allocation, duration, vestingStartTimestamp, cadence } =
         await loadFixture(deploySimpleVesting);
 
-      expect(await simpleVesting.getVestedToken()).to.equal(wlth.address);
+      expect(await simpleVesting.wlth()).to.equal(wlth.address);
       expect(await simpleVesting.beneficiary()).to.equal(beneficiary.address);
       expect(await simpleVesting.vestingStartTimestamp()).to.equal(vestingStartTimestamp);
       expect(await simpleVesting.allocation()).to.equal(allocation);
@@ -120,7 +113,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWithCustomError(simpleVesting, 'BaseVesting__VestingNotStarted');
+        ).to.be.revertedWithCustomError(simpleVesting, 'SimpleVesting__VestingNotStarted');
       });
 
       it('Should release tokens within vesting time', async () => {
@@ -150,7 +143,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000').add(ONE_TOKEN), beneficiary.address)
-        ).to.be.revertedWithCustomError(simpleVesting, 'BaseVesting__NotEnoughTokensVested');
+        ).to.be.revertedWithCustomError(simpleVesting, 'SimpleVesting__NotEnoughTokensVested');
       });
 
       it('Should revert releasing tokens if not beneficiary', async () => {
@@ -163,7 +156,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(deployer).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWithCustomError(simpleVesting, 'BaseVesting__UnauthorizedAccess');
+        ).to.be.revertedWithCustomError(simpleVesting, 'SimpleVesting__UnauthorizedAccess');
       });
 
       it('Should revert releasing tokens if not enough tokens on vesting contract', async () => {
@@ -175,7 +168,7 @@ describe('Simple vesting unit tests', () => {
 
         await expect(
           simpleVesting.connect(beneficiary).release(toWlth('1000000'), beneficiary.address)
-        ).to.be.revertedWithCustomError(simpleVesting, 'BaseVesting__NotEnoughTokensOnContract');
+        ).to.be.revertedWithCustomError(simpleVesting, 'SimpleVesting__NotEnoughTokensOnContract');
       });
 
       it('Should revert releasing tokens if transfer fails', async () => {

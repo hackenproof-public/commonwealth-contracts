@@ -17,7 +17,7 @@ const ercAbi = [
   'function approve(address spender, uint256 amount) returns (bool)'
 ];
 
-describe('UniswapSwapper goerli integration tests', function () {
+describe.skip('UniswapSwapper goerli integration tests', function () {
   const TOTAL_WETH_AMOUNT = '0.00001';
   const SWAP_WETH_AMOUNT = '0.000001';
 

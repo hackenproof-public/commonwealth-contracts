@@ -6,12 +6,15 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IGeneisNFTMirror} from "../interfaces/IGenesisNFTMirror.sol";
 import {IGenesisNFTVesting} from "../interfaces/IGenesisNFTVesting.sol";
 import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
+import {IWlth} from "../interfaces/IWlth.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {MAX_GAMIFICATION_PENALTY} from "../libraries/Constants.sol";
 
 error GenesisNFTVesting__OwnerZeroAddress();
 error GenesisNFTVesting__WlthZeroAddress();
+error GenesisNFTVesting__CommunityFundZeroAddress();
 error GenesisNFTVesting__GenesisNftSeries1MirrorZeroAddress();
 error GenesisNFTVesting__GenesisNftSeries2MirrorZeroAddress();
 error GenesisNFTVesting__NoNFTs(address wallet);
@@ -26,9 +29,16 @@ error GenesisNFTVesting__TokenAlreadyLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__TokenNotLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__TokenLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__NoSurplus(uint256 balance, uint256 released, uint256 allocation);
+error GenesisNFTVesting__GamificationNotEnabled();
+error GenesisNFTVesting__VestingStartTimestampAlreadyDefined();
 
 contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
+
+    /**
+     * @notice Community fund address.
+     */
+    address private immutable i_communityFund;
 
     /**
      * @notice Maximum reward amount for Series 1 Genesis NFTs.
@@ -53,37 +63,42 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @notice Instance of the Genesis NFT Mirror contract for Series 2.
      */
-    IGeneisNFTMirror private i_genesisNftSeries2Mirror;
+    IGeneisNFTMirror private immutable i_genesisNftSeries2Mirror;
 
     /**
      * @notice Instance of the WLTH token contract.
      */
-    IERC20 private i_wlth;
+    IERC20 private immutable i_wlth;
 
     /**
      * @notice Duration of the vesting period.
      */
-    uint256 private i_duration;
+    uint256 private immutable i_duration;
 
     /**
      * @notice Cadence of vesting (time interval between releases).
      */
-    uint256 private i_cadence;
-
-    /**
-     * @notice Timestamp when vesting starts.
-     */
-    uint256 private i_vestingStartTimestamp;
+    uint256 private immutable i_cadence;
 
     /**
      * @notice Allocation amount for rewards.
      */
-    uint256 private i_allocation;
+    uint256 private immutable i_allocation;
 
     /**
-     * @notice Timestamp when emergency withdrawal is unlocked.
+     * @notice Period after duration when emergency withdrawal is unlocked.
      */
-    uint256 private i_leftoversUnlockTimestamp;
+    uint256 private immutable i_leftoversUnlockDelay;
+
+    /**
+     * @notice Amount of cadences based on vesting and cadence perionds.
+     */
+    uint256 private immutable i_cadencesAmount;
+
+    /**
+     * @notice Timestamp when vesting starts.
+     */
+    uint256 private s_vestingStartTimestamp;
 
     /**
      * @notice Total amount of rewards released.
@@ -111,29 +126,13 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     mapping(uint256 => mapping(uint256 => bool)) private s_lostTokens;
 
     /**
-     * @notice Event emitted when rewards are released.
+     * @notice controls if function is function is not available before vesting start
      */
-    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId);
-
-    /**
-     * @notice Event emitted when a token is marked as lost.
-     */
-    event LostTokenSet(uint256 indexed tokenId, uint256 indexed series);
-
-    /**
-     * @notice Event emitted when a token is unmarked as lost.
-     */
-    event LostTokenReseted(uint256 indexed tokenId, uint256 indexed series);
-
-    /**
-     * @notice Event emitted when an emergency withdrawal is performed.
-     */
-    event EmergencyWithdrawalPerformed(
-        uint256 indexed series,
-        uint256 indexed tokenId,
-        address indexed to,
-        uint256 amount
-    );
+    modifier afterVestingStart() {
+        if (s_vestingStartTimestamp == 0 || block.timestamp < s_vestingStartTimestamp)
+            revert GenesisNFTVesting__VestingNotStarted();
+        _;
+    }
 
     /**
      * @notice Constructor for GenesisNFTVesting contract.
@@ -143,34 +142,38 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      * @param _wlth The address of the WLTH token contract.
      * @param _duration The duration of the vesting period.
      * @param _cadence The cadence of vesting (time interval between releases).
-     * @param _vestingStartTimestamp The timestamp when vesting starts.
      * @param _allocation The allocation amount for rewards.
-     * @param _leftoversUnlockTimestamp The timestamp when emergency withdrawal is unlocked.
+     * @param _leftoversUnlockDelay The timestamp when emergency withdrawal is unlocked.
+     * @param _vestingStartTimestamp The timestamp when vesting starts.
      */
     constructor(
         address _owner,
         address _genesisNftSeries1Mirror,
         address _genesisNftSeries2Mirror,
         address _wlth,
+        address _communityFund,
         uint256 _duration,
         uint256 _cadence,
-        uint256 _vestingStartTimestamp,
         uint256 _allocation,
-        uint _leftoversUnlockTimestamp
+        uint256 _leftoversUnlockDelay,
+        uint256 _vestingStartTimestamp
     ) {
         if (_owner == address(0)) revert GenesisNFTVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert GenesisNFTVesting__WlthZeroAddress();
+        if (_communityFund == address(0)) revert GenesisNFTVesting__CommunityFundZeroAddress();
         if (_genesisNftSeries1Mirror == address(0)) revert GenesisNFTVesting__GenesisNftSeries1MirrorZeroAddress();
         if (_genesisNftSeries2Mirror == address(0)) revert GenesisNFTVesting__GenesisNftSeries2MirrorZeroAddress();
 
         i_genesisNftSeries1Mirror = IGeneisNFTMirror(_genesisNftSeries1Mirror);
         i_genesisNftSeries2Mirror = IGeneisNFTMirror(_genesisNftSeries2Mirror);
         i_wlth = IERC20(_wlth);
+        i_communityFund = _communityFund;
         i_duration = _duration;
         i_cadence = _cadence;
-        i_vestingStartTimestamp = _vestingStartTimestamp;
         i_allocation = _allocation;
-        i_leftoversUnlockTimestamp = _leftoversUnlockTimestamp;
+        i_leftoversUnlockDelay = _leftoversUnlockDelay;
+        i_cadencesAmount = _duration / _cadence;
+        s_vestingStartTimestamp = _vestingStartTimestamp;
 
         _transferOwnership(_owner);
     }
@@ -181,12 +184,27 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     function releaseAllAvailable(
         uint256[] calldata _series1TokenIds,
         uint256[] calldata _series2TokenIds,
-        address _beneficiary
-    ) external override {
-        if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
+        address _beneficiary,
+        bool _gamified
+    ) external override afterVestingStart {
         if (!accessCheck(_beneficiary)) revert GenesisNFTVesting__NoNFTs(_beneficiary);
-        releaseAllForSeries(_series1TokenIds, _beneficiary, true);
-        releaseAllForSeries(_series2TokenIds, _beneficiary, false);
+        releaseAllForSeries(_series1TokenIds, _beneficiary, true, _gamified);
+        releaseAllForSeries(_series2TokenIds, _beneficiary, false, _gamified);
+    }
+
+    /**
+     * @notice calculates the penalty, gamification
+     */
+    function calculatePenalty(
+        bool _series1,
+        uint256 _amount,
+        uint256 _tokenId
+    ) public view afterVestingStart returns (uint256) {
+        uint256 vested = releasableAmountPerNFT(_series1, _tokenId, true);
+        uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
+        if (slashingPool == 0) return 0;
+        return
+            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadencesAmount - actualCadence())) / i_cadencesAmount / 10000;
     }
 
     /**
@@ -231,17 +249,20 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         if (!s_lostTokens[_series1 ? 1 : 2][_tokenId])
             revert GenesisNFTVesting__TokenNotLost(_series1 ? 1 : 2, _tokenId);
 
-        uint256 amount = releasableAmountPerNFT(_series1, _tokenId, block.timestamp);
+        uint256 amount = releasableAmountPerNFT(_series1, _tokenId, false);
         emit EmergencyWithdrawalPerformed(_series1 ? 1 : 2, _tokenId, _to, amount);
 
-        releasePerNFT(_series1, _tokenId, amount, _to);
+        releasePerNFT(_series1, _tokenId, amount, _to, false);
     }
 
     /**
      * @inheritdoc IWithdrawal
      */
     function withdrawLeftovers(address _wallet) external override onlyOwner {
-        if (i_leftoversUnlockTimestamp > block.timestamp) revert GenesisNFTVesting__LeftoversWithdrawalLocked();
+        if (
+            s_vestingStartTimestamp == 0 ||
+            s_vestingStartTimestamp + i_duration + i_leftoversUnlockDelay > block.timestamp
+        ) revert GenesisNFTVesting__LeftoversWithdrawalLocked();
 
         emit LeftoversWithdrawn(_wallet, i_wlth.balanceOf(address(this)));
 
@@ -268,20 +289,23 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function unvestedAmountPerNFT(
-        bool _series1,
-        uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) external view override returns (uint256) {
+    function setVestingStartTimestamp(uint256 _timestamp) external override {
+        if (s_vestingStartTimestamp != 0) revert GenesisNFTVesting__VestingStartTimestampAlreadyDefined();
+        s_vestingStartTimestamp = _timestamp;
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function unvestedAmountPerNFT(bool _series1, uint256 _tokenId) external view override returns (uint256) {
         if (_series1) {
             if (!i_genesisNftSeries1Mirror.isTokenExisted(_tokenId))
                 revert GenesisNFTVesting__NFTNotExisted(1, _tokenId);
-            return
-                (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - vestedAmountPerNFT(_series1, _tokenId, _actualTimestamp);
+            return (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - vestedAmountPerNFT(_series1, _tokenId);
         } else {
             if (!i_genesisNftSeries2Mirror.isTokenExisted(_tokenId))
                 revert GenesisNFTVesting__NFTNotExisted(2, _tokenId);
-            return SERIES_2_MAX_REWARD - vestedAmountPerNFT(_series1, _tokenId, _actualTimestamp);
+            return SERIES_2_MAX_REWARD - vestedAmountPerNFT(_series1, _tokenId);
         }
     }
 
@@ -291,15 +315,15 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     function releasableAmount(
         uint256[] calldata _series1TokenIds,
         uint256[] calldata _series2TokenIds,
-        uint256 _actualTimestamp,
-        address _beneficiary
+        address _beneficiary,
+        bool _gamified
     ) external view override returns (uint256) {
         if (!accessCheck(_beneficiary)) revert GenesisNFTVesting__NoNFTs(_beneficiary);
 
         uint256 amount;
 
-        amount += releasableAmountForSeries(_series1TokenIds, _beneficiary, true, _actualTimestamp);
-        amount += releasableAmountForSeries(_series2TokenIds, _beneficiary, false, _actualTimestamp);
+        amount += releasableAmountForSeries(_series1TokenIds, _beneficiary, true, _gamified);
+        amount += releasableAmountForSeries(_series2TokenIds, _beneficiary, false, _gamified);
 
         return amount;
     }
@@ -343,7 +367,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      * @inheritdoc IGenesisNFTVesting
      */
     function vestingStartTimestamp() external view override returns (uint256) {
-        return i_vestingStartTimestamp;
+        return s_vestingStartTimestamp;
     }
 
     /**
@@ -377,8 +401,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IWithdrawal
      */
-    function leftoversUnlockTimestamp() external view override returns (uint256) {
-        return i_leftoversUnlockTimestamp;
+    function leftoversUnlockDelay() external view override returns (uint256) {
+        return i_leftoversUnlockDelay;
     }
 
     /**
@@ -391,8 +415,13 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function releasePerNFT(bool _series1, uint256 _tokenId, uint256 _amount, address _beneficiary) public override {
-        if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
+    function releasePerNFT(
+        bool _series1,
+        uint256 _tokenId,
+        uint256 _amount,
+        address _beneficiary,
+        bool _gamified
+    ) public override afterVestingStart {
         if (s_lostTokens[_series1 ? 1 : 2][_tokenId] && msg.sender != owner())
             revert GenesisNFTVesting__TokenLost(_series1 ? 1 : 2, _tokenId);
         if (
@@ -405,9 +434,11 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
             revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _tokenId, _beneficiary);
         }
 
-        if (releasableAmountPerNFT(_series1, _tokenId, block.timestamp) < _amount)
+        if (!_gamified && releasableAmountPerNFT(_series1, _tokenId, _gamified) < _amount)
             revert GenesisNFTVesting__NotEnoughTokensVested();
         if (i_wlth.balanceOf(address(this)) < _amount) revert GenesisNFTVesting__InsufficientWlthBalance();
+
+        uint256 penaltyAmount = calculatePenalty(_series1, _amount, _tokenId);
 
         s_released += _amount;
 
@@ -419,7 +450,12 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
 
         emit Released(_beneficiary, _amount, _tokenId);
 
-        i_wlth.safeTransfer(_beneficiary, _amount);
+        if (penaltyAmount > 0) {
+            IWlth(address(i_wlth)).burn((penaltyAmount * 9801) / 10000);
+            i_wlth.safeTransfer(i_communityFund, (penaltyAmount * 99) / 10000);
+        }
+
+        i_wlth.safeTransfer(_beneficiary, _amount - penaltyAmount);
     }
 
     /**
@@ -428,25 +464,27 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     function releasableAmountPerNFT(
         bool _series1,
         uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) public view override returns (uint256) {
-        if (block.timestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
-        uint256 cadencesAmount = (_actualTimestamp - i_vestingStartTimestamp) / i_cadence;
+        bool _gamified
+    ) public view override afterVestingStart returns (uint256) {
         if (_series1) {
             uint256 claimed = s_amountClaimedBySeries1TokenId[_tokenId];
             return
-                Math.min(
-                    (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed,
-                    (((cadencesAmount * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence)) / i_duration) -
-                        claimed
-                );
+                _gamified
+                    ? (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed
+                    : Math.min(
+                        (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed,
+                        (((actualCadence() * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence)) / i_duration) -
+                            claimed
+                    );
         } else {
             uint256 claimed = s_amountClaimedBySeries2TokenId[_tokenId];
             return
-                Math.min(
-                    SERIES_2_MAX_REWARD - claimed,
-                    (((cadencesAmount * SERIES_2_MAX_REWARD * i_cadence)) / i_duration) - claimed
-                );
+                _gamified
+                    ? SERIES_2_MAX_REWARD - claimed
+                    : Math.min(
+                        SERIES_2_MAX_REWARD - claimed,
+                        (((actualCadence() * SERIES_2_MAX_REWARD * i_cadence)) / i_duration) - claimed
+                    );
         }
     }
 
@@ -455,19 +493,16 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      */
     function vestedAmountPerNFT(
         bool _series1,
-        uint256 _tokenId,
-        uint256 _actualTimestamp
-    ) public view override returns (uint256) {
-        if (_actualTimestamp < i_vestingStartTimestamp) revert GenesisNFTVesting__VestingNotStarted();
-        uint256 cadencesAmount = (_actualTimestamp - i_vestingStartTimestamp) / i_cadence;
+        uint256 _tokenId
+    ) public view override afterVestingStart returns (uint256) {
         if (_series1) {
             return
                 Math.min(
                     (SERIES_1_MAX_REWARD + bonusValue(_tokenId)),
-                    (cadencesAmount * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence) / i_duration
+                    (actualCadence() * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence) / i_duration
                 );
         } else {
-            return Math.min(SERIES_2_MAX_REWARD, (cadencesAmount * SERIES_2_MAX_REWARD * i_cadence) / i_duration);
+            return Math.min(SERIES_2_MAX_REWARD, (actualCadence() * SERIES_2_MAX_REWARD * i_cadence) / i_duration);
         }
     }
 
@@ -478,10 +513,15 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         return s_bonusValue[_tokenId] ? BONUS : 0;
     }
 
-    function releaseAllForSeries(uint256[] calldata _ids, address _beneficiary, bool _series1) private {
+    function releaseAllForSeries(uint256[] calldata _ids, address _beneficiary, bool _series1, bool _gamified) private {
         for (uint i; i < _ids.length; ) {
-            releasePerNFT(_series1, _ids[i], releasableAmountPerNFT(_series1, _ids[i], block.timestamp), _beneficiary);
-
+            releasePerNFT(
+                _series1,
+                _ids[i],
+                releasableAmountPerNFT(_series1, _ids[i], _gamified),
+                _beneficiary,
+                _gamified
+            );
             unchecked {
                 i++;
             }
@@ -492,7 +532,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         uint256[] calldata _ids,
         address _beneficiary,
         bool _series1,
-        uint256 _actualTimestamp
+        bool _gamified
     ) private view returns (uint256) {
         uint256 amount;
         if (_ids.length > 0) {
@@ -505,7 +545,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
                     revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _ids[i], _beneficiary);
                 }
 
-                amount += releasableAmountPerNFT(_series1, _ids[i], _actualTimestamp);
+                amount += releasableAmountPerNFT(_series1, _ids[i], _gamified);
                 unchecked {
                     i++;
                 }
@@ -518,5 +558,28 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         return
             i_genesisNftSeries1Mirror.balanceOf(_beneficiary) > 0 ||
             i_genesisNftSeries2Mirror.balanceOf(_beneficiary) > 0;
+    }
+
+    /**
+     * @notice calculates the penalty, gamification
+     */
+    function calculatePenaltyPerNFT(
+        bool _series1,
+        uint256 _tokenId,
+        uint256 _amount
+    ) public view afterVestingStart returns (uint256) {
+        uint256 vested = vestedAmountPerNFT(_series1, _tokenId);
+        uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
+        if (slashingPool == 0) return 0;
+        return
+            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadencesAmount - actualCadence())) / i_cadencesAmount / 10000;
+    }
+
+    /**
+     * @notice Returns releaseable amount of vesting token. Defined by children vesting contracts
+     */
+    function actualCadence() public view afterVestingStart returns (uint256) {
+        uint256 cadenceNumber = (block.timestamp - s_vestingStartTimestamp) / i_cadence;
+        return cadenceNumber <= i_cadencesAmount ? cadenceNumber : i_cadencesAmount;
     }
 }

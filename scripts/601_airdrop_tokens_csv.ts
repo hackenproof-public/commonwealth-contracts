@@ -1,5 +1,6 @@
 import parse from 'csv-parser';
 import fs from 'fs';
+import { NonceManager } from "@ethersproject/experimental";
 import { ethers } from 'hardhat';
 import { Contract, Provider, utils, Wallet } from 'zksync-web3';
 import { toUsdc, toWlth } from '../test/utils';
@@ -14,33 +15,34 @@ async function main() {
   const csvFilePath = __dirname + '/data.csv';
   const delimiter = ';';
 
-  // stage
-  // const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
-  // const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
-  // const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
-  // const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
-  // const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
-  // const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
+    // stage sepolia
+    const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
+    const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
+    const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
+    const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
+    const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
+    const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
 
   // dev
-  const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
-  const wlthAddress = '0xe418b5F692D950b3318b9FCdeD88718505D05798';
-  const GEN1NFT_ADDRESS = '0x23C801711748a0Ddd98399c30910Fb9f9F65AE32';
-  const S1_MIRROR_ADDRESS = '0xa469275068a516E60679f85C3642987Aa7571877';
-  const GEN2NFT_ADDRESS = '0x099016255f27f5482d642b7bFCD8a3050549E903';
-  const S2_MIRROR_ADDRESS = '0x6BbC5caC9A37d2Be56768184B9969556E0194f63';
+  // const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
+  // const wlthAddress = '0xe418b5F692D950b3318b9FCdeD88718505D05798';
+  // const GEN1NFT_ADDRESS = '0x23C801711748a0Ddd98399c30910Fb9f9F65AE32';
+  // const S1_MIRROR_ADDRESS = '0xa469275068a516E60679f85C3642987Aa7571877';
+  // const GEN2NFT_ADDRESS = '0x099016255f27f5482d642b7bFCD8a3050549E903';
+  // const S2_MIRROR_ADDRESS = '0x6BbC5caC9A37d2Be56768184B9969556E0194f63';
 
   const l1Provider = new ethers.providers.JsonRpcProvider(
     'https://eth-sepolia.g.alchemy.com/v2/kaJnbyOsoAMnNzsiCjwfcZR69GwHiUAZ'
   );
 
-  const sepoliaWallet = new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider);
+  //const sepoliaWallet = new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider);
+  const sepoliaWallet = new NonceManager(new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider));
 
   // Set a constant that accesses the Layer 1 contract.
   const nftV1 = new Contract(GEN1NFT_ADDRESS, NFT_ABI.abi, sepoliaWallet);
   const nftV2 = new Contract(GEN2NFT_ADDRESS, NFT_ABI.abi, sepoliaWallet);
 
-  const l2Provider = new Provider('https://sepolia.era.zksync.dev');
+  const l2Provider = new Provider('https://zksync-sepolia.core.chainstack.com/712f023756715336826719bb2476db34');
   // Get the current address of the zkSync L1 bridge.
   const zkSyncAddress = await l2Provider.getMainContractAddress();
   // Get the `Contract` object of the zkSync bridge.
@@ -103,7 +105,7 @@ async function main() {
 
       if (transaction.s1Amount > 0) {
         const data = mirrorInterface.encodeFunctionData('moveToken', [transaction.s1Amount, transaction.to]);
-        const gasPrice = await l1Provider.getGasPrice();
+        const gasPrice = (await l1Provider.getGasPrice()).mul(6).div(5);
 
         // Define a constant for gas limit which estimates the limit for the L1 to L2 transaction.
         const gasLimit = await l2Provider.estimateL1ToL2Execute({
@@ -124,7 +126,7 @@ async function main() {
           gasPrice: gasPrice
         });
         // await tx.wait();
-        await delay(500);
+        await delay(1000);
         console.log(`transferred ${transaction.s1Amount} GenesisNFTSeries1 to ${transaction.to}`);
       }
 
@@ -132,7 +134,7 @@ async function main() {
         // const s2Tx = await s2.connect(wallet).mint(transaction.to, transaction.s2Amount);
         // s2Tx.waitFinalize();
         const data = mirrorInterface.encodeFunctionData('moveToken', [transaction.s2Amount, transaction.to]);
-        const gasPrice = await l1Provider.getGasPrice();
+        const gasPrice = (await l1Provider.getGasPrice()).mul(6).div(5);
 
         // Define a constant for gas limit which estimates the limit for the L1 to L2 transaction.
         const gasLimit = await l2Provider.estimateL1ToL2Execute({
@@ -159,12 +161,14 @@ async function main() {
 
       if (transaction.wlthAmount > 0) {
         const wlthTx = await wlth.connect(wallet).transfer(transaction.to, toWlth(transaction.wlthAmount.toString()));
+        //const wlthTx = await wlth.connect(wallet).transfer(transaction.to, toWlth('80'));
         await delay(500);
         // await wlthTx.waitFinalize();
         console.log(`transferred ${transaction.wlthAmount} WLTH to ${transaction.to}`);
       }
       if (transaction.usdcAmount > 0) {
         const usdcTx = await usdc.connect(wallet).mint(transaction.to, toUsdc(transaction.usdcAmount.toString()));
+        //const usdcTx = await usdc.connect(wallet).mint(transaction.to, toUsdc('13003'));
         await delay(500);
         // await usdcTx.waitFinalize();
         console.log(`transferred ${transaction.usdcAmount} USDC to ${transaction.to}`);
@@ -173,7 +177,8 @@ async function main() {
       if (transaction.ethAmount > 0) {
         const ethTx = await wallet.sendTransaction({
           to: transaction.to,
-          value: ethers.utils.parseEther(transaction.ethAmount.toString())
+          //value: ethers.utils.parseEther(transaction.ethAmount.toString())
+          value: ethers.utils.parseEther('0.1')
         });
 
         // await ethTx.waitFinalize();
@@ -199,7 +204,7 @@ function getSingerWallet() {
   console.log('');
   const deployerPrivateKey = getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepoliaZkTestnet')!;
 
-  const zkSyncProvider = new Provider('https://sepolia.era.zksync.dev'); // need to be changed to mainnet when mainnet lunch
+  const zkSyncProvider = new Provider('https://zksync-sepolia.core.chainstack.com/712f023756715336826719bb2476db34'); // need to be changed to mainnet when mainnet lunch
 
-  return new Wallet(deployerPrivateKey, zkSyncProvider);
+  return new NonceManager(new Wallet(deployerPrivateKey, zkSyncProvider));
 }

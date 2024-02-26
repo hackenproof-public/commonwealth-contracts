@@ -6,10 +6,11 @@ import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { GenesisNFTVesting, IGeneisNFTMirror, Wlth } from '../../typechain-types';
+import { toWlth } from '../utils';
 
 describe('Genesis NFT Vesting unit tests', function () {
   const deployGenesisNFTVesting = async () => {
-    const [deployer, owner, user1, user2] = await ethers.getSigners();
+    const [deployer, owner, user1, user2, communityFund] = await ethers.getSigners();
 
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
     const ONE_MONTH_IN_SECONDS = 2628000;
@@ -21,7 +22,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
     const allocation = parseEther('1000000');
 
-    const leftoversUnlockTimestamp = (await ethers.provider.getBlock('latest')).timestamp + ONE_YEAR_IN_SECONDS;
+    const leftoversUnlockDelay = ONE_YEAR_IN_SECONDS;
 
     const genesisNFTSeries1Mirror: FakeContract<IGeneisNFTMirror> = await smock.fake('GenesisNFTMirror');
     const genesisNFTSeries2Mirror: FakeContract<IGeneisNFTMirror> = await smock.fake('GenesisNFTMirror');
@@ -33,11 +34,12 @@ describe('Genesis NFT Vesting unit tests', function () {
         genesisNFTSeries1Mirror.address,
         genesisNFTSeries2Mirror.address,
         wlth.address,
+        communityFund.address,
         duration,
         cadence,
-        vestingStartTimestamp,
         allocation,
-        leftoversUnlockTimestamp
+        leftoversUnlockDelay,
+        vestingStartTimestamp
       ],
       deployer
     );
@@ -45,6 +47,7 @@ describe('Genesis NFT Vesting unit tests', function () {
     const bonus = await genesisNFTVesting.BONUS();
     const series1MaxReward = await genesisNFTVesting.SERIES_1_MAX_REWARD();
     const series2MaxReward = await genesisNFTVesting.SERIES_2_MAX_REWARD();
+    //await genesisNFTVesting.connect(owner).setVestingStartTimestamp(vestingStartTimestamp);
 
     const user1Series1Tokens = [0, 1, 2];
     const user1Series2Tokens = [5, 6];
@@ -72,7 +75,8 @@ describe('Genesis NFT Vesting unit tests', function () {
       bonus,
       series1MaxReward,
       series2MaxReward,
-      leftoversUnlockTimestamp
+      leftoversUnlockDelay,
+      communityFund
     };
   };
 
@@ -124,7 +128,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           allocation,
           genesisNFTSeries1Mirror,
           genesisNFTSeries2Mirror,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay
         } = await loadFixture(deployGenesisNFTVesting);
 
         expect(await genesisNFTVesting.owner()).to.be.equal(owner.address);
@@ -136,7 +140,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         expect(await genesisNFTVesting.released()).to.be.equal(0);
         expect(await genesisNFTVesting.genesisNftSeries1Mirror()).to.be.equal(genesisNFTSeries1Mirror.address);
         expect(await genesisNFTVesting.genesisNftSeries2Mirror()).to.be.equal(genesisNFTSeries2Mirror.address);
-        expect(await genesisNFTVesting.leftoversUnlockTimestamp()).to.be.equal(leftoversUnlockTimestamp);
+        expect(await genesisNFTVesting.leftoversUnlockDelay()).to.be.equal(leftoversUnlockDelay);
       });
     });
 
@@ -150,9 +154,9 @@ describe('Genesis NFT Vesting unit tests', function () {
           genesisNFTSeries2Mirror,
           duration,
           cadence,
-          vestingStartTimestamp,
           allocation,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay,
+          communityFund
         } = await loadFixture(deployGenesisNFTVesting);
 
         await expect(
@@ -163,16 +167,18 @@ describe('Genesis NFT Vesting unit tests', function () {
               genesisNFTSeries1Mirror.address,
               genesisNFTSeries2Mirror.address,
               wlth.address,
+              communityFund.address,
               duration,
               cadence,
-              vestingStartTimestamp,
               allocation,
-              leftoversUnlockTimestamp
+              leftoversUnlockDelay,
+              0
             ],
             deployer
           )
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__OwnerZeroAddress');
       });
+
       it('Should revert when wlth address is zero address', async () => {
         const {
           deployer,
@@ -182,9 +188,9 @@ describe('Genesis NFT Vesting unit tests', function () {
           owner,
           duration,
           cadence,
-          vestingStartTimestamp,
           allocation,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay,
+          communityFund
         } = await loadFixture(deployGenesisNFTVesting);
 
         await expect(
@@ -195,15 +201,50 @@ describe('Genesis NFT Vesting unit tests', function () {
               genesisNFTSeries1Mirror.address,
               genesisNFTSeries2Mirror.address,
               constants.AddressZero,
+              communityFund.address,
               duration,
               cadence,
-              vestingStartTimestamp,
               allocation,
-              leftoversUnlockTimestamp
+              leftoversUnlockDelay,
+              0
             ],
             deployer
           )
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__WlthZeroAddress');
+      });
+
+      it('Should revert when community fund address is zero address', async () => {
+        const {
+          deployer,
+          genesisNFTVesting,
+          genesisNFTSeries1Mirror,
+          genesisNFTSeries2Mirror,
+          owner,
+          duration,
+          cadence,
+          allocation,
+          leftoversUnlockDelay,
+          wlth
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await expect(
+          deploy(
+            'GenesisNFTVesting',
+            [
+              owner.address,
+              genesisNFTSeries1Mirror.address,
+              genesisNFTSeries2Mirror.address,
+              wlth.address,
+              constants.AddressZero,
+              duration,
+              cadence,
+              allocation,
+              leftoversUnlockDelay,
+              0
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__CommunityFundZeroAddress');
       });
 
       it('Should revert when genesis nft series 1 address is zero address', async () => {
@@ -215,9 +256,9 @@ describe('Genesis NFT Vesting unit tests', function () {
           owner,
           duration,
           cadence,
-          vestingStartTimestamp,
           allocation,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay,
+          communityFund
         } = await loadFixture(deployGenesisNFTVesting);
 
         await expect(
@@ -228,11 +269,12 @@ describe('Genesis NFT Vesting unit tests', function () {
               constants.AddressZero,
               genesisNFTSeries2Mirror.address,
               wlth.address,
+              communityFund.address,
               duration,
               cadence,
-              vestingStartTimestamp,
               allocation,
-              leftoversUnlockTimestamp
+              leftoversUnlockDelay,
+              0
             ],
             deployer
           )
@@ -248,9 +290,9 @@ describe('Genesis NFT Vesting unit tests', function () {
           owner,
           duration,
           cadence,
-          vestingStartTimestamp,
           allocation,
-          leftoversUnlockTimestamp
+          leftoversUnlockDelay,
+          communityFund
         } = await loadFixture(deployGenesisNFTVesting);
 
         await expect(
@@ -261,11 +303,12 @@ describe('Genesis NFT Vesting unit tests', function () {
               genesisNFTSeries1Mirror.address,
               constants.AddressZero,
               wlth.address,
+              communityFund.address,
               duration,
               cadence,
-              vestingStartTimestamp,
               allocation,
-              leftoversUnlockTimestamp
+              leftoversUnlockDelay,
+              0
             ],
             deployer
           )
@@ -297,7 +340,9 @@ describe('Genesis NFT Vesting unit tests', function () {
           .add(series2TokenReward.mul(user1Series2Tokens.length));
 
         await expect(
-          genesisNFTVesting.connect(user1).releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address, false)
         )
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0])
@@ -326,6 +371,68 @@ describe('Genesis NFT Vesting unit tests', function () {
           series2TokenReward
         );
       });
+
+      it('Should realease all avaiable tokens with proper penalty after one month of vesting', async () => {
+        const {
+          genesisNFTVesting,
+          user1,
+          user1Series1Tokens,
+          user1Series2Tokens,
+          vestingStartTimestamp,
+          ONE_MONTH_IN_SECONDS,
+          wlth
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS + 1);
+
+        const series1TokenReward = await genesisNFTVesting.SERIES_1_MAX_REWARD();
+        const series2TokenReward = await genesisNFTVesting.SERIES_2_MAX_REWARD();
+
+        const totalRewardsClaimed = series1TokenReward
+          .mul(user1Series1Tokens.length)
+          .add(series2TokenReward.mul(user1Series2Tokens.length));
+
+        await expect(
+          genesisNFTVesting
+            .connect(user1)
+            .releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address, true)
+        )
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0])
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[1])
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[2])
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series2TokenReward, user1Series2Tokens[0])
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series2TokenReward, user1Series2Tokens[1]);
+        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(user1.address, toWlth('32327.777778'));
+
+        /*
+        Penalty calculations for this case:
+        equantion: penalty = slashpool * maxPenalty * (cadencesAmount - actualCadence) / cadencesAmount
+        vested = 6960000
+        slashpool = 10000000 - 6960000 = 3040000
+        penalty = 3040000*0.8*13/19 = 1664000
+        */
+        expect(await genesisNFTVesting.released()).to.be.equal(totalRewardsClaimed);
+        expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[0])).to.be.equal(
+          series1TokenReward
+        );
+        expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[1])).to.be.equal(
+          series1TokenReward
+        );
+        expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[2])).to.be.equal(
+          series1TokenReward
+        );
+        expect(await genesisNFTVesting.amountClaimedBySeries2TokenId(user1Series2Tokens[0])).to.be.equal(
+          series2TokenReward
+        );
+        expect(await genesisNFTVesting.amountClaimedBySeries2TokenId(user1Series2Tokens[1])).to.be.equal(
+          series2TokenReward
+        );
+      });
     });
 
     describe('Reverts', () => {
@@ -335,7 +442,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
 
         await expect(
-          genesisNFTVesting.connect(user1).releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address, false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__VestingNotStarted');
       });
 
@@ -356,7 +465,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp);
 
         await expect(
-          genesisNFTVesting.connect(user1).releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address, false)
         )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NoNFTs')
           .withArgs(user1.address);
@@ -367,7 +478,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp);
 
         await expect(
-          genesisNFTVesting.connect(user1).releaseAllAvailable(user2Series1Tokens, user1Series2Tokens, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releaseAllAvailable(user2Series1Tokens, user1Series2Tokens, user1.address, false)
         )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(1, user2Series1Tokens[0], user1.address);
@@ -379,7 +492,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
         await time.increaseTo(vestingStartTimestamp);
 
-        await expect(genesisNFTVesting.connect(user1).releaseAllAvailable([], user2Series2Tokens, user1.address))
+        await expect(genesisNFTVesting.connect(user1).releaseAllAvailable([], user2Series2Tokens, user1.address, false))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(2, user2Series2Tokens[0], user1.address);
       });
@@ -427,9 +540,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
 
         await time.increaseTo(vestingStartTimestamp);
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(series1MaxReward);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(series1MaxReward);
       });
 
       it('Should return 0 if everything already vested for an nft series 1', async () => {
@@ -439,9 +550,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(0);
       });
 
       it('Should return less than max when some already vested for an nft series 1', async () => {
@@ -453,9 +562,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         const rewardsAfterMonth = series1MaxReward.div(12);
         const left = series1MaxReward.sub(rewardsAfterMonth);
 
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(left);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(left);
       });
 
       it('Should return max unvested amount for an nft series 2 if nothing vested yet', async () => {
@@ -464,9 +571,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
 
         await time.increaseTo(vestingStartTimestamp);
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(series2MaxReward);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(
+          series2MaxReward
+        );
       });
 
       it('Should return 0 if everything already vested for an nft series 2', async () => {
@@ -476,9 +583,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(0);
       });
 
       it('Should return less than max when some already vested for an nft series 2', async () => {
@@ -490,9 +595,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         const rewardsAfterMonth = series2MaxReward.div(12);
         const left = series2MaxReward.sub(rewardsAfterMonth);
 
-        expect(
-          await genesisNFTVesting.unvestedAmountPerNFT(false, user2Series1Tokens[0], await time.latest())
-        ).to.be.equal(left);
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(false, user2Series1Tokens[0])).to.be.equal(left);
       });
     });
 
@@ -502,7 +605,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         genesisNFTSeries1Mirror.isTokenExisted.returns(false);
 
-        await expect(genesisNFTVesting.unvestedAmountPerNFT(true, 0, await time.latest()))
+        await expect(genesisNFTVesting.unvestedAmountPerNFT(true, 0))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NFTNotExisted')
           .withArgs(1, 0);
       });
@@ -512,7 +615,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         genesisNFTSeries2Mirror.isTokenExisted.returns(false);
 
-        await expect(genesisNFTVesting.unvestedAmountPerNFT(false, 0, await time.latest()))
+        await expect(genesisNFTVesting.unvestedAmountPerNFT(false, 0))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NFTNotExisted')
           .withArgs(2, 0);
       });
@@ -541,12 +644,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         console.log('Reward', rewards);
         expect(
-          await genesisNFTVesting.releasableAmount(
-            user1Series1Tokens,
-            user1Series2Tokens,
-            await time.latest(),
-            user1.address
-          )
+          await genesisNFTVesting.releasableAmount(user1Series1Tokens, user1Series2Tokens, user1.address, false)
         ).to.be.equal(rewards);
       });
 
@@ -555,7 +653,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        expect(await genesisNFTVesting.releasableAmount([], [], await time.latest(), user1.address)).to.be.equal(0);
+        expect(await genesisNFTVesting.releasableAmount([], [], user1.address, false)).to.be.equal(0);
       });
     });
 
@@ -575,9 +673,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         genesisNFTSeries1Mirror.balanceOf.returns(0);
         genesisNFTSeries2Mirror.balanceOf.returns(0);
 
-        await expect(
-          genesisNFTVesting.releasableAmount(user1Series1Tokens, user1Series2Tokens, await time.latest(), user1.address)
-        )
+        await expect(genesisNFTVesting.releasableAmount(user1Series1Tokens, user1Series2Tokens, user1.address, false))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NoNFTs')
           .withArgs(user1.address);
       });
@@ -587,9 +683,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           deployGenesisNFTVesting
         );
 
-        await expect(
-          genesisNFTVesting.releasableAmount(user2Series1Tokens, user1Series2Tokens, await time.latest(), user1.address)
-        )
+        await expect(genesisNFTVesting.releasableAmount(user2Series1Tokens, user1Series2Tokens, user1.address, false))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(1, user2Series1Tokens[0], user1.address);
       });
@@ -600,9 +694,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        await expect(
-          genesisNFTVesting.releasableAmount(user1Series1Tokens, user2Series2Tokens, await time.latest(), user1.address)
-        )
+        await expect(genesisNFTVesting.releasableAmount(user1Series1Tokens, user2Series2Tokens, user1.address, false))
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(2, user2Series2Tokens[0], user1.address);
       });
@@ -613,7 +705,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
 
         await expect(
-          genesisNFTVesting.releasableAmount(user1Series1Tokens, user1Series2Tokens, await time.latest(), user1.address)
+          genesisNFTVesting.releasableAmount(user1Series1Tokens, user1Series2Tokens, user1.address, false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__VestingNotStarted');
       });
     });
@@ -622,11 +714,10 @@ describe('Genesis NFT Vesting unit tests', function () {
   describe('Leftovers withdraw', () => {
     describe('Success', () => {
       it("Should withdraw all wlth from the contract's balance", async () => {
-        const { genesisNFTVesting, owner, wlth, allocation, leftoversUnlockTimestamp } = await loadFixture(
-          deployGenesisNFTVesting
-        );
+        const { genesisNFTVesting, owner, wlth, allocation, leftoversUnlockDelay, vestingStartTimestamp, duration } =
+          await loadFixture(deployGenesisNFTVesting);
 
-        await time.increaseTo(leftoversUnlockTimestamp);
+        await time.increaseTo(vestingStartTimestamp + duration + leftoversUnlockDelay);
 
         const leftoversWithdrawalAddress = Wallet.createRandom().address;
 
@@ -674,7 +765,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp + duration);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], series1MaxReward, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releasePerNFT(true, user1Series1Tokens[0], series1MaxReward, user1.address, false)
         )
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, series1MaxReward, user1Series1Tokens[0]);
@@ -687,9 +780,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[0])).to.be.equal(
           series1MaxReward
         );
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(0);
       });
 
       it("Should release some of available tokens for a user's nft from series 1", async () => {
@@ -709,7 +800,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         const left = series1MaxReward.sub(amountToRelease);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], amountToRelease, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releasePerNFT(true, user1Series1Tokens[0], amountToRelease, user1.address, false)
         )
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, amountToRelease, user1Series1Tokens[0]);
@@ -719,9 +812,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           amountToRelease
         );
         expect(await genesisNFTVesting.released()).to.be.equal(amountToRelease);
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(left);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(left);
       });
 
       it("Should release all available tokens for a user's nft from series 2", async () => {
@@ -738,7 +829,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp + duration);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], series2MaxReward, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releasePerNFT(false, user1Series2Tokens[0], series2MaxReward, user1.address, false)
         )
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, series2MaxReward, user1Series2Tokens[0]);
@@ -751,9 +844,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         expect(await genesisNFTVesting.amountClaimedBySeries2TokenId(user1Series2Tokens[0])).to.be.equal(
           series2MaxReward
         );
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], false)).to.be.equal(0);
       });
 
       it("Should release some of available tokens for a user's nft from series 2", async () => {
@@ -773,7 +864,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         const left = series2MaxReward.sub(amountToRelease);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], amountToRelease, user1.address)
+          genesisNFTVesting
+            .connect(user1)
+            .releasePerNFT(false, user1Series2Tokens[0], amountToRelease, user1.address, false)
         )
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, amountToRelease, user1Series2Tokens[0]);
@@ -783,9 +876,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           amountToRelease
         );
         expect(await genesisNFTVesting.released()).to.be.equal(amountToRelease);
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(left);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], false)).to.be.equal(left);
       });
     });
     describe('Reverts', () => {
@@ -795,7 +886,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         );
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address)
+          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address, false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__VestingNotStarted');
       });
 
@@ -806,7 +897,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        await expect(genesisNFTVesting.connect(user1).releasePerNFT(true, user2Series1Tokens[0], 1, user1.address))
+        await expect(
+          genesisNFTVesting.connect(user1).releasePerNFT(true, user2Series1Tokens[0], 1, user1.address, false)
+        )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(1, user2Series1Tokens[0], user1.address);
       });
@@ -818,7 +911,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        await expect(genesisNFTVesting.connect(user1).releasePerNFT(false, user2Series2Tokens[0], 1, user1.address))
+        await expect(
+          genesisNFTVesting.connect(user1).releasePerNFT(false, user2Series2Tokens[0], 1, user1.address, false)
+        )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotOwnerOfGenesisNFT')
           .withArgs(2, user2Series2Tokens[0], user1.address);
       });
@@ -831,7 +926,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 100, user1.address)
+          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 100, user1.address, false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__NotEnoughTokensVested');
       });
 
@@ -844,7 +939,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         wlth.balanceOf.whenCalledWith(genesisNFTVesting.address).returns(0);
 
         await expect(
-          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address)
+          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address, false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__InsufficientWlthBalance');
       });
 
@@ -855,7 +950,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp + duration);
         await genesisNFTVesting.connect(owner).setLostToken(true, [user1Series1Tokens[0]]);
 
-        await expect(genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address))
+        await expect(
+          genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], 1, user1.address, false)
+        )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__TokenLost')
           .withArgs(1, user1Series1Tokens[0]);
       });
@@ -867,7 +964,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await time.increaseTo(vestingStartTimestamp + duration);
         await genesisNFTVesting.connect(owner).setLostToken(false, [user1Series2Tokens[0]]);
 
-        await expect(genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], 1, user1.address))
+        await expect(
+          genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], 1, user1.address, false)
+        )
           .to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__TokenLost')
           .withArgs(2, user1Series2Tokens[0]);
       });
@@ -882,9 +981,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(series1MaxReward);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(
+          series1MaxReward
+        );
       });
 
       it("Should all tokens be releasable for a user's nft from series 2", async () => {
@@ -893,9 +992,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(series2MaxReward);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], false)).to.be.equal(
+          series2MaxReward
+        );
       });
 
       it("Should some tokens be releasable for a user's nft from series 1", async () => {
@@ -906,9 +1005,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         const rewardsAfterMonth = series1MaxReward.div(12);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(rewardsAfterMonth);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(
+          rewardsAfterMonth
+        );
       });
 
       it("Should some tokens be releasable for a user's nft from series 2", async () => {
@@ -919,9 +1018,9 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         const rewardsAfterMonth = series2MaxReward.div(12);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(false, user2Series1Tokens[0], await time.latest())
-        ).to.be.equal(rewardsAfterMonth);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(false, user2Series1Tokens[0], false)).to.be.equal(
+          rewardsAfterMonth
+        );
       });
 
       it("Should return 0 when nothing is releasable for a user's nft from series 1", async () => {
@@ -931,9 +1030,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(0);
       });
 
       it("Should return 0 when nothing is releasable for a user's nft from series 2", async () => {
@@ -943,9 +1040,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(false, user1Series2Tokens[0], false)).to.be.equal(0);
       });
 
       it("Should return releasable amount with bonus for a user's nft from series 1", async () => {
@@ -964,9 +1059,9 @@ describe('Genesis NFT Vesting unit tests', function () {
         await genesisNFTVesting.connect(owner).setupBonus([user1Series1Tokens[0]]);
 
         const totalRewards = series1MaxReward.add(bonus);
-        expect(
-          await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(totalRewards);
+        expect(await genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)).to.be.equal(
+          totalRewards
+        );
       });
     });
 
@@ -975,7 +1070,7 @@ describe('Genesis NFT Vesting unit tests', function () {
         const { genesisNFTVesting, user1Series1Tokens } = await loadFixture(deployGenesisNFTVesting);
 
         await expect(
-          genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
+          genesisNFTVesting.releasableAmountPerNFT(true, user1Series1Tokens[0], false)
         ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__VestingNotStarted');
       });
     });
@@ -990,9 +1085,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(0);
       });
 
       it('Should return 0 when nothing vested for series 2', async () => {
@@ -1002,9 +1095,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(0);
       });
 
       it('Should return 0 when nothing vested for series 1 before first cadance passed', async () => {
@@ -1014,9 +1105,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + 1);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(0);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(0);
       });
 
       it("Should return all vested tokens for a user's nft from series 1", async () => {
@@ -1025,9 +1114,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(series1MaxReward);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(series1MaxReward);
       });
 
       it("Should return all vested tokens for a user's nft from series 2", async () => {
@@ -1036,9 +1123,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         await time.increaseTo(vestingStartTimestamp + duration);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0], await time.latest())
-        ).to.be.equal(series2MaxReward);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(series2MaxReward);
       });
 
       it("Should return some vested tokens for a user's nft from series 1", async () => {
@@ -1049,9 +1134,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         const rewardsAfterMonth = series1MaxReward.div(12);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(rewardsAfterMonth);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(rewardsAfterMonth);
       });
 
       it("Should return some vested tokens for a user's nft from series 2", async () => {
@@ -1062,9 +1145,7 @@ describe('Genesis NFT Vesting unit tests', function () {
 
         const rewardsAfterMonth = series2MaxReward.div(12);
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(false, user2Series1Tokens[0], await time.latest())
-        ).to.be.equal(rewardsAfterMonth);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, user2Series1Tokens[0])).to.be.equal(rewardsAfterMonth);
       });
 
       it("Should return some vested tokens plus some of the bonus for a user's nft from series 1", async () => {
@@ -1086,18 +1167,17 @@ describe('Genesis NFT Vesting unit tests', function () {
         const rewardsAfterMonth = series1MaxReward.div(2);
         const totalRewards = rewardsAfterMonth.add(bonus.div(2));
 
-        expect(
-          await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.equal(totalRewards);
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(totalRewards);
       });
     });
     describe('Reverts', () => {
       it('Should revert when vesting not started', async () => {
         const { genesisNFTVesting, user1Series1Tokens } = await loadFixture(deployGenesisNFTVesting);
 
-        await expect(
-          genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0], await time.latest())
-        ).to.be.revertedWithCustomError(genesisNFTVesting, 'GenesisNFTVesting__VestingNotStarted');
+        await expect(genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.revertedWithCustomError(
+          genesisNFTVesting,
+          'GenesisNFTVesting__VestingNotStarted'
+        );
       });
     });
   });
