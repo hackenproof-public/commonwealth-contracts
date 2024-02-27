@@ -186,7 +186,7 @@ contract InvestmentFund is
         FeeDistributionAddresses memory feeDistributionAddresses_,
         uint16 managementFee_,
         uint256 cap_
-    ) public initializer {
+    ) public virtual initializer {
         __Context_init();
         {
             __OwnablePausable_init(owner_);
@@ -229,7 +229,7 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(uint240 amount, string calldata tokenUri) external override onlyAllowedStates nonReentrant {
+    function invest(uint240 amount, string calldata tokenUri) external virtual override onlyAllowedStates nonReentrant {
         if (amount < MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = cap;
 
