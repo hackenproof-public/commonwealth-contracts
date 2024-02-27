@@ -200,7 +200,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         IERC20(i_wlth).safeTransfer(_beneficiary, _amount - penaltyAmount);
 
         if (penaltyAmount > 0) {
-            IWlth(i_wlth).burn((penaltyAmount * 9801) / BASIS_POINT_DIVISOR);
+            IWlth(i_wlth).burn((penaltyAmount * 99 * 99) / BASIS_POINT_DIVISOR);
             IERC20(i_wlth).safeTransfer(i_communityFund, (penaltyAmount * 99) / BASIS_POINT_DIVISOR);
         }
     }

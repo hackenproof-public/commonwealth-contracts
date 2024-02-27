@@ -10,7 +10,7 @@ import {IWlth} from "../interfaces/IWlth.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {MAX_GAMIFICATION_PENALTY} from "../libraries/Constants.sol";
+import {MAX_GAMIFICATION_PENALTY, BASIS_POINT_DIVISOR} from "../libraries/Constants.sol";
 
 error GenesisNFTVesting__OwnerZeroAddress();
 error GenesisNFTVesting__WlthZeroAddress();
@@ -200,11 +200,13 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         uint256 _amount,
         uint256 _tokenId
     ) public view afterVestingStart returns (uint256) {
-        uint256 vested = releasableAmountPerNFT(_series1, _tokenId, true);
+        uint256 vested = releasableAmountPerNFT(_series1, _tokenId, false);
         uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
         if (slashingPool == 0) return 0;
         return
-            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadencesAmount - actualCadence())) / i_cadencesAmount / 10000;
+            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadencesAmount - actualCadence())) /
+            i_cadencesAmount /
+            BASIS_POINT_DIVISOR;
     }
 
     /**
@@ -438,7 +440,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
             revert GenesisNFTVesting__NotEnoughTokensVested();
         if (i_wlth.balanceOf(address(this)) < _amount) revert GenesisNFTVesting__InsufficientWlthBalance();
 
-        uint256 penaltyAmount = calculatePenalty(_series1, _amount, _tokenId);
+        uint256 penaltyAmount = !_gamified ? 0 : calculatePenalty(_series1, _amount, _tokenId);
 
         s_released += _amount;
 
@@ -451,7 +453,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         emit Released(_beneficiary, _amount, _tokenId);
 
         if (penaltyAmount > 0) {
-            IWlth(address(i_wlth)).burn((penaltyAmount * 9801) / 10000);
+            IWlth(address(i_wlth)).burn((penaltyAmount * 99 * 99) / 10000);
             i_wlth.safeTransfer(i_communityFund, (penaltyAmount * 99) / 10000);
         }
 
@@ -561,24 +563,9 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     }
 
     /**
-     * @notice calculates the penalty, gamification
-     */
-    function calculatePenaltyPerNFT(
-        bool _series1,
-        uint256 _tokenId,
-        uint256 _amount
-    ) public view afterVestingStart returns (uint256) {
-        uint256 vested = vestedAmountPerNFT(_series1, _tokenId);
-        uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
-        if (slashingPool == 0) return 0;
-        return
-            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadencesAmount - actualCadence())) / i_cadencesAmount / 10000;
-    }
-
-    /**
      * @notice Returns releaseable amount of vesting token. Defined by children vesting contracts
      */
-    function actualCadence() public view afterVestingStart returns (uint256) {
+    function actualCadence() private view afterVestingStart returns (uint256) {
         uint256 cadenceNumber = (block.timestamp - s_vestingStartTimestamp) / i_cadence;
         return cadenceNumber <= i_cadencesAmount ? cadenceNumber : i_cadencesAmount;
     }

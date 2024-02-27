@@ -373,64 +373,31 @@ describe('Genesis NFT Vesting unit tests', function () {
       });
 
       it('Should realease all avaiable tokens with proper penalty after one month of vesting', async () => {
-        const {
-          genesisNFTVesting,
-          user1,
-          user1Series1Tokens,
-          user1Series2Tokens,
-          vestingStartTimestamp,
-          ONE_MONTH_IN_SECONDS,
-          wlth
-        } = await loadFixture(deployGenesisNFTVesting);
+        const { genesisNFTVesting, user1, user1Series1Tokens, vestingStartTimestamp, ONE_MONTH_IN_SECONDS, wlth } =
+          await loadFixture(deployGenesisNFTVesting);
 
-        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS + 1);
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS);
 
         const series1TokenReward = await genesisNFTVesting.SERIES_1_MAX_REWARD();
-        const series2TokenReward = await genesisNFTVesting.SERIES_2_MAX_REWARD();
 
-        const totalRewardsClaimed = series1TokenReward
-          .mul(user1Series1Tokens.length)
-          .add(series2TokenReward.mul(user1Series2Tokens.length));
+        await expect(genesisNFTVesting.connect(user1).releaseAllAvailable([0], [], user1.address, true))
+          .to.emit(genesisNFTVesting, 'Released')
+          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0]);
 
-        await expect(
-          genesisNFTVesting
-            .connect(user1)
-            .releaseAllAvailable(user1Series1Tokens, user1Series2Tokens, user1.address, true)
-        )
-          .to.emit(genesisNFTVesting, 'Released')
-          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0])
-          .to.emit(genesisNFTVesting, 'Released')
-          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[1])
-          .to.emit(genesisNFTVesting, 'Released')
-          .withArgs(user1.address, series1TokenReward, user1Series1Tokens[2])
-          .to.emit(genesisNFTVesting, 'Released')
-          .withArgs(user1.address, series2TokenReward, user1Series2Tokens[0])
-          .to.emit(genesisNFTVesting, 'Released')
-          .withArgs(user1.address, series2TokenReward, user1Series2Tokens[1]);
-        expect(wlth.transfer.atCall(0)).to.have.been.calledWith(user1.address, toWlth('32327.777778'));
+        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user1.address, toWlth('14422.222222222222222222'));
 
         /*
         Penalty calculations for this case:
         equantion: penalty = slashpool * maxPenalty * (cadencesAmount - actualCadence) / cadencesAmount
-        vested = 6960000
-        slashpool = 10000000 - 6960000 = 3040000
-        penalty = 3040000*0.8*13/19 = 1664000
+        vested = 3666.666666
+        slashpool = 44000 - 3666.666666 = 40333.333334
+        penalty = 40333.333334*0.8*23/24 = 29577.7777783
+        user will get: 44000 - 29577.7777783 = 14422.222222222222222222
         */
-        expect(await genesisNFTVesting.released()).to.be.equal(totalRewardsClaimed);
+
+        expect(await genesisNFTVesting.released()).to.be.equal(series1TokenReward);
         expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[0])).to.be.equal(
           series1TokenReward
-        );
-        expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[1])).to.be.equal(
-          series1TokenReward
-        );
-        expect(await genesisNFTVesting.amountClaimedBySeries1TokenId(user1Series1Tokens[2])).to.be.equal(
-          series1TokenReward
-        );
-        expect(await genesisNFTVesting.amountClaimedBySeries2TokenId(user1Series2Tokens[0])).to.be.equal(
-          series2TokenReward
-        );
-        expect(await genesisNFTVesting.amountClaimedBySeries2TokenId(user1Series2Tokens[1])).to.be.equal(
-          series2TokenReward
         );
       });
     });
