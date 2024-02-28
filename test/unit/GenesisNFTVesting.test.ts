@@ -384,7 +384,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0]);
 
-        expect(wlth.transfer.atCall(1)).to.have.been.calledWith(user1.address, toWlth('14422.222222222222222222'));
+        expect(wlth.transfer).to.have.been.calledWith(user1.address, toWlth('14422.222222222222222222'));
 
         /*
         Penalty calculations for this case:

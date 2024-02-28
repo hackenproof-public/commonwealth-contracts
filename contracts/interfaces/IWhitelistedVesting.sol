@@ -134,4 +134,19 @@ interface IWhitelistedVesting {
      * @notice Returns the total amount of currently whitelisted addresses
      */
     function whitelistedAddressesAmount() external view returns (uint256);
+
+    /**
+     * @notice Returns the community fund address
+     */
+    function communityFund() external view returns (address);
+
+    /**
+     * @notice Returns tokens release distribution for whole contract, defined at deployment
+     */
+    function tokenReleaseDistribution() external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns if gamification is enabled for given contract
+     */
+    function gamification() external view returns (bool);
 }

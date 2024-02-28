@@ -1,6 +1,7 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
+import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { WhitelistedVesting, Wlth } from '../../typechain-types';
@@ -78,20 +79,262 @@ describe('Whitelisted vesting unit tests', () => {
       gamification,
       beneficiary1,
       beneficiary2,
-      tokenReleaseDistribution
+      tokenReleaseDistribution,
+      communityFund,
+      leftoversUnlockDelay
     };
   };
 
   describe('Deployment', () => {
-    it('Should return initial parameters', async () => {
-      const { whitelistedVesting, owner, wlth, allocation, duration, cadence, vestingStartTimestamp, gamification } =
-        await loadFixture(deploySimpleVesting);
+    it('Should revert deployment if owner is zero address', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+
+      await expect(
+        deploy(
+          'WhitelistedVesting',
+          [
+            gamification,
+            constants.AddressZero,
+            wlth.address,
+            communityFund.address,
+            allocation,
+            duration,
+            cadence,
+            leftoversUnlockDelay,
+            vestingStartTimestamp,
+            tokenReleaseDistribution
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__OwnerZeroAddress');
+    });
+
+    it('Should revert deployment if wlth is zero address', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+
+      await expect(
+        deploy(
+          'WhitelistedVesting',
+          [
+            gamification,
+            owner.address,
+            constants.AddressZero,
+            communityFund.address,
+            allocation,
+            duration,
+            cadence,
+            leftoversUnlockDelay,
+            vestingStartTimestamp,
+            tokenReleaseDistribution
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__WlthZeroAddress');
+    });
+
+    it('Should revert deployment if community fund is zero address', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+
+      await expect(
+        deploy(
+          'WhitelistedVesting',
+          [
+            gamification,
+            owner.address,
+            wlth.address,
+            constants.AddressZero,
+            allocation,
+            duration,
+            cadence,
+            leftoversUnlockDelay,
+            vestingStartTimestamp,
+            tokenReleaseDistribution
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__CommunityFundZeroAddress');
+    });
+
+    it('Should revert deployment if invalid distribution table length', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+
+      const newTokenReleaseDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6960000'),
+        toWlth('12180000'),
+        toWlth('17400000'),
+        toWlth('22620000'),
+        toWlth('27840000'),
+        toWlth('33060000'),
+        toWlth('38280000'),
+        toWlth('43500000'),
+        toWlth('48720000'),
+        toWlth('53940000'),
+        toWlth('59160000'),
+        toWlth('64380000'),
+        toWlth('69600000')
+      ];
+
+      await expect(
+        deploy(
+          'WhitelistedVesting',
+          [
+            gamification,
+            owner.address,
+            wlth.address,
+            communityFund.address,
+            allocation,
+            duration,
+            cadence,
+            leftoversUnlockDelay,
+            vestingStartTimestamp,
+            newTokenReleaseDistribution
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayLength');
+    });
+
+    it('Should revert deployment if last item of distribution array does not match the allocation', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+
+      const newTokenReleaseDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6960000'),
+        toWlth('12180000'),
+        toWlth('17400000'),
+        toWlth('22620000'),
+        toWlth('27840000'),
+        toWlth('33060000'),
+        toWlth('38280000'),
+        toWlth('43500000'),
+        toWlth('48720000'),
+        toWlth('53940000'),
+        toWlth('59160000'),
+        toWlth('64380000'),
+        toWlth('69600000').sub(toWlth('1'))
+      ];
+
+      await expect(
+        deploy(
+          'WhitelistedVesting',
+          [
+            gamification,
+            owner.address,
+            wlth.address,
+            communityFund.address,
+            allocation,
+            duration,
+            cadence,
+            leftoversUnlockDelay,
+            vestingStartTimestamp,
+            newTokenReleaseDistribution
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should deploy and return initial parameters', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay
+      } = await loadFixture(deploySimpleVesting);
 
       expect(await whitelistedVesting.wlth()).to.equal(wlth.address);
+      expect(await whitelistedVesting.owner()).to.equal(owner.address);
+      expect(await whitelistedVesting.communityFund()).to.equal(communityFund.address);
       expect(await whitelistedVesting.vestingStartTimestamp()).to.equal(vestingStartTimestamp);
       expect(await whitelistedVesting.allocation()).to.equal(allocation);
       expect(await whitelistedVesting.duration()).to.equal(duration);
       expect(await whitelistedVesting.cadence()).to.equal(cadence);
+      expect(await whitelistedVesting.gamification()).to.equal(gamification);
+      expect(await whitelistedVesting.tokenReleaseDistribution()).to.deep.equal(tokenReleaseDistribution);
+      expect(await whitelistedVesting.leftoversUnlockDelay()).to.equal(leftoversUnlockDelay);
     });
   });
 
@@ -271,6 +514,7 @@ describe('Whitelisted vesting unit tests', () => {
         tokenReleaseDistribution,
         allocation
       } = await loadFixture(deploySimpleVesting);
+      wlth.balanceOf.returns(0);
       wlth.balanceOf.returns(0);
       wlth.transfer.returns(true);
 
@@ -535,6 +779,157 @@ describe('Whitelisted vesting unit tests', () => {
         .connect(owner)
         .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
       expect(await whitelistedVesting.connect(owner).deactivateAddress(beneficiary1.address));
+    });
+  });
+
+  describe('Contract related getters', () => {
+    it('Should return amount of WLTH tokens released by contract', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+
+      expect(await whitelistedVesting.connect(owner).released()).to.equal(0);
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper vested WLTH amount [' + value + '] by contract at based on actual block timestamp',
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+            await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+          time.increaseTo(vestingStartTimestamp + cadence * index);
+
+          expect(await whitelistedVesting.connect(owner).vestedAmount()).to.equal(value);
+        }
+      );
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper vested WLTH amount [' +
+          value +
+          '] by contract at the beginning of given cadence ' +
+          index,
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+            await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+          time.increaseTo(vestingStartTimestamp + cadence * index);
+
+          expect(await whitelistedVesting.connect(owner).vestedAmountToCadence(index)).to.equal(value);
+        }
+      );
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it('Should return proper releasable WLTH amount by contract at the beginning of cadence ' + index, async () => {
+        const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+          await loadFixture(deploySimpleVesting);
+        await whitelistedVesting
+          .connect(owner)
+          .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+        time.increaseTo(vestingStartTimestamp + cadence * index);
+
+        expect(await whitelistedVesting.connect(owner).releaseableAmount()).to.equal(value);
+      });
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it('Should return proper cadence number [' + value + '] for respective block timestamp', async () => {
+        const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+          await loadFixture(deploySimpleVesting);
+        await whitelistedVesting
+          .connect(owner)
+          .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+        time.increaseTo(vestingStartTimestamp + cadence * index);
+
+        expect(await whitelistedVesting.connect(owner).actualCadence()).to.equal(index);
+      });
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper WLTH allocation [' + value + '] by given address at the beginning of cadence ' + index,
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1 } = await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+
+          expect(
+            await whitelistedVesting.connect(owner).walletAllocationForCadence(beneficiary1.address, index)
+          ).to.equal(value);
+        }
+      );
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper releasable WLTH amount [' +
+          value +
+          '] by given address at the beginning of cadence ' +
+          index,
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+            await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+          time.increaseTo(vestingStartTimestamp + cadence * index);
+
+          expect(await whitelistedVesting.connect(owner).releaseableAmountPerWallet(beneficiary1.address)).to.equal(
+            value
+          );
+        }
+      );
+    });
+  });
+
+  describe('Wallet related getters', () => {
+    it('Should return whitelisted addresses amount', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+
+      expect(await whitelistedVesting.connect(owner).whitelistedAddressesAmount()).to.equal(0);
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper WLTH allocation [' + value + '] by given address at the beginning of cadence ' + index,
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1 } = await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+
+          expect(
+            await whitelistedVesting.connect(owner).walletAllocationForCadence(beneficiary1.address, index)
+          ).to.equal(value);
+        }
+      );
+    });
+
+    tokenReleaseDistribution.forEach((value, index) => {
+      it(
+        'Should return proper releasable WLTH amount [' +
+          value +
+          '] by given address at the beginning of cadence ' +
+          index,
+        async () => {
+          const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
+            await loadFixture(deploySimpleVesting);
+          await whitelistedVesting
+            .connect(owner)
+            .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+          time.increaseTo(vestingStartTimestamp + cadence * index);
+
+          expect(await whitelistedVesting.connect(owner).releaseableAmountPerWallet(beneficiary1.address)).to.equal(
+            value
+          );
+        }
+      );
     });
   });
 });
