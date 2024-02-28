@@ -4,9 +4,9 @@ pragma abicoder v2;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import {TransferHelper} from "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import {IWlthQuoter} from "./interfaces/IWlthQuoter.sol";
-import {IWlthSwapper} from "./interfaces/IWlthSwapper.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {IWlthQuoter} from "../interfaces/IWlthQuoter.sol";
+import {IWlthSwapper} from "../interfaces/IWlthSwapper.sol";
+import {OwnablePausable} from "../OwnablePausable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 contract UniswapWlthSwapper is ReentrancyGuardUpgradeable, OwnablePausable, IWlthSwapper {

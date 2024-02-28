@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.18;
 
-import {IWlthQuoter} from "./interfaces/IWlthQuoter.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {IWlthQuoter} from "../interfaces/IWlthQuoter.sol";
+import {OwnablePausable} from "../OwnablePausable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 contract UniswapWlthQuoter is ReentrancyGuardUpgradeable, OwnablePausable, IWlthQuoter {
