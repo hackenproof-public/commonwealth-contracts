@@ -42,6 +42,7 @@ error InvestmentFund__GenesisNftRevenueZeroAddress();
 error InvestmentFund__InvalidManagementFee();
 error InvestmentFund__InvalidInvestmentCap();
 error InvestmentFund__InvestmentNftInterfaceNotSupported();
+error InvestmmentFund__MaxPercentageWalletInvestmentLimitReached();
 
 /**
  * @title Investment Fund contract
@@ -70,94 +71,99 @@ contract InvestmentFund is
     }
 
     /**
-     * @notice Address of payout un
+     * @notice Management fee value
      */
-    address public unlocker;
-
-    /**
-     * @notice Fund name
-     */
-    string public name;
-
-    /**
-     * @notice Address of token collected from investors
-     */
-    address public currency;
+    uint16 public s_managementFee;
 
     /**
      * @notice Address of Investment NFT contract
      */
-    address public investmentNft;
+    IInvestmentNFT internal s_investmentNft;
 
     /**
      * @notice Address of Staking Wlth contract
      */
-    IStakingWlth public stakingWlth;
+    IStakingWlth public s_stakingWlth;
+
+    /**
+     * @notice Address of payout un
+     */
+    address private s_unlocker;
+
+    /**
+     * @notice Address of token collected from investors
+     */
+    address private s_currency;
 
     /**
      * @notice Wallet collecting fees
      */
-    address public treasuryWallet;
+    address private s_treasuryWallet;
 
     /**
      * @notice Wallet collecting fees
      */
-    address public genesisNftRevenue;
+    address private s_genesisNftRevenue;
 
     /**
      * @notice Wallet collecting fees
      */
-    address public lpPoolAddress;
+    address private s_lpPoolAddress;
 
     /**
      * @notice Wallet collecting fees
      */
-    address public burnAddress;
-
-    /**
-     * @notice Management fee value
-     */
-    uint16 public managementFee;
+    address private s_burnAddress;
 
     /**
      * @notice The address of the community fund
      */
-    address public communityFund;
-
-    /**
-     * @notice Fund capacity above which collecting funds is stopped
-     */
-    uint256 public cap;
+    address private s_communityFund;
 
     /**
      * @notice Total income from sold project tokens
      */
-    uint256 public totalIncome;
+    uint256 private s_totalIncome;
 
     /**
      * @notice The index of the next payout to unlock
      */
-    uint256 public nextPayoutToUnlock;
+    uint256 private s_nextPayoutToUnlock;
+
+    /**
+     * @notice Maximum percentage of wallet investment limit
+     */
+    uint256 private s_maxPercentageWalletInvestmentLimit;
+
+    /**
+     * @notice Fund name
+     */
+    string private s_name;
+
+    /**
+     * @notice Fund capacity above which collecting funds is stopped
+     */
+    uint256 internal s_cap;
 
     /**
      * @notice List of payouts (incomes from tokens sale)
      */
-    Payout[] public payouts;
+    Payout[] private s_payouts;
 
     /**
      * @notice Total withdrawn amount per user
      */
-    mapping(address => uint256) public userTotalWithdrawal;
+    mapping(address => uint256) private s_userTotalWithdrawal;
 
     /**
      * @dev The index of the next user payout
      */
-    mapping(address => uint256) private userNextPayout;
+    mapping(address => uint256) private s_userNextPayout;
 
     /**
      * @dev List of projects
      */
-    EnumerableSetUpgradeable.AddressSet private _projects;
+    EnumerableSetUpgradeable.AddressSet private s_projects;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -166,62 +172,64 @@ contract InvestmentFund is
 
     /**
      * @dev Initializes the contract
-     * @param owner_ Contract owner
-     * @param unlocker_ Address of payout unlocker
-     * @param name_ Investment fund name
-     * @param currency_ Address of currency for investments
-     * @param investmentNft_ Address of investment NFT contract
-     * @param stakingWlth_ Address of contract for staking WLTH
-     * @param feeDistributionAddresses_ Addresses of fee distribution wallets
-     * @param managementFee_ Management fee value
-     * @param cap_ Cap value
+     * @param _owner Contract owner
+     * @param _unlocker Address of payout unlocker
+     * @param _name Investment fund name
+     * @param _currency Address of currency for investments
+     * @param _investmentNft Address of investment NFT contract
+     * @param _stakingWlth Address of contract for staking WLTH
+     * @param _feeDistributionAddresses Addresses of fee distribution wallets
+     * @param _managementFee Management fee value
+     * @param _cap Cap value
      */
     function initialize(
-        address owner_,
-        address unlocker_,
-        string memory name_,
-        address currency_,
-        address investmentNft_,
-        address stakingWlth_,
-        FeeDistributionAddresses memory feeDistributionAddresses_,
-        uint16 managementFee_,
-        uint256 cap_
+        address _owner,
+        address _unlocker,
+        string memory _name,
+        address _currency,
+        address _investmentNft,
+        address _stakingWlth,
+        FeeDistributionAddresses memory _feeDistributionAddresses,
+        uint16 _managementFee,
+        uint256 _cap,
+        uint256 _maxPercentageWalletInvestmentLimit
     ) public virtual initializer {
         __Context_init();
         {
-            __OwnablePausable_init(owner_);
+            __OwnablePausable_init(_owner);
         }
         __StateMachine_init(LibFund.STATE_FUNDS_IN);
         __ReentrancyGuard_init();
         __ERC165_init();
 
-        if (unlocker_ == address(0)) revert InvestmentFund__UnlockerZeroAddress();
-        if (currency_ == address(0)) revert InvestmentFund__CurrencyZeroAddress();
-        if (investmentNft_ == address(0)) revert InvestmentFund__InvestmentNftZeroAddress();
-        if (stakingWlth_ == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
-        if (feeDistributionAddresses_.treasuryWallet == address(0)) revert InvestmentFund__TreasuryZeroAddress();
-        if (feeDistributionAddresses_.lpPool == address(0)) revert InvestmentFund__LpPoolZeroAddress();
-        if (feeDistributionAddresses_.burn == address(0)) revert InvestmentFund__BurnZeroAddress();
-        if (feeDistributionAddresses_.communityFund == address(0)) revert InvestmentFund__CommunityFundZeroAddress();
-        if (feeDistributionAddresses_.genesisNftRevenue == address(0))
+        if (_unlocker == address(0)) revert InvestmentFund__UnlockerZeroAddress();
+        if (_currency == address(0)) revert InvestmentFund__CurrencyZeroAddress();
+        if (_investmentNft == address(0)) revert InvestmentFund__InvestmentNftZeroAddress();
+        if (_stakingWlth == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
+        if (_feeDistributionAddresses.treasuryWallet == address(0)) revert InvestmentFund__TreasuryZeroAddress();
+        if (_feeDistributionAddresses.lpPool == address(0)) revert InvestmentFund__LpPoolZeroAddress();
+        if (_feeDistributionAddresses.burn == address(0)) revert InvestmentFund__BurnZeroAddress();
+        if (_feeDistributionAddresses.communityFund == address(0)) revert InvestmentFund__CommunityFundZeroAddress();
+        if (_feeDistributionAddresses.genesisNftRevenue == address(0))
             revert InvestmentFund__GenesisNftRevenueZeroAddress();
-        if (managementFee_ >= 10000) revert InvestmentFund__InvalidManagementFee();
-        if (cap_ <= 0) revert InvestmentFund__InvalidInvestmentCap();
-        if (!IERC165Upgradeable(investmentNft_).supportsInterface(type(IInvestmentNFT).interfaceId) == true)
+        if (_managementFee >= 10000) revert InvestmentFund__InvalidManagementFee();
+        if (_cap <= 0) revert InvestmentFund__InvalidInvestmentCap();
+        if (!IERC165Upgradeable(_investmentNft).supportsInterface(type(IInvestmentNFT).interfaceId) == true)
             revert InvestmentFund__InvestmentNftInterfaceNotSupported();
 
-        unlocker = unlocker_;
-        name = name_;
-        currency = currency_;
-        investmentNft = investmentNft_;
-        stakingWlth = IStakingWlth(stakingWlth_);
-        treasuryWallet = feeDistributionAddresses_.treasuryWallet;
-        genesisNftRevenue = feeDistributionAddresses_.genesisNftRevenue;
-        lpPoolAddress = feeDistributionAddresses_.lpPool;
-        burnAddress = feeDistributionAddresses_.burn;
-        communityFund = feeDistributionAddresses_.communityFund;
-        managementFee = managementFee_;
-        cap = cap_;
+        s_unlocker = _unlocker;
+        s_name = _name;
+        s_currency = _currency;
+        s_investmentNft = IInvestmentNFT(_investmentNft);
+        s_stakingWlth = IStakingWlth(_stakingWlth);
+        s_treasuryWallet = _feeDistributionAddresses.treasuryWallet;
+        s_genesisNftRevenue = _feeDistributionAddresses.genesisNftRevenue;
+        s_lpPoolAddress = _feeDistributionAddresses.lpPool;
+        s_burnAddress = _feeDistributionAddresses.burn;
+        s_communityFund = _feeDistributionAddresses.communityFund;
+        s_managementFee = _managementFee;
+        s_cap = _cap;
+        s_maxPercentageWalletInvestmentLimit = _maxPercentageWalletInvestmentLimit;
 
         _initializeStates();
     }
@@ -229,11 +237,20 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(uint240 amount, string calldata tokenUri) external virtual override onlyAllowedStates nonReentrant {
-        if (amount < MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
-        uint256 actualCap = cap;
+    function invest(
+        uint240 _amount,
+        string calldata _tokenUri
+    ) external virtual override onlyAllowedStates nonReentrant {
+        if (_amount < MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
+        uint256 actualCap = s_cap;
 
-        uint256 newTotalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue() + amount;
+        IInvestmentNFT investmentNFT = s_investmentNft;
+        uint256 value = investmentNFT.getInvestmentValue(_msgSender());
+        if (value + _amount > (actualCap * s_maxPercentageWalletInvestmentLimit) / BASIS_POINT_DIVISOR) {
+            revert InvestmmentFund__MaxPercentageWalletInvestmentLimitReached();
+        }
+
+        uint256 newTotalInvestment = investmentNFT.getTotalInvestmentValue() + _amount;
         if (newTotalInvestment > actualCap) revert InvestmentFund__TotalInvestmentAboveCap(newTotalInvestment);
 
         if (newTotalInvestment == actualCap) {
@@ -241,39 +258,39 @@ contract InvestmentFund is
             emit CapReached(actualCap);
         }
 
-        _invest(_msgSender(), amount, tokenUri);
+        _invest(_msgSender(), _amount, _tokenUri);
     }
 
     /**
      * @inheritdoc IInvestmentFund
      */
 
-    function unlockPayoutsTo(uint256 index) external onlyAllowedStates {
-        if (_msgSender() != unlocker) {
+    function unlockPayoutsTo(uint256 _index) external onlyAllowedStates {
+        if (_msgSender() != s_unlocker) {
             revert InvestmentFund__NotTheUnlocker(_msgSender());
         }
-        uint payoutsCount = payouts.length;
-        uint256 nextPayout = nextPayoutToUnlock;
+        uint payoutsCount = s_payouts.length;
+        uint256 nextPayout = s_nextPayoutToUnlock;
 
-        if (nextPayoutToUnlock >= payoutsCount) {
+        if (nextPayout >= payoutsCount) {
             revert InvestmentFund__NoPayoutToUnclock();
         }
-        if (index < nextPayoutToUnlock) {
+        if (_index < nextPayout) {
             revert InvestmentFund__PayoutIndexTooLow();
         }
-        if (index >= payoutsCount) {
+        if (_index >= payoutsCount) {
             revert InvestmentFund__PayoutIndexTooHigh();
         }
 
-        for (uint256 i = nextPayout; i <= index; ) {
-            payouts[i].locked = false;
+        for (uint256 i = nextPayout; i <= _index; ) {
+            s_payouts[i].locked = false;
             unchecked {
                 i++;
             }
         }
 
-        nextPayoutToUnlock = index + 1;
-        emit PayoutsUnlocked(nextPayout, index);
+        s_nextPayoutToUnlock = _index + 1;
+        emit PayoutsUnlocked(nextPayout, _index);
     }
 
     /**
@@ -282,9 +299,8 @@ contract InvestmentFund is
     function withdraw() external onlyAllowedStates nonReentrant {
         (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) = getAvailableFundsDetails(_msgSender());
 
-        address currencyAddress = currency;
-        userTotalWithdrawal[_msgSender()] += amount;
-        userNextPayout[_msgSender()] = nextUserPayoutIndex;
+        s_userTotalWithdrawal[_msgSender()] += amount;
+        s_userNextPayout[_msgSender()] = nextUserPayoutIndex;
 
         if (amount == 0) {
             revert InvestmentFund__NoFundsAvailable(_msgSender());
@@ -294,6 +310,7 @@ contract InvestmentFund is
             _carryFeeDistribution(carryFee);
         }
 
+        address currencyAddress = s_currency;
         _transfer(currencyAddress, _msgSender(), amount);
 
         emit ProfitWithdrawn(_msgSender(), currencyAddress, amount);
@@ -302,81 +319,22 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function getAvailableFundsDetails(
-        address account
-    ) public view returns (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) {
-        nextUserPayoutIndex = userNextPayout[account];
-        uint256 nextPayoutIndex = nextPayoutToUnlock;
+    function addProject(address _project) external onlyAllowedStates onlyOwner {
+        if (_project == address(0)) revert InvestmentFund__ProjectZeroAddress();
+        if (s_projects.contains(_project)) revert InvestmentFund__ProjectExist();
 
-        if (nextUserPayoutIndex >= nextPayoutIndex) {
-            return (0, 0, nextUserPayoutIndex);
-        }
+        s_projects.add(_project);
 
-        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; ) {
-            Payout memory payout = payouts[i];
-            if (payouts[i].inProfit) {
-                uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
-
-                uint256 carryFeeSize = _getCarryFeeSize(account, block.timestamp, payout.blockData.number);
-
-                amount +=
-                    userIncomeBeforeCarryFee -
-                    MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
-
-                if (carryFeeSize > LOWEST_CARRY_FEE) {
-                    carryFeeSize -= LOWEST_CARRY_FEE;
-                    carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
-                }
-            } else {
-                amount += _calculateUserIncomeInBlock(payout.value, account, payout.blockData);
-            }
-            unchecked {
-                i++;
-            }
-        }
-        return (amount, carryFee, nextPayoutIndex);
+        emit ProjectAdded(_msgSender(), _project);
     }
 
     /**
      * @inheritdoc IInvestmentFund
      */
-    function getPayoutsCount() external view returns (uint256) {
-        return payouts.length;
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function addProject(address project) external onlyAllowedStates onlyOwner {
-        if (project == address(0)) revert InvestmentFund__ProjectZeroAddress();
-        if (_projects.contains(project)) revert InvestmentFund__ProjectExist();
-
-        _projects.add(project);
-
-        emit ProjectAdded(_msgSender(), project);
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function listProjects() external view returns (address[] memory) {
-        return _projects.values();
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function getProjectsCount() external view returns (uint256) {
-        return _projects.length();
-    }
-
-    /**
-     * @inheritdoc IInvestmentFund
-     */
-    function removeProject(address project) external onlyAllowedStates onlyOwner {
-        if (!_projects.contains(project)) revert InvestmentFund__NotRegisteredProject(_msgSender());
-        _projects.remove(project);
-        emit ProjectRemoved(_msgSender(), project);
+    function removeProject(address _project) external onlyAllowedStates onlyOwner {
+        if (!s_projects.contains(_project)) revert InvestmentFund__NotRegisteredProject(_msgSender());
+        s_projects.remove(_project);
+        emit ProjectRemoved(_msgSender(), _project);
     }
 
     function stopCollectingFunds() external onlyAllowedStates onlyOwner {
@@ -400,47 +358,49 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function deployFundsToProject(address project, uint256 amount) external onlyOwner {
-        if (!_projects.contains(project)) revert InvestmentFund__NotRegisteredProject(project);
-        if (IERC20(currency).balanceOf(address(this)) < amount)
+    function deployFundsToProject(address _project, uint256 _amount) external onlyOwner {
+        if (!s_projects.contains(_project)) revert InvestmentFund__NotRegisteredProject(_project);
+        address currencyAddress = s_currency;
+        if (IERC20(currencyAddress).balanceOf(address(this)) < _amount)
             revert InvestmentFund__NotEnoughTokensOnInvestmentFund();
 
-        IERC20(currency).safeIncreaseAllowance(project, amount);
-        IProject(project).deployFunds(amount);
+        IERC20(currencyAddress).safeIncreaseAllowance(_project, _amount);
+        IProject(_project).deployFunds(_amount);
 
-        emit FundsDeployedToProject(address(this), project, amount);
+        emit FundsDeployedToProject(address(this), _project, _amount);
     }
 
     /**
      * @inheritdoc IInvestmentFund
      */
-    function provideProfit(uint256 amount) external onlyAllowedStates nonReentrant {
-        if (!_projects.contains(_msgSender())) {
+    function provideProfit(uint256 _amount) external onlyAllowedStates nonReentrant {
+        if (!s_projects.contains(_msgSender())) {
             revert InvestmentFund__NotRegisteredProject(_msgSender());
         }
-        if (amount == 0) {
+        if (_amount == 0) {
             revert InvestmentFund__ZeroProfitProvided();
         }
 
         Block memory blockData = Block(uint128(block.number), uint128(block.timestamp));
 
-        uint256 newTotalIncome = totalIncome + amount;
-        uint256 totalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue();
+        uint256 currentTotalIncome = s_totalIncome;
+        uint256 newTotalIncome = currentTotalIncome + _amount;
+        uint256 totalInvestment = s_investmentNft.getTotalInvestmentValue();
         uint256 initialCarryFee;
-        if (totalIncome >= totalInvestment) {
-            initialCarryFee = MathUpgradeable.mulDiv(amount, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
-            payouts.push(Payout(amount, blockData, true, true));
+        if (currentTotalIncome >= totalInvestment) {
+            initialCarryFee = MathUpgradeable.mulDiv(_amount, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
+            s_payouts.push(Payout(_amount, blockData, true, true));
         } else {
             if (newTotalIncome > totalInvestment) {
                 uint256 profitAboveBreakeven = newTotalIncome - totalInvestment;
                 initialCarryFee = MathUpgradeable.mulDiv(profitAboveBreakeven, LOWEST_CARRY_FEE, BASIS_POINT_DIVISOR);
 
-                payouts.push(Payout(amount - profitAboveBreakeven, blockData, false, true));
-                payouts.push(Payout(profitAboveBreakeven, blockData, true, true));
+                s_payouts.push(Payout(_amount - profitAboveBreakeven, blockData, false, true));
+                s_payouts.push(Payout(profitAboveBreakeven, blockData, true, true));
 
                 emit BreakevenReached(totalInvestment);
             } else {
-                payouts.push(Payout(amount, blockData, false, true));
+                s_payouts.push(Payout(_amount, blockData, false, true));
 
                 if (newTotalIncome == totalInvestment) {
                     emit BreakevenReached(totalInvestment);
@@ -448,15 +408,15 @@ contract InvestmentFund is
             }
         }
 
-        totalIncome = newTotalIncome;
+        s_totalIncome = newTotalIncome;
 
-        _transferFrom(currency, _msgSender(), address(this), amount);
+        _transferFrom(s_currency, _msgSender(), address(this), _amount);
 
         if (initialCarryFee > 0) {
             _carryFeeDistribution(initialCarryFee);
         }
 
-        emit ProfitProvided(address(this), amount, initialCarryFee, blockData.number);
+        emit ProfitProvided(address(this), _amount, initialCarryFee, blockData.number);
     }
 
     function closeFund() external onlyAllowedStates onlyOwner {
@@ -466,8 +426,29 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function isInProfit() public view returns (bool) {
-        return totalIncome > IInvestmentNFT(investmentNft).getTotalInvestmentValue();
+    function getPayoutsCount() external view returns (uint256) {
+        return s_payouts.length;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function listProjects() external view returns (address[] memory) {
+        return s_projects.values();
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function getProjectsCount() external view returns (uint256) {
+        return s_projects.length();
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function isInProfit() external view returns (bool) {
+        return s_totalIncome > s_investmentNft.getTotalInvestmentValue();
     }
 
     /**
@@ -476,19 +457,19 @@ contract InvestmentFund is
     function getDetails() external view returns (Details memory) {
         return
             Details(
-                name,
-                currency,
-                investmentNft,
-                treasuryWallet,
-                genesisNftRevenue,
-                lpPoolAddress,
-                burnAddress,
-                communityFund,
-                managementFee,
-                cap,
-                IInvestmentNFT(investmentNft).getTotalInvestmentValue(),
-                totalIncome,
-                payouts,
+                s_name,
+                s_currency,
+                address(s_investmentNft),
+                s_treasuryWallet,
+                s_genesisNftRevenue,
+                s_lpPoolAddress,
+                s_burnAddress,
+                s_communityFund,
+                s_managementFee,
+                s_cap,
+                s_investmentNft.getTotalInvestmentValue(),
+                s_totalIncome,
+                s_payouts,
                 currentState
             );
     }
@@ -496,11 +477,186 @@ contract InvestmentFund is
     /**
      * @inheritdoc IERC165Upgradeable
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IInvestmentFund).interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 _interfaceId) public view virtual override returns (bool) {
+        return _interfaceId == type(IInvestmentFund).interfaceId || super.supportsInterface(_interfaceId);
     }
 
-    function _initializeStates() internal {
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function name() external view override returns (string memory) {
+        return s_name;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function currency() external view override returns (address) {
+        return s_currency;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function unlocker() external view override returns (address) {
+        return s_unlocker;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function investmentNft() external view override returns (address) {
+        return address(s_investmentNft);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function stakingWlth() external view override returns (address) {
+        return address(s_stakingWlth);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function treasuryWallet() external view override returns (address) {
+        return s_treasuryWallet;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function genesisNftRevenue() external view override returns (address) {
+        return s_genesisNftRevenue;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function lpPoolAddress() external view override returns (address) {
+        return s_lpPoolAddress;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function burnAddress() external view override returns (address) {
+        return s_burnAddress;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function managementFee() external view override returns (uint16) {
+        return s_managementFee;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function communityFund() external view override returns (address) {
+        return s_communityFund;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function cap() external view override returns (uint256) {
+        return s_cap;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function totalIncome() external view override returns (uint256) {
+        return s_totalIncome;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function nextPayoutToUnlock() external view override returns (uint256) {
+        return s_nextPayoutToUnlock;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function userTotalWithdrawal() external view override returns (uint256) {
+        return s_userTotalWithdrawal[_msgSender()];
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function userNextPayout() external view override returns (uint256) {
+        return s_userNextPayout[_msgSender()];
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function maxPercentageWalletInvestmentLimit() external view override returns (uint256) {
+        return s_maxPercentageWalletInvestmentLimit;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function payouts() external view override returns (Payout[] memory) {
+        return s_payouts;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function payout(uint256 _index) external view override returns (Payout memory) {
+        return s_payouts[_index];
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function getAvailableFundsDetails(
+        address _account
+    ) public view returns (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) {
+        nextUserPayoutIndex = s_userNextPayout[_account];
+        uint256 nextPayoutIndex = s_nextPayoutToUnlock;
+
+        if (nextUserPayoutIndex >= nextPayoutIndex) {
+            return (0, 0, nextUserPayoutIndex);
+        }
+
+        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; ) {
+            Payout memory payout = s_payouts[i];
+            if (payout.inProfit) {
+                uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(
+                    payout.value,
+                    _account,
+                    payout.blockData
+                );
+
+                uint256 carryFeeSize = _getCarryFeeSize(_account, block.timestamp, payout.blockData.number);
+
+                amount +=
+                    userIncomeBeforeCarryFee -
+                    MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
+
+                if (carryFeeSize > LOWEST_CARRY_FEE) {
+                    carryFeeSize -= LOWEST_CARRY_FEE;
+                    carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
+                }
+            } else {
+                amount += _calculateUserIncomeInBlock(payout.value, _account, payout.blockData);
+            }
+            unchecked {
+                i++;
+            }
+        }
+        return (amount, carryFee, nextPayoutIndex);
+    }
+
+    function _initializeStates() private {
         allowFunction(LibFund.STATE_FUNDS_IN, this.addProject.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.removeProject.selector);
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
@@ -516,68 +672,70 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
     }
 
-    function _invest(address investor, uint256 amount, string calldata tokenUri) internal {
-        uint256 fee = (uint256(amount) * managementFee) / BASIS_POINT_DIVISOR;
-        address currencyAddress = currency;
+    function _invest(address _investor, uint256 _amount, string calldata _tokenUri) private {
+        uint256 fee = (uint256(_amount) * s_managementFee) / BASIS_POINT_DIVISOR;
 
-        _transferFrom(currency, investor, treasuryWallet, fee);
-        _transferFrom(currency, investor, address(this), amount - fee);
-        IInvestmentNFT(investmentNft).mint(investor, amount, tokenUri);
+        _transferFrom(s_currency, _investor, s_treasuryWallet, fee);
+        _transferFrom(s_currency, _investor, address(this), _amount - fee);
+        s_investmentNft.mint(_investor, _amount, _tokenUri);
 
-        emit Invested(investor, currencyAddress, amount, fee);
+        emit Invested(_investor, s_currency, _amount, fee);
+    }
+
+    function _carryFeeDistribution(uint256 _carryFee) private {
+        _transfer(s_currency, s_treasuryWallet, (_carryFee * 68) / 100);
+        _transfer(s_currency, s_genesisNftRevenue, (_carryFee * 12) / 100);
+        _transfer(s_currency, s_lpPoolAddress, (_carryFee * 99) / 1000);
+        _transfer(s_currency, s_burnAddress, (_carryFee * 99) / 1000);
+        _transfer(s_currency, s_communityFund, (_carryFee * 2) / 1000);
+    }
+
+    /**
+     * @dev Returns carry fee in basis points for account in timestamp
+     */
+    function _getCarryFeeSize(
+        address _account,
+        uint256 _timestamp,
+        uint256 _blockNumber
+    ) private view returns (uint256) {
+        return
+            MathUpgradeable.max(
+                LibFund.DEFAULT_CARRY_FEE -
+                    s_stakingWlth.getDiscountFromPreviousInvestmentInTimestamp(
+                        _account,
+                        address(this),
+                        _timestamp,
+                        _blockNumber
+                    ),
+                1000
+            );
     }
 
     function _calculateUserIncomeInBlock(
-        uint256 income,
-        address account,
-        Block memory blockData
+        uint256 _income,
+        address _account,
+        Block memory _blockData
     ) private view returns (uint256) {
-        (uint256 userValue, uint256 totalValue) = _getUserParticipationInFund(account, blockData.number);
+        (uint256 userValue, uint256 totalValue) = _getUserParticipationInFund(_account, _blockData.number);
         if (totalValue > 0) {
-            return (income * userValue) / totalValue;
+            return (_income * userValue) / totalValue;
         } else {
             return 0;
         }
     }
 
     function _getUserParticipationInFund(
-        address account,
-        uint256 blockNumber
+        address _account,
+        uint256 _blockNumber
     ) private view returns (uint256 userValue, uint256 totalValue) {
-        if (blockNumber > block.number) revert InvestmentFund__InvalidBlockNumber();
+        if (_blockNumber > block.number) revert InvestmentFund__InvalidBlockNumber();
 
-        if (blockNumber < block.number) {
-            return IInvestmentNFT(investmentNft).getPastParticipation(account, blockNumber);
+        if (_blockNumber < block.number) {
+            return s_investmentNft.getPastParticipation(_account, _blockNumber);
         } else {
-            return IInvestmentNFT(investmentNft).getParticipation(account);
+            return s_investmentNft.getParticipation(_account);
         }
     }
 
-    /**
-     * @dev Returns carry fee in basis points for account in timestamp
-     */
-    function _getCarryFeeSize(address account, uint256 timestamp, uint256 blockNumber) private view returns (uint256) {
-        return
-            MathUpgradeable.max(
-                LibFund.DEFAULT_CARRY_FEE -
-                    stakingWlth.getDiscountFromPreviousInvestmentInTimestamp(
-                        account,
-                        address(this),
-                        timestamp,
-                        blockNumber
-                    ),
-                1000
-            );
-    }
-
-    // TODO: ZkSync transactions batching handling?
-    function _carryFeeDistribution(uint256 carryFee) internal {
-        _transfer(currency, treasuryWallet, (carryFee * 68) / 100);
-        _transfer(currency, genesisNftRevenue, (carryFee * 12) / 100);
-        _transfer(currency, lpPoolAddress, (carryFee * 99) / 1000);
-        _transfer(currency, burnAddress, (carryFee * 99) / 1000);
-        _transfer(currency, communityFund, (carryFee * 2) / 1000);
-    }
-
-    uint256[39] private __gap;
+    uint256[48] private __gap;
 }

@@ -273,6 +273,7 @@ describe('Project unit tests', () => {
 
       const defaultManagementFee = 1000;
       const defaultInvestmentCap = toUsdc('1000000');
+      const maxPercentageWalletInvestmentLimit = 2000;
       const [treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund, unlocker, deployer] =
         await ethers.getSigners();
       const feeDistributionAddresses = {
@@ -300,7 +301,8 @@ describe('Project unit tests', () => {
           staking.address,
           feeDistributionAddresses,
           defaultManagementFee,
-          defaultInvestmentCap
+          defaultInvestmentCap,
+          maxPercentageWalletInvestmentLimit
         ],
         deployer
       );
@@ -324,6 +326,8 @@ describe('Project unit tests', () => {
 
       const defaultManagementFee = 1000;
       const defaultInvestmentCap = toUsdc('1000000');
+      const maxPercentageWalletInvestmentLimit = 2000;
+
       const [treasuryWallet, genesisNftRevenue, lpPool, burnAddr, communityFund, unlocker, deployer] =
         await ethers.getSigners();
       const feeDistributionAddresses = {
@@ -351,7 +355,8 @@ describe('Project unit tests', () => {
           staking.address,
           feeDistributionAddresses,
           defaultManagementFee,
-          defaultInvestmentCap
+          defaultInvestmentCap,
+          maxPercentageWalletInvestmentLimit
         ],
         deployer
       );

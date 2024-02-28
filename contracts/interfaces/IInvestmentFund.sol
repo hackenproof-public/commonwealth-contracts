@@ -110,10 +110,10 @@ interface IInvestmentFund {
      *
      * Emits a {Invested} event.
      *
-     * @param amount Amount of tokens to be invested
-     * @param tokenUri URI of metadata for Investment NFT minted within investment
+     * @param _amount Amount of tokens to be invested
+     * @param _tokenUri URI of metadata for Investment NFT minted within investment
      */
-    function invest(uint240 amount, string calldata tokenUri) external;
+    function invest(uint240 _amount, string calldata _tokenUri) external;
 
     /**
      * @notice Unlocks payouts to given index.
@@ -123,9 +123,9 @@ interface IInvestmentFund {
      *
      * Emits a {PayoutsUnlocked} event.
      *
-     * @param index Index of last payout to unlock
+     * @param _index Index of last payout to unlock
      */
-    function unlockPayoutsTo(uint256 index) external;
+    function unlockPayoutsTo(uint256 _index) external;
 
     /**
      * @notice Withdraws all avaiable profits in USD Coin tokens using investment NFT.
@@ -134,6 +134,51 @@ interface IInvestmentFund {
      *
      */
     function withdraw() external;
+
+    /**
+     * @notice Adds project to investment fund. Throws if project already exists in fund.
+     *
+     * Requirements:
+     * - Project must not exist in fund
+     *
+     * Emits ProjectAdded event
+     *
+     * @param _project Address of project to be added
+     */
+    function addProject(address _project) external;
+
+    /**
+     * @notice Deploys funds to project.
+     *
+     * Requirements:
+     * - project must be added to investment fund
+     * - amount must be higher than zero and lower than available funds defined by project contract
+     *
+     * @param _project project contract address which will receive funds
+     * @param _amount Amount of funds to deploy to project
+     */
+    function deployFundsToProject(address _project, uint256 _amount) external;
+
+    /**
+     * @notice Rmoves a projects from fund
+     *
+     * Requirements:
+     * - Project must exist in fund
+     *
+     * Emits ProjectRemoved event
+     *
+     * @param _project Address of project to be added
+     */
+    function removeProject(address _project) external;
+
+    /**
+     * @notice Provides 'amount' number of USD Coin tokens to be distributed between investors.
+     *
+     * Emits a {ProfitProvided} event.
+     *
+     * @param _amount Amount of tokens provided within payout
+     */
+    function provideProfit(uint256 _amount) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
@@ -150,18 +195,6 @@ interface IInvestmentFund {
     ) external view returns (uint256 amount, uint256 carryFee, uint256 lastPayoutIndex);
 
     /**
-     * @notice Adds project to investment fund. Throws if project already exists in fund.
-     *
-     * Requirements:
-     * - Project must not exist in fund
-     *
-     * Emits ProjectAdded event
-     *
-     * @param project Address of project to be added
-     */
-    function addProject(address project) external;
-
-    /**
      * @notice Returns list of projects within a fund
      */
     function listProjects() external view returns (address[] memory);
@@ -170,39 +203,6 @@ interface IInvestmentFund {
      * @notice Returns number of projects within fund
      */
     function getProjectsCount() external view returns (uint256);
-
-    /**
-     * @notice Deploys funds to project.
-     *
-     * Requirements:
-     * - project must be added to investment fund
-     * - amount must be higher than zero and lower than available funds defined by project contract
-     *
-     * @param project project contract address which will receive funds
-     * @param amount Amount of funds to deploy to project
-     */
-    function deployFundsToProject(address project, uint256 amount) external;
-
-    /**
-     * @notice Rmoves a projects from fund
-     *
-     * Requirements:
-     * - Project must exist in fund
-     *
-     * Emits ProjectRemoved event
-     *
-     * @param project Address of project to be added
-     */
-    function removeProject(address project) external;
-
-    /**
-     * @notice Provides 'amount' number of USD Coin tokens to be distributed between investors.
-     *
-     * Emits a {ProfitProvided} event.
-     *
-     * @param amount Amount of tokens provided within payout
-     */
-    function provideProfit(uint256 amount) external;
 
     /**
      * @notice Returns if fund is already in profit (breakeven is reached).
@@ -218,4 +218,94 @@ interface IInvestmentFund {
      * @notice Returns investment NFT contract
      */
     function investmentNft() external view returns (address);
+
+    /**
+     * @notice Returns name of investment fund
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @notice Returns address of currency for investments
+     */
+    function currency() external view returns (address);
+
+    /**
+     * @notice Returns address of payout unlocker
+     */
+    function unlocker() external view returns (address);
+
+    /**
+     * @notice Returns address of contract for staking WLTH
+     */
+    function stakingWlth() external view returns (address);
+
+    /**
+     * @notice Returns address of fee distribution wallets
+     */
+    function treasuryWallet() external view returns (address);
+
+    /**
+     * @notice Returns address of fee distribution wallets
+     */
+    function genesisNftRevenue() external view returns (address);
+
+    /**
+     * @notice Returns address of LP pool
+     */
+    function lpPoolAddress() external view returns (address);
+
+    /**
+     * @notice Returns address of burn address
+     */
+    function burnAddress() external view returns (address);
+
+    /**
+     * @notice Returns management fee
+     */
+    function managementFee() external view returns (uint16);
+
+    /**
+     * @notice Returns address of community fund
+     */
+    function communityFund() external view returns (address);
+
+    /**
+     * @notice Returns cap value
+     */
+    function cap() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function totalIncome() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function nextPayoutToUnlock() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function userTotalWithdrawal() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function userNextPayout() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function maxPercentageWalletInvestmentLimit() external view returns (uint256);
+
+    /**
+     * @notice Returns total investment
+     */
+    function payouts() external view returns (Payout[] memory);
+
+    /**
+     * @notice Returns total investment
+     */
+    function payout(uint256 _index) external view returns (Payout memory);
 }

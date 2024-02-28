@@ -166,43 +166,14 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWhitelistedVesting
      */
     function release(uint256 _amount, address _beneficiary) external override afterVestingStart {
-        if (IERC20(i_wlth).balanceOf(address(this)) < _amount) revert WhitelistedVesting__NotEnoughTokensOnContract();
-        WhitelistedWallet memory wallet = s_whitelistedWallets[_beneficiary];
-        if (wallet.allocation == 0) revert WhitelistedVesting__NotEnoughTokensAllocated();
-        uint256 currentReleaseableAmount = releaseableAmountPerWallet(_beneficiary);
-        if (_amount > currentReleaseableAmount)
-            revert WhitelistedVesting__NotEnoughTokensVested(_amount, currentReleaseableAmount);
-
-        s_released += _amount;
-        wallet.allocation += _amount;
-        s_whitelistedWallets[_beneficiary] = wallet;
-
-        emit Released(_beneficiary, i_wlth, _amount);
-
-        IERC20(i_wlth).safeTransfer(_beneficiary, _amount);
+        release(_amount, _beneficiary, false);
     }
 
     /**
      * @inheritdoc IWhitelistedVesting
      */
     function releaseWithPenalty(uint256 _amount, address _beneficiary) external override gamified afterVestingStart {
-        if (IERC20(i_wlth).balanceOf(address(this)) < _amount) revert WhitelistedVesting__NotEnoughTokensOnContract();
-        WhitelistedWallet memory wallet = s_whitelistedWallets[_beneficiary];
-        if (wallet.allocation == 0) revert WhitelistedVesting__NotEnoughTokensAllocated();
-
-        uint256 penaltyAmount = calculatePenalty(_amount, _beneficiary);
-        s_released += _amount;
-        wallet.allocation += _amount;
-        s_whitelistedWallets[_beneficiary] = wallet;
-
-        emit Released(_beneficiary, i_wlth, _amount);
-
-        IERC20(i_wlth).safeTransfer(_beneficiary, _amount - penaltyAmount);
-
-        if (penaltyAmount > 0) {
-            IWlth(i_wlth).burn((penaltyAmount * 99 * 99) / BASIS_POINT_DIVISOR);
-            IERC20(i_wlth).safeTransfer(i_communityFund, (penaltyAmount * 99) / BASIS_POINT_DIVISOR);
-        }
+        release(_amount, _beneficiary, true);
     }
 
     /**
@@ -467,5 +438,30 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      */
     function whitelistedAddressesAmount() external view override returns (uint256) {
         return s_whitelistedAddressesAmount;
+    }
+
+    function release(uint256 _amount, address _beneficiary, bool _penalty) private {
+        if (IERC20(i_wlth).balanceOf(address(this)) < _amount) revert WhitelistedVesting__NotEnoughTokensOnContract();
+        WhitelistedWallet memory wallet = s_whitelistedWallets[_beneficiary];
+        if (wallet.allocation == 0) revert WhitelistedVesting__NotEnoughTokensAllocated();
+        if (!_penalty) {
+            uint256 currentReleaseableAmount = releaseableAmountPerWallet(_beneficiary);
+            if (_amount > currentReleaseableAmount)
+                revert WhitelistedVesting__NotEnoughTokensVested(_amount, currentReleaseableAmount);
+        }
+        s_released += _amount;
+        wallet.allocation += _amount;
+        s_whitelistedWallets[_beneficiary] = wallet;
+
+        emit Released(_beneficiary, i_wlth, _amount);
+
+        uint256 penaltyAmount = _penalty ? calculatePenalty(_amount, _beneficiary) : 0;
+
+        IERC20(i_wlth).safeTransfer(_beneficiary, _amount - penaltyAmount);
+
+        if (penaltyAmount > 0) {
+            IWlth(i_wlth).burn((penaltyAmount * 99 * 99) / BASIS_POINT_DIVISOR);
+            IERC20(i_wlth).safeTransfer(i_communityFund, (penaltyAmount * 99) / BASIS_POINT_DIVISOR);
+        }
     }
 }

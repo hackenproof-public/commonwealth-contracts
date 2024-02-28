@@ -43,7 +43,8 @@ contract FreeFund is InvestmentFund {
             _stakingWlth,
             _feeDistributionAddresses,
             0,
-            _cap
+            _cap,
+            0
         );
     }
 
@@ -66,9 +67,11 @@ contract FreeFund is InvestmentFund {
         string calldata _tokenUri
     ) external onlyOwner onlyAllowedStates {
         if (_amount <= MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
-        uint256 actualCap = cap;
+        uint256 actualCap = s_cap;
 
-        uint256 newTotalInvestment = IInvestmentNFT(investmentNft).getTotalInvestmentValue() + _amount;
+        IInvestmentNFT investmentNft = s_investmentNft;
+        uint256 newTotalInvestment = investmentNft.getTotalInvestmentValue() + _amount;
+
         if (newTotalInvestment > actualCap) revert InvestmentFund__TotalInvestmentAboveCap(newTotalInvestment);
 
         if (newTotalInvestment == actualCap) {
@@ -77,6 +80,7 @@ contract FreeFund is InvestmentFund {
         }
 
         emit InvestmentCreated(_amount);
-        IInvestmentNFT(investmentNft).mint(_wallet, _amount, _tokenUri);
+
+        investmentNft.mint(_wallet, _amount, _tokenUri);
     }
 }
