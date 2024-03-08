@@ -1,0 +1,23 @@
+[
+  {
+    "user_uuid": 1,
+    "name": "test",
+    "currentXp": 1000,
+    "position": 1,
+    "wallet": "0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63"
+  },
+  {
+    "user_uuid": 2,
+    "name": "test",
+    "currentXp": 1000,
+    "position": 2,
+    "wallet": "0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63"
+  },
+  {
+    "user_uuid": 3,
+    "name": "test",
+    "currentXp": 1000,
+    "position": 3,
+    "wallet": "0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63"
+  }
+]

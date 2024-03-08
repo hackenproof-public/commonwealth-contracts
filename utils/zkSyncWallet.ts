@@ -1,3 +1,4 @@
+import { NonceManager } from '@ethersproject/experimental';
 import { ethers, network } from 'hardhat';
 import { Provider, Wallet } from 'zksync-web3';
 import { l2Tol1 } from '../helper-hardhat-config';
@@ -10,5 +11,5 @@ export function getZkSyncSingerWallet() {
   const zkSyncProvider = new Provider(rpc);
   const ethereumProvider = ethers.getDefaultProvider(l2Tol1[network.config.chainId!].name);
 
-  return new Wallet(deployerPrivateKey, zkSyncProvider, ethereumProvider);
+  return new NonceManager(new Wallet(deployerPrivateKey, zkSyncProvider, ethereumProvider));
 }
