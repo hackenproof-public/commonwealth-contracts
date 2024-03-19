@@ -14,8 +14,8 @@ const deployGenesisNFT2Mirror: DeployFunction = async (hre: HardhatRuntimeEnviro
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'governor', value: utils.applyL1ToL2Alias(lockContract) },
-    { name: 'name', value: deploymentCofing.genesisNftName },
-    { name: 'symbol', value: deploymentCofing.genesisNFTSymbol }
+    { name: 'name', value: deploymentCofing.genesisNftS2Name },
+    { name: 'symbol', value: deploymentCofing.genesisNFTS2Symbol }
   ];
 
   await deploy(hre, 'GenesisNFTMirror', parameters, true, true, 'GenesisNFTV2Mirror');

@@ -7,8 +7,8 @@ const deployGenesisNftV1: DeployFunction = async (hre: HardhatRuntimeEnvironment
   const deploymentCofing = getDeploymentConfig();
 
   const parameters = [
-    { name: 'name', value: deploymentCofing.genesisNftName },
-    { name: 'symbol', value: deploymentCofing.genesisNFTSymbol },
+    { name: 'name', value: deploymentCofing.genesisNftS1Name },
+    { name: 'symbol', value: deploymentCofing.genesisNFTS1Symbol },
     { name: 'series', value: deploymentCofing.genesisNftV1Series },
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'royaltyAccount', value: deploymentCofing.genesisNftRoyaltyAccount },
@@ -16,7 +16,7 @@ const deployGenesisNftV1: DeployFunction = async (hre: HardhatRuntimeEnvironment
     { name: 'tokenUri', value: deploymentCofing.genesisNftV1TokenUri }
   ];
 
-  await deploy(hre, 'GenesisNFTV1', parameters, true);
+  await deploy(hre, 'GenesisNFT', parameters, true, true, 'GenesisNFTV1');
 };
 
 export default deployGenesisNftV1;

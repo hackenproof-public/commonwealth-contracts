@@ -9,22 +9,23 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
   const deploymentCofing = getDeploymentConfig();
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
-  const genNFTseries1Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV1mirror');
-  const genNFTseries2Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV2mirror');
+  const genNFTseries1Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV1Mirror');
+  const genNFTseries2Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV2Mirror');
 
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'genNFTseries1', value: genNFTseries1Mirror },
     { name: 'genNFTseries2', value: genNFTseries2Mirror },
     { name: 'wlth', value: wlth },
+    { name: 'communityFund', value: deploymentCofing.communityFundWallet },
     { name: 'duration', value: deploymentCofing.nftVestingDuration },
     { name: 'cadence', value: deploymentCofing.nftVestingCadence },
-    { name: 'vestingStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp },
     { name: 'allocation', value: deploymentCofing.genesisNftVestingAllocation },
     {
-      name: 'emergencyWithdrawalUnlockTimestamp',
-      value: deploymentCofing.genesisNftVestingEmergencyWithdrawalUnlockTimestamp
-    }
+      name: 'leftoversUnlockDelay',
+      value: deploymentCofing.genesisNftVestingLeftoversUnlockDelay
+    },
+    { name: 'vestingStartTimestamp', value: deploymentCofing.genesisNftVestingStartTimestamp }
   ];
 
   await deploy(hre, 'GenesisNFTVesting', parameters);

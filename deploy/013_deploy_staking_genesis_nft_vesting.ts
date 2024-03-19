@@ -13,11 +13,11 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'wlth', value: wlth },
-    { name: 'allocation', value: deploymentCofing.genesisNftStakingAllocation },
-    { name: 'distributionStartTimestamp', value: deploymentCofing.nftVestingStartTimestamp },
+    { name: 'allocation', value: deploymentCofing.stakingRewardsAllocation },
+    { name: 'distributionStartTimestamp', value: deploymentCofing.stakingRewardsDistributionStartTimestamp },
     {
-      name: 'emergencyWithdrawalUnlockTimestamp',
-      value: deploymentCofing.stakingGenesisNftVestingEmergencyWithdrawalUnlockTimestamp
+      name: 'leftoversUnlockDelay',
+      value: deploymentCofing.stakingRewardsLeftoversUnlockDelay
     }
   ];
 
