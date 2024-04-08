@@ -9,13 +9,13 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
   const deploymentCofing = getDeploymentConfig();
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
-  const genNFTseries1Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV1Mirror');
-  const genNFTseries2Mirror = await getContractAddress(network.config.chainId!, 'GenesisNFTV2Mirror');
+  const genNFTseries1 = await getContractAddress(network.config.chainId!, 'GenesisNFTV1');
+  const genNFTseries2 = await getContractAddress(network.config.chainId!, 'GenesisNFTV2');
 
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
-    { name: 'genNFTseries1', value: genNFTseries1Mirror },
-    { name: 'genNFTseries2', value: genNFTseries2Mirror },
+    { name: 'genNFTseries1', value: genNFTseries1 },
+    { name: 'genNFTseries2', value: genNFTseries2 },
     { name: 'wlth', value: wlth },
     { name: 'communityFund', value: deploymentCofing.communityFundWallet },
     { name: 'duration', value: deploymentCofing.nftVestingDuration },

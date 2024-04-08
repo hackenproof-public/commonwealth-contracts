@@ -255,6 +255,56 @@ const sepoliaZkTestnetStageConfig: networkConfigItem = {
   burnAddress: '0xd969736e88De00F2e8c964d23659674e2c58F6b4'
 };
 
+const baseSepoliaConfig: networkConfigItem = {
+  genesisNftS1Name: 'Common Wealth Genesis NFT Series 1',
+  genesisNFTS1Symbol: 'CWOGS1',
+  genesisNftS2Name: 'Common Wealth Genesis NFT Series 2 ',
+  genesisNFTS2Symbol: 'CWOGS2',
+  genesisNftV1Series: 1,
+  genesisNftV2Series: 2,
+  ownerAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  genesisNftRoyalty: 650,
+  genesisNftRoyaltyAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
+  genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
+  wlthName: 'Common Wealth Token',
+  wlthSymbol: 'WLTH',
+  uniswapQuaterV2Address: '0xb8687F610b5e7c3357Ff0eB5318E6f083532Af17',
+  uniswapSwapRouterV2Address: '0x141a36E0FdAc580bD934D2144AE354149464bC7e',
+  zeroPointThreeFeeTier: '3000',
+  stakingTransactionFee: 100,
+  stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
+  communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
+  maxDiscount: 3000,
+  periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
+  coefficients: [5000, 3750, 3125, 2500],
+  stakingNFTRewardPerios: 86400,
+  investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
+  investmentFundManagementFee: 1000,
+  nftVestingCadence: FIFTY_DAYS / 100,
+  nftVestingDuration: FIFTY_DAYS,
+  nftVestingStartTimestamp: 1711324800,
+  stakingRewardsDistributionStartTimestamp: 1712568616,
+  stakingRewardsLeftoversUnlockDelay: 604800,
+  genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
+  lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
+  burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
+  stakingRewardsAllocation: parseEther('24000000'),
+  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  zkSyncGasPerPubdataLimit: 800,
+  genesisNftVestingAllocation: parseEther('24000000'),
+  genesisNftVestingLeftoversUnlockDelay: 604800,
+  genesisNftVestingStartTimestamp: 1712591984
+};
+
+const baseSepoliaDevConfig: networkConfigItem = {
+  ...baseSepoliaConfig
+};
+
+const baseSepoliaStageConfig: networkConfigItem = {
+  ...baseSepoliaConfig
+};
+
 export const networkConfig: networkConfigInfo = {
   31337: {
     ...localConfig
@@ -285,5 +335,11 @@ export const networkConfig: networkConfigInfo = {
     ...zkSyncTestnet,
     dev: { ...sepoliaZkTestnetDevConfig },
     stage: { ...sepoliaZkTestnetStageConfig }
+  },
+
+  84532: {
+    ...baseSepoliaConfig,
+    dev: { ...baseSepoliaDevConfig },
+    stage: { ...baseSepoliaStageConfig }
   }
 };

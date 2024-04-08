@@ -31,7 +31,25 @@ const config: HardhatUserConfig = {
     except: ['^contracts/test']
   },
   etherscan: {
-    apiKey: env.ETHERSCAN_API_KEY
+    apiKey: env.ETHERSCAN_API_KEY,
+    customChains: [
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api-sepolia.basescan.org/api",
+          browserURL: "https://sepolia.basescan.org"
+        }
+      },
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.basescan.org/api",
+          browserURL: "https://basescan.org/"
+        }
+      }
+    ]
   },
   gasReporter: {
     coinmarketcap: env.COINMARKETCAP_API_KEY,
@@ -83,6 +101,16 @@ const config: HardhatUserConfig = {
       gas: 21000000,
       accounts: !!env.ZKTESTNET_WALLET_PRIVATE_KEY ? [env.ZKTESTNET_WALLET_PRIVATE_KEY] : [],
       verifyURL: env.ZKTESTNET_VERIFY_URL || ''
+    },
+    baseSepolia: {
+      url: "https://rpc.notadegen.com/base/sepolia",
+      chainId: 84532,
+      accounts: !!env.BASESEPOLIA_WALLET_PRIVATE_KEY ? [env.BASESEPOLIA_WALLET_PRIVATE_KEY] : [],
+    },
+    base: {
+      url: 'https://mainnet.base.org',
+      chainId: 8453,
+      accounts: !!env.BASE_WALLET_PRIVATE_KEY ? [env.BASE_WALLET_PRIVATE_KEY] : [],
     },
 
     localhost: {
