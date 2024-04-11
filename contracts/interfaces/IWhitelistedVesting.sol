@@ -11,10 +11,10 @@ interface IWhitelistedVesting {
     /**
      * @notice Emitted when token released from vesting contract
      * @param beneficiary Wallet that released tokens
-     * @param wlth Token address
      * @param amount Amount released
+     * @param penalty penalty included in this transaction
      */
-    event Released(address indexed beneficiary, address indexed wlth, uint256 indexed amount);
+    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed penalty);
 
     /**
      * @notice Emitted when owner sets vesting start timestamp

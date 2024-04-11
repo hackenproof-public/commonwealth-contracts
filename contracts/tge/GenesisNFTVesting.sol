@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IGeneisNFTMirror} from "../interfaces/IGenesisNFTMirror.sol";
+import {GenesisNFT} from "../GenesisNFT.sol";
 import {IGenesisNFTVesting} from "../interfaces/IGenesisNFTVesting.sol";
 import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 import {IWlth} from "../interfaces/IWlth.sol";
@@ -15,8 +15,8 @@ import {MAX_GAMIFICATION_PENALTY, BASIS_POINT_DIVISOR} from "../libraries/Consta
 error GenesisNFTVesting__OwnerZeroAddress();
 error GenesisNFTVesting__WlthZeroAddress();
 error GenesisNFTVesting__CommunityFundZeroAddress();
-error GenesisNFTVesting__GenesisNftSeries1MirrorZeroAddress();
-error GenesisNFTVesting__GenesisNftSeries2MirrorZeroAddress();
+error GenesisNFTVesting__GenesisNftSeries1ZeroAddress();
+error GenesisNFTVesting__GenesisNftSeries2ZeroAddress();
 error GenesisNFTVesting__NoNFTs(address wallet);
 error GenesisNFTVesting__VestingNotStarted();
 error GenesisNFTVesting__NotOwnerOfGenesisNFT(uint256 series, uint256 tokenId, address account);
@@ -31,14 +31,14 @@ error GenesisNFTVesting__TokenLost(uint256 series, uint256 tokenId);
 error GenesisNFTVesting__NoSurplus(uint256 balance, uint256 released, uint256 allocation);
 error GenesisNFTVesting__GamificationNotEnabled();
 error GenesisNFTVesting__VestingStartTimestampAlreadyDefined();
+error GenesisNFTVesting__PastVestingStartTimestamp();
 
+/**
+ * @title GenesisNFTVesting
+ * @notice Contract for vesting WLTH tokens for Genesis NFT holders
+ */
 contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
-
-    /**
-     * @notice Community fund address.
-     */
-    address private immutable i_communityFund;
 
     /**
      * @notice Maximum reward amount for Series 1 Genesis NFTs.
@@ -56,14 +56,19 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     uint256 public constant BONUS = 4400 * 1e18;
 
     /**
-     * @notice Instance of the Genesis NFT Mirror contract for Series 1.
+     * @notice Community fund address.
      */
-    IGeneisNFTMirror private immutable i_genesisNftSeries1Mirror;
+    address private immutable i_communityFund;
 
     /**
-     * @notice Instance of the Genesis NFT Mirror contract for Series 2.
+     * @notice Instance of the Genesis NFT contract for Series 1.
      */
-    IGeneisNFTMirror private immutable i_genesisNftSeries2Mirror;
+    GenesisNFT private immutable i_genesisNftSeries1;
+
+    /**
+     * @notice Instance of the Genesis NFT contract for Series 2.
+     */
+    GenesisNFT private immutable i_genesisNftSeries2;
 
     /**
      * @notice Instance of the WLTH token contract.
@@ -86,7 +91,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     uint256 private immutable i_allocation;
 
     /**
-     * @notice Period after duration when emergency withdrawal is unlocked.
+     * @notice Delay when leftover tokens can be withdrawn after the vesting is ended.
      */
     uint256 private immutable i_leftoversUnlockDelay;
 
@@ -137,8 +142,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @notice Constructor for GenesisNFTVesting contract.
      * @param _owner The address of the contract owner.
-     * @param _genesisNftSeries1Mirror The address of the Genesis NFT Mirror contract for Series 1.
-     * @param _genesisNftSeries2Mirror The address of the Genesis NFT Mirror contract for Series 2.
+     * @param _genesisNftSeries1 The address of the Genesis NFT Mirror contract for Series 1.
+     * @param _genesisNftSeries2 The address of the Genesis NFT Mirror contract for Series 2.
      * @param _wlth The address of the WLTH token contract.
      * @param _duration The duration of the vesting period.
      * @param _cadence The cadence of vesting (time interval between releases).
@@ -148,8 +153,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      */
     constructor(
         address _owner,
-        address _genesisNftSeries1Mirror,
-        address _genesisNftSeries2Mirror,
+        address _genesisNftSeries1,
+        address _genesisNftSeries2,
         address _wlth,
         address _communityFund,
         uint256 _duration,
@@ -161,11 +166,13 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         if (_owner == address(0)) revert GenesisNFTVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert GenesisNFTVesting__WlthZeroAddress();
         if (_communityFund == address(0)) revert GenesisNFTVesting__CommunityFundZeroAddress();
-        if (_genesisNftSeries1Mirror == address(0)) revert GenesisNFTVesting__GenesisNftSeries1MirrorZeroAddress();
-        if (_genesisNftSeries2Mirror == address(0)) revert GenesisNFTVesting__GenesisNftSeries2MirrorZeroAddress();
+        if (_genesisNftSeries1 == address(0)) revert GenesisNFTVesting__GenesisNftSeries1ZeroAddress();
+        if (_genesisNftSeries2 == address(0)) revert GenesisNFTVesting__GenesisNftSeries2ZeroAddress();
+        if (_vestingStartTimestamp > 0 && _vestingStartTimestamp < block.timestamp)
+            revert GenesisNFTVesting__PastVestingStartTimestamp();
 
-        i_genesisNftSeries1Mirror = IGeneisNFTMirror(_genesisNftSeries1Mirror);
-        i_genesisNftSeries2Mirror = IGeneisNFTMirror(_genesisNftSeries2Mirror);
+        i_genesisNftSeries1 = GenesisNFT(_genesisNftSeries1);
+        i_genesisNftSeries2 = GenesisNFT(_genesisNftSeries2);
         i_wlth = IERC20(_wlth);
         i_communityFund = _communityFund;
         i_duration = _duration;
@@ -212,13 +219,15 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function setupBonus(uint256[] calldata _series1tokenIds) external override onlyOwner {
+    function setupBonus(uint256[] calldata _series1tokenIds, bool _flag) external override onlyOwner {
         for (uint i; i < _series1tokenIds.length; ) {
-            s_bonusValue[_series1tokenIds[i]] = true;
+            s_bonusValue[_series1tokenIds[i]] = _flag;
             unchecked {
                 i++;
             }
         }
+
+        emit BonusSetted(_flag, _series1tokenIds);
     }
 
     /**
@@ -291,9 +300,12 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function setVestingStartTimestamp(uint256 _timestamp) external override {
+    function setVestingStartTimestamp(uint256 _timestamp) external override onlyOwner {
         if (s_vestingStartTimestamp != 0) revert GenesisNFTVesting__VestingStartTimestampAlreadyDefined();
+        if (_timestamp < block.timestamp) revert GenesisNFTVesting__PastVestingStartTimestamp();
         s_vestingStartTimestamp = _timestamp;
+
+        emit VestingStartTimestampSet(_timestamp);
     }
 
     /**
@@ -301,12 +313,10 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      */
     function unvestedAmountPerNFT(bool _series1, uint256 _tokenId) external view override returns (uint256) {
         if (_series1) {
-            if (!i_genesisNftSeries1Mirror.isTokenExisted(_tokenId))
-                revert GenesisNFTVesting__NFTNotExisted(1, _tokenId);
+            if (!i_genesisNftSeries1.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(1, _tokenId);
             return (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - vestedAmountPerNFT(_series1, _tokenId);
         } else {
-            if (!i_genesisNftSeries2Mirror.isTokenExisted(_tokenId))
-                revert GenesisNFTVesting__NFTNotExisted(2, _tokenId);
+            if (!i_genesisNftSeries2.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(2, _tokenId);
             return SERIES_2_MAX_REWARD - vestedAmountPerNFT(_series1, _tokenId);
         }
     }
@@ -334,14 +344,14 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
      * @inheritdoc IGenesisNFTVesting
      */
     function genesisNftSeries1Mirror() external view override returns (address) {
-        return address(i_genesisNftSeries1Mirror);
+        return address(i_genesisNftSeries1);
     }
 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
     function genesisNftSeries2Mirror() external view override returns (address) {
-        return address(i_genesisNftSeries2Mirror);
+        return address(i_genesisNftSeries2);
     }
 
     /**
@@ -429,8 +439,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         if (
             !(
                 _series1
-                    ? i_genesisNftSeries1Mirror.ownerOf(_tokenId) == _beneficiary
-                    : i_genesisNftSeries2Mirror.ownerOf(_tokenId) == _beneficiary
+                    ? i_genesisNftSeries1.ownerOf(_tokenId) == _beneficiary
+                    : i_genesisNftSeries2.ownerOf(_tokenId) == _beneficiary
             ) && msg.sender != owner()
         ) {
             revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _tokenId, _beneficiary);
@@ -540,8 +550,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         if (_ids.length > 0) {
             for (uint i; i < _ids.length; ) {
                 bool isOwner = _series1
-                    ? i_genesisNftSeries1Mirror.ownerOf(_ids[i]) == _beneficiary
-                    : i_genesisNftSeries2Mirror.ownerOf(_ids[i]) == _beneficiary;
+                    ? i_genesisNftSeries1.ownerOf(_ids[i]) == _beneficiary
+                    : i_genesisNftSeries2.ownerOf(_ids[i]) == _beneficiary;
 
                 if (!isOwner) {
                     revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _ids[i], _beneficiary);
@@ -557,15 +567,10 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     }
 
     function accessCheck(address _beneficiary) private view returns (bool) {
-        return
-            i_genesisNftSeries1Mirror.balanceOf(_beneficiary) > 0 ||
-            i_genesisNftSeries2Mirror.balanceOf(_beneficiary) > 0;
+        return i_genesisNftSeries1.balanceOf(_beneficiary) > 0 || i_genesisNftSeries2.balanceOf(_beneficiary) > 0;
     }
 
-    /**
-     * @notice Returns releaseable amount of vesting token. Defined by children vesting contracts
-     */
-    function actualCadence() private view afterVestingStart returns (uint256) {
+    function actualCadence() private view returns (uint256) {
         uint256 cadenceNumber = (block.timestamp - s_vestingStartTimestamp) / i_cadence;
         return cadenceNumber <= i_cadencesAmount ? cadenceNumber : i_cadencesAmount;
     }

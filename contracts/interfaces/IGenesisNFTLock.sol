@@ -13,6 +13,37 @@ interface IGenesisNFTLock {
     }
 
     /**
+     * @notice Event emitted when the zkSync bridge is notified about a locked or unlocked NFT.
+     */
+    event ZkSyncNotified(
+        OperationType operationType,
+        uint8 indexed sieries,
+        uint256[] tokenIds,
+        address indexed to,
+        bytes32 indexed txHash
+    );
+
+    /**
+     * @notice Event emitted when the gas per pubdata limit is set.
+     */
+    event ZkSyncGasPerPubdataLimitSet(uint256 indexed gasLimit);
+
+    /**
+     * @notice Event emitted when the zkSync bridge address is set.
+     */
+    event ZkSyncBridgeSet(address indexed zkSyncBridge);
+
+    /**
+     * @notice Event emitted when the zkSync mirror address for Series 1 NFTs is set.
+     */
+    event GenesisNftMirror1Set(address indexed genesisNftMirror1);
+
+    /**
+     * @notice Event emitted when the zkSync mirror address for Series 2 NFTs is set.
+     */
+    event GenesisNftMirror2Set(address indexed genesisNftMirror2);
+
+    /**
      * @notice Locks Series 1 tokens for a given account.
      * @param _ids Array of token IDs to lock.
      * @param _account Address of the account.

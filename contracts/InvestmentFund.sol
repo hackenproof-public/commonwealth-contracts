@@ -57,19 +57,6 @@ contract InvestmentFund is
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using SafeERC20 for IERC20;
 
-    struct PayoutPtr {
-        uint256 index;
-        uint256 withdrawn;
-    }
-
-    struct FeeDistributionAddresses {
-        address treasuryWallet;
-        address lpPool;
-        address burn;
-        address communityFund;
-        address genesisNftRevenue;
-    }
-
     /**
      * @notice Management fee value
      */
@@ -332,13 +319,15 @@ contract InvestmentFund is
      * @inheritdoc IInvestmentFund
      */
     function removeProject(address _project) external onlyAllowedStates onlyOwner {
-        if (!s_projects.contains(_project)) revert InvestmentFund__NotRegisteredProject(_msgSender());
+        if (!s_projects.contains(_project)) revert InvestmentFund__NotRegisteredProject(_project);
         s_projects.remove(_project);
         emit ProjectRemoved(_msgSender(), _project);
     }
 
     function stopCollectingFunds() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CAP_REACHED;
+
+        emit CollectingFundsStopped();
     }
 
     // TODO: business logic clarification with client
@@ -352,6 +341,8 @@ contract InvestmentFund is
         //     unchecked {i++;}
         // }
         currentState = LibFund.STATE_FUNDS_DEPLOYED;
+
+        emit FundsDeployed();
     }
 
     // temporary manual deployment of funds to specified project
@@ -421,6 +412,7 @@ contract InvestmentFund is
 
     function closeFund() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CLOSED;
+        emit FundClosed();
     }
 
     /**
@@ -470,7 +462,8 @@ contract InvestmentFund is
                 s_investmentNft.getTotalInvestmentValue(),
                 s_totalIncome,
                 s_payouts,
-                currentState
+                currentState,
+                s_maxPercentageWalletInvestmentLimit
             );
     }
 
@@ -582,15 +575,15 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function userTotalWithdrawal() external view override returns (uint256) {
-        return s_userTotalWithdrawal[_msgSender()];
+    function userTotalWithdrawal(address _wallet) external view override returns (uint256) {
+        return s_userTotalWithdrawal[_wallet];
     }
 
     /**
      * @inheritdoc IInvestmentFund
      */
-    function userNextPayout() external view override returns (uint256) {
-        return s_userNextPayout[_msgSender()];
+    function userNextPayout(address _wallet) external view override returns (uint256) {
+        return s_userNextPayout[_wallet];
     }
 
     /**
@@ -619,41 +612,41 @@ contract InvestmentFund is
      */
     function getAvailableFundsDetails(
         address _account
-    ) public view returns (uint256 amount, uint256 carryFee, uint256 nextUserPayoutIndex) {
-        nextUserPayoutIndex = s_userNextPayout[_account];
+    ) public view returns (uint256 _amount, uint256 _carryFee, uint256 _nextUserPayoutIndex) {
+        _nextUserPayoutIndex = s_userNextPayout[_account];
         uint256 nextPayoutIndex = s_nextPayoutToUnlock;
 
-        if (nextUserPayoutIndex >= nextPayoutIndex) {
-            return (0, 0, nextUserPayoutIndex);
+        if (_nextUserPayoutIndex >= nextPayoutIndex) {
+            return (0, 0, _nextUserPayoutIndex);
         }
 
-        for (uint256 i = nextUserPayoutIndex; i < nextPayoutIndex; ) {
-            Payout memory payout = s_payouts[i];
-            if (payout.inProfit) {
+        for (uint256 i = _nextUserPayoutIndex; i < nextPayoutIndex; ) {
+            Payout memory payoutData = s_payouts[i];
+            if (payoutData.inProfit) {
                 uint256 userIncomeBeforeCarryFee = _calculateUserIncomeInBlock(
-                    payout.value,
+                    payoutData.value,
                     _account,
-                    payout.blockData
+                    payoutData.blockData
                 );
 
-                uint256 carryFeeSize = _getCarryFeeSize(_account, block.timestamp, payout.blockData.number);
+                uint256 carryFeeSize = _getCarryFeeSize(_account, block.timestamp, payoutData.blockData.number);
 
-                amount +=
+                _amount +=
                     userIncomeBeforeCarryFee -
                     MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
 
                 if (carryFeeSize > LOWEST_CARRY_FEE) {
                     carryFeeSize -= LOWEST_CARRY_FEE;
-                    carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
+                    _carryFee += MathUpgradeable.mulDiv(userIncomeBeforeCarryFee, carryFeeSize, BASIS_POINT_DIVISOR);
                 }
             } else {
-                amount += _calculateUserIncomeInBlock(payout.value, _account, payout.blockData);
+                _amount += _calculateUserIncomeInBlock(payoutData.value, _account, payoutData.blockData);
             }
             unchecked {
                 i++;
             }
         }
-        return (amount, carryFee, nextPayoutIndex);
+        return (_amount, _carryFee, nextPayoutIndex);
     }
 
     function _initializeStates() private {
@@ -716,24 +709,11 @@ contract InvestmentFund is
         address _account,
         Block memory _blockData
     ) private view returns (uint256) {
-        (uint256 userValue, uint256 totalValue) = _getUserParticipationInFund(_account, _blockData.number);
+        (uint256 userValue, uint256 totalValue) = s_investmentNft.getPastParticipation(_account, _blockData.number);
         if (totalValue > 0) {
             return (_income * userValue) / totalValue;
         } else {
             return 0;
-        }
-    }
-
-    function _getUserParticipationInFund(
-        address _account,
-        uint256 _blockNumber
-    ) private view returns (uint256 userValue, uint256 totalValue) {
-        if (_blockNumber > block.number) revert InvestmentFund__InvalidBlockNumber();
-
-        if (_blockNumber < block.number) {
-            return s_investmentNft.getPastParticipation(_account, _blockNumber);
-        } else {
-            return s_investmentNft.getParticipation(_account);
         }
     }
 

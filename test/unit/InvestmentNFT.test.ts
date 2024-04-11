@@ -22,20 +22,27 @@ describe('Investment NFT unit tests', () => {
   let user: SignerWithAddress;
   let minter: SignerWithAddress;
   let restorer: SnapshotRestorer;
+  let royaltyWallet: SignerWithAddress;
   let investmentNft: InvestmentNFT;
 
-  const deployFixture = async () => {
-    const [deployer, owner, user, minter] = await ethers.getSigners();
+  const royalty = 650;
 
-    const investmentNft: InvestmentNFT = await deployProxy('InvestmentNFT', [name, symbol, owner.address], deployer);
+  const deployFixture = async () => {
+    const [deployer, owner, user, minter, royaltyWallet] = await ethers.getSigners();
+
+    const investmentNft: InvestmentNFT = await deployProxy(
+      'InvestmentNFT',
+      [name, symbol, owner.address, royaltyWallet.address, royalty],
+      deployer
+    );
     await investmentNft.connect(owner).addMinter(minter.address);
 
-    return { investmentNft, deployer, owner, user, minter };
+    return { investmentNft, deployer, owner, user, minter, royaltyWallet, royalty };
   };
 
   describe('Deployment', () => {
     it('Should deploy and return initial parameters', async () => {
-      const { investmentNft, deployer, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, deployer, user, minter, royaltyWallet } = await loadFixture(deployFixture);
 
       expect(await investmentNft.name()).to.equal(name);
       expect(await investmentNft.symbol()).to.equal(symbol);
@@ -45,15 +52,24 @@ describe('Investment NFT unit tests', () => {
       expect(await investmentNft.getTotalInvestmentValue()).to.equal(0);
       expect(await investmentNft.getInvestors()).to.deep.equal([]);
       expect(await investmentNft.supportsInterface(IInvestmentNFTId)).to.equal(true);
+      expect(await investmentNft.royaltyInfo(0, 1000)).to.deep.equal([royaltyWallet.address, 65]);
     });
 
     it('Should revert deployment if owner is zero address', async () => {
-      const { investmentNft } = await loadFixture(deployFixture);
+      const { investmentNft, royaltyWallet, royalty } = await loadFixture(deployFixture);
       const [deployer] = await ethers.getSigners();
 
       await expect(
-        deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero], deployer)
+        deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero, royaltyWallet.address, royalty], deployer)
       ).to.be.revertedWithCustomError(investmentNft, 'OwnablePausable__OwnerAccountZeroAddress');
+    });
+
+    it('Should revert deployment if invalid royalty parameters', async () => {
+      const { owner, royaltyWallet, deployer } = await loadFixture(deployFixture);
+
+      await expect(
+        deployProxy('InvestmentNFT', [name, symbol, owner.address, royaltyWallet.address, 10001], deployer)
+      ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
     });
   });
 

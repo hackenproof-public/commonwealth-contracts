@@ -1,6 +1,6 @@
+import { NonceManager } from '@ethersproject/experimental';
 import parse from 'csv-parser';
 import fs from 'fs';
-import { NonceManager } from "@ethersproject/experimental";
 import { ethers } from 'hardhat';
 import { Contract, Provider, utils, Wallet } from 'zksync-web3';
 import { toUsdc, toWlth } from '../test/utils';
@@ -15,13 +15,13 @@ async function main() {
   const csvFilePath = __dirname + '/data.csv';
   const delimiter = ';';
 
-    // stage sepolia
-    const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
-    const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
-    const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
-    const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
-    const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
-    const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
+  // stage sepolia
+  const usdcAddress = '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405';
+  const wlthAddress = '0x6a6CB56009d83128F2fAa8743f1002BCc449B11d';
+  const GEN1NFT_ADDRESS = '0x944a6e65D23D9c17f1c1B715E334cbA0fEf7C52A'; // s1 goerli
+  const S1_MIRROR_ADDRESS = '0x6fCCE629848EE01f583BA5ccF5cb901735c1e155';
+  const GEN2NFT_ADDRESS = '0x8A7394B21d3bd9174d611E9044Ac9ebD5151C5C3'; // s2 goerli
+  const S2_MIRROR_ADDRESS = '0x04BE07A6Fa58BB28f18466d547F0848156de58aE';
 
   // dev
   // const usdcAddress = '0xb7e02bE79954cE8d4A58EF564B531e63499f3Da9';
@@ -36,7 +36,9 @@ async function main() {
   );
 
   //const sepoliaWallet = new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider);
-  const sepoliaWallet = new NonceManager(new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider));
+  const sepoliaWallet = new NonceManager(
+    new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', 'sepolia')!, l1Provider)
+  );
 
   // Set a constant that accesses the Layer 1 contract.
   const nftV1 = new Contract(GEN1NFT_ADDRESS, NFT_ABI.abi, sepoliaWallet);

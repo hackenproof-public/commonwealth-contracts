@@ -65,8 +65,9 @@ describe('GenesisNFTMirror', () => {
         const { governor, owner, genesisNFTLock } = await loadFixture(deployGenesisNFTMirror);
         const newGovernor = ethers.Wallet.createRandom();
 
-        await genesisNFTLock.connect(owner).changeGovernor(newGovernor.address);
-
+        await expect(genesisNFTLock.connect(owner).changeGovernor(newGovernor.address))
+          .to.emit(genesisNFTLock, 'GovernorChanged')
+          .withArgs(newGovernor.address);
         expect(await genesisNFTLock.governor()).to.equal(newGovernor.address);
       });
     });

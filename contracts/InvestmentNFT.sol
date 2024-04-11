@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import {ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CheckpointsUpgradeable.sol";
 import {CountersUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
@@ -28,6 +29,7 @@ contract InvestmentNFT is
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
     ERC721PausableUpgradeable,
+    ERC2981Upgradeable,
     OwnablePausable,
     IInvestmentNFT
 {
@@ -59,8 +61,16 @@ contract InvestmentNFT is
      * @param name Investment NFT name
      * @param symbol Investment NFT symbol
      * @param owner Contract owner
+     * @param royaltyAccount Address where to send royalty
+     * @param royaltyValue Royalty value in basis points
      */
-    function initialize(string memory name, string memory symbol, address owner) public initializer {
+    function initialize(
+        string memory name,
+        string memory symbol,
+        address owner,
+        address royaltyAccount,
+        uint96 royaltyValue
+    ) public initializer {
         __Context_init();
         __ERC165_init();
         __ERC721_init(name, symbol);
@@ -68,6 +78,7 @@ contract InvestmentNFT is
         __ERC721URIStorage_init();
         __ERC721Pausable_init();
         __OwnablePausable_init(owner);
+        _setDefaultRoyalty(royaltyAccount, royaltyValue);
 
         _minters[owner] = true;
     }
@@ -128,6 +139,8 @@ contract InvestmentNFT is
         _validateSplit(tokenId, values, tokenUris);
 
         _burn(tokenId);
+        _resetTokenRoyalty(tokenId);
+
         address owner = _msgSender();
         for (uint256 i; i < values.length; ) {
             _mintWithURI(owner, values[i], tokenUris[i]);
@@ -202,8 +215,17 @@ contract InvestmentNFT is
      */
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(IERC165Upgradeable, ERC721Upgradeable, ERC721EnumerableUpgradeable) returns (bool) {
-        return interfaceId == type(IInvestmentNFT).interfaceId || super.supportsInterface(interfaceId);
+    )
+        public
+        view
+        virtual
+        override(IERC165Upgradeable, ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC2981Upgradeable)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IInvestmentNFT).interfaceId ||
+            ERC2981Upgradeable.supportsInterface(interfaceId) ||
+            super.supportsInterface(interfaceId);
     }
 
     function _mintWithURI(address to, uint256 value, string calldata tokenUri) private {
@@ -220,6 +242,7 @@ contract InvestmentNFT is
     function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
         super._burn(tokenId);
         tokenValue[tokenId] = 0;
+        _resetTokenRoyalty(tokenId);
     }
 
     function _validateSplit(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) private view {

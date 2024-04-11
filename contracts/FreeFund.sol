@@ -3,10 +3,10 @@ pragma solidity ^0.8.18;
 
 import "./InvestmentFund.sol";
 
-error InvestmentFund__InvestmentNotAllowed();
+error FreeFund__InvestmentNotAllowed();
 
 contract FreeFund is InvestmentFund {
-    event InvestmentCreated(uint256 amount);
+    event InvestmentAirdroped(address wallet, uint256 amount);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -32,8 +32,10 @@ contract FreeFund is InvestmentFund {
         address _investmentNft,
         address _stakingWlth,
         FeeDistributionAddresses memory _feeDistributionAddresses,
-        uint256 _cap
-    ) public initializer {
+        uint16,
+        uint256 _cap,
+        uint256
+    ) public override initializer {
         super.initialize(
             _owner,
             _unlocker,
@@ -46,13 +48,16 @@ contract FreeFund is InvestmentFund {
             _cap,
             0
         );
+
+        allowFunction(LibFund.STATE_FUNDS_IN, this.airdropInvestmentNFT.selector);
     }
 
     /**
      * @inheritdoc IInvestmentFund
+     * @dev Invest function is not allowed in FreeFund
      */
-    function invest(uint240, string calldata) external override onlyOwner onlyAllowedStates {
-        revert InvestmentFund__InvestmentNotAllowed();
+    function invest(uint240, string calldata) external override {
+        revert FreeFund__InvestmentNotAllowed();
     }
 
     /**
@@ -69,8 +74,8 @@ contract FreeFund is InvestmentFund {
         if (_amount <= MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
 
-        IInvestmentNFT investmentNft = s_investmentNft;
-        uint256 newTotalInvestment = investmentNft.getTotalInvestmentValue() + _amount;
+        IInvestmentNFT nft = s_investmentNft;
+        uint256 newTotalInvestment = nft.getTotalInvestmentValue() + _amount;
 
         if (newTotalInvestment > actualCap) revert InvestmentFund__TotalInvestmentAboveCap(newTotalInvestment);
 
@@ -79,8 +84,8 @@ contract FreeFund is InvestmentFund {
             emit CapReached(actualCap);
         }
 
-        emit InvestmentCreated(_amount);
+        emit InvestmentAirdroped(_wallet, _amount);
 
-        investmentNft.mint(_wallet, _amount, _tokenUri);
+        nft.mint(_wallet, _amount, _tokenUri);
     }
 }

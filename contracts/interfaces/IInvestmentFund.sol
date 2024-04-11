@@ -5,12 +5,15 @@ pragma solidity ^0.8.18;
  * @title Investment Fund interface
  */
 interface IInvestmentFund {
+    /**
+     * @notice Details of investment fund
+     */
     struct Details {
         string name;
         address currency;
         address investmentNft;
         address treasuryWallet;
-        address nesisNftRevenue;
+        address genesisNftRevenue;
         address lpPoolAddress;
         address burnAddress;
         address communityFund;
@@ -20,18 +23,36 @@ interface IInvestmentFund {
         uint256 totalIncome;
         Payout[] payouts;
         bytes32 state;
+        uint256 maxPercentageWalletInvestmentLimit;
     }
 
+    /**
+     * @dev Block structure
+     */
     struct Block {
         uint128 number;
         uint128 timestamp;
     }
 
+    /**
+     * @dev Payout structure
+     */
     struct Payout {
         uint256 value;
         Block blockData;
         bool inProfit;
         bool locked;
+    }
+
+    /**
+     * @notice Fee distribution addresses
+     */
+    struct FeeDistributionAddresses {
+        address treasuryWallet;
+        address lpPool;
+        address burn;
+        address communityFund;
+        address genesisNftRevenue;
     }
 
     /**
@@ -100,6 +121,21 @@ interface IInvestmentFund {
      * @param project Project address
      */
     event ProjectRemoved(address indexed caller, address indexed project);
+
+    /**
+     * @notice Emitted when collecting funds is stopped
+     */
+    event CollectingFundsStopped();
+
+    /**
+     * @notice Emitted when funds are deployed
+     */
+    event FundsDeployed();
+
+    /**
+     * @notice Emitted when fund is closed
+     */
+    event FundClosed();
 
     /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
@@ -286,13 +322,15 @@ interface IInvestmentFund {
 
     /**
      * @notice Returns total investment
+     * @param _wallet Wallet address
      */
-    function userTotalWithdrawal() external view returns (uint256);
+    function userTotalWithdrawal(address _wallet) external view returns (uint256);
 
     /**
      * @notice Returns total investment
+     * @param _wallet Wallet address
      */
-    function userNextPayout() external view returns (uint256);
+    function userNextPayout(address _wallet) external view returns (uint256);
 
     /**
      * @notice Returns total investment

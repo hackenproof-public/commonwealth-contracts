@@ -138,7 +138,9 @@ describe('GenesisNFTLock unit tests', () => {
       it('Should set zk sync bridge', async () => {
         const { genesisNFTLock, owner, zkSyncBridge } = await loadFixture(deployGensisNFTLock);
 
-        await genesisNFTLock.connect(owner).setZkSyncBridge(zkSyncBridge.address);
+        await expect(genesisNFTLock.connect(owner).setZkSyncBridge(zkSyncBridge.address))
+          .to.emit(genesisNFTLock, 'ZkSyncBridgeSet')
+          .withArgs(zkSyncBridge.address);
         expect(await genesisNFTLock.zkSyncBridge()).to.be.equal(zkSyncBridge.address);
       });
     });
@@ -168,7 +170,9 @@ describe('GenesisNFTLock unit tests', () => {
       it('Should set zk sync genesis nft series 1 mirror', async () => {
         const { genesisNFTLock, owner, genesisNFT1Mirror } = await loadFixture(deployGensisNFTLock);
 
-        await genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(genesisNFT1Mirror.address);
+        await expect(genesisNFTLock.connect(owner).setZkSyncGenesisNFT1Mirror(genesisNFT1Mirror.address))
+          .to.emit(genesisNFTLock, 'GenesisNftMirror1Set')
+          .withArgs(genesisNFT1Mirror.address);
         expect(await genesisNFTLock.zkSyncGenesisNFT1Mirror()).to.be.equal(genesisNFT1Mirror.address);
       });
     });
@@ -197,7 +201,9 @@ describe('GenesisNFTLock unit tests', () => {
       it('Should set zk sync genesis nft series 2 mirror', async () => {
         const { genesisNFTLock, owner, genesisNFT2Mirror } = await loadFixture(deployGensisNFTLock);
 
-        await genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(genesisNFT2Mirror.address);
+        await expect(genesisNFTLock.connect(owner).setZkSyncGenesisNFT2Mirror(genesisNFT2Mirror.address))
+          .to.emit(genesisNFTLock, 'GenesisNftMirror2Set')
+          .withArgs(genesisNFT2Mirror.address);
         expect(await genesisNFTLock.zkSyncGenesisNFT2Mirror()).to.be.equal(genesisNFT2Mirror.address);
       });
     });
@@ -227,7 +233,9 @@ describe('GenesisNFTLock unit tests', () => {
         const { genesisNFTLock, owner } = await loadFixture(deployGensisNFTLock);
         const newGasPerPubDataLimit = 1000;
 
-        await genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(newGasPerPubDataLimit);
+        await expect(genesisNFTLock.connect(owner).setZkSyncGasPerPubdataLimit(newGasPerPubDataLimit))
+          .to.emit(genesisNFTLock, 'ZkSyncGasPerPubdataLimitSet')
+          .withArgs(newGasPerPubDataLimit);
         expect(await genesisNFTLock.zkSyncGasPerPubdataLimit()).to.be.equal(newGasPerPubDataLimit);
       });
     });

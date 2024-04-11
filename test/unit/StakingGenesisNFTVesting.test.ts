@@ -1,7 +1,7 @@
 import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
-import { BigNumber, Wallet } from 'ethers';
+import { BigNumber, constants, Wallet } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
@@ -109,6 +109,23 @@ describe('StakingGenesisNFTVesting', () => {
             deployer
           )
         ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__WlthZeroAddress');
+      });
+
+      it('Should revert if invalid vesting start timetamp provided', async () => {
+        const { stakingGenesisNFTVesting, deployer, owner, allocation, wlth, leftoversUnlockDelay } = await loadFixture(
+          deployStakingGenesisNFTVesting
+        );
+
+        await expect(
+          deploy(
+            'StakingGenesisNFTVesting',
+            [owner.address, wlth.address, allocation, 1, leftoversUnlockDelay],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(
+          stakingGenesisNFTVesting,
+          'StakingGenesisNFTVesting__PastDistributionStartTimestamp'
+        );
       });
     });
   });
@@ -396,6 +413,32 @@ describe('StakingGenesisNFTVesting', () => {
           .to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__WalletNotLost')
           .withArgs(user1.address);
       });
+
+      it('Should revert when a receiver wallet is zero', async () => {
+        const { owner, user1, stakingGenesisNFTVesting, distributionStartTimestamp } = await loadFixture(
+          deployStakingGenesisNFTVesting
+        );
+
+        await stakingGenesisNFTVesting.connect(owner).setLostWallet(user1.address);
+        await time.increaseTo(distributionStartTimestamp);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).emergencyWithdraw(user1.address, constants.AddressZero)
+        ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__AddressToZeroAddress');
+      });
+
+      it('Should revert when a giver wallet is zero', async () => {
+        const { owner, user1, stakingGenesisNFTVesting, distributionStartTimestamp } = await loadFixture(
+          deployStakingGenesisNFTVesting
+        );
+
+        await stakingGenesisNFTVesting.connect(owner).setLostWallet(constants.AddressZero);
+        await time.increaseTo(distributionStartTimestamp);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).emergencyWithdraw(constants.AddressZero, owner.address)
+        ).to.be.revertedWithCustomError(stakingGenesisNFTVesting, 'StakingGenesisNFTVesting__AddressFromZeroAddress');
+      });
     });
   });
 
@@ -439,6 +482,26 @@ describe('StakingGenesisNFTVesting', () => {
         ).to.be.revertedWithCustomError(
           stakingGenesisNFTVesting,
           'StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet'
+        );
+      });
+
+      it('Should revert if the distribution timestamp is past, lower than block timestamp', async () => {
+        const { owner, distributionStartTimestamp, wlth, allocation, leftoversUnlockDelay, deployer } =
+          await loadFixture(deployStakingGenesisNFTVesting);
+
+        const stakingGenesisNFTVesting = await deploy(
+          'StakingGenesisNFTVesting',
+          [owner.address, wlth.address, allocation, 0, leftoversUnlockDelay],
+          deployer
+        );
+
+        await time.increaseTo(distributionStartTimestamp);
+
+        await expect(
+          stakingGenesisNFTVesting.connect(owner).setDistributionStartTimestamp(distributionStartTimestamp - 100)
+        ).to.be.revertedWithCustomError(
+          stakingGenesisNFTVesting,
+          'StakingGenesisNFTVesting__PastDistributionStartTimestamp'
         );
       });
     });

@@ -9,14 +9,22 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISimpleVesting} from "../interfaces/ISimpleVesting.sol";
 import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 
+error SimpleVesting__OwnerZeroAddress();
+error SimpleVesting__WlthZeroAddress();
+error SimpleVesting__BeneficiaryZeroAddress();
 error SimpleVesting__UnauthorizedAccess();
 error SimpleVesting__VestingNotStarted();
 error SimpleVesting__NotEnoughTokensVested();
 error SimpleVesting__NotEnoughTokensOnContract();
 error SimpleVesting__LeftoversWithdrawalLocked();
 error SimpleVesting__VestingStartTimestampAlreadyDefined();
+error SimpleVesting__PastVestingStartTimestamp();
 error SimpleVesting__NoSurplus(uint256 balance, uint256 released, uint256 allocation);
 
+/**
+ * @title SimpleVesting
+ * @notice Contract for vesting WLTH tokens
+ */
 contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal {
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -42,6 +50,11 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     uint256 private immutable i_cadence;
 
     /**
+     * @notice Delay when leftover tokens can be withdrawn after the vesting is ended.
+     */
+    uint256 private immutable i_leftoversUnlockDelay;
+
+    /**
      * @notice Address that can release vested tokens
      */
     address private s_beneficiary;
@@ -52,15 +65,21 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     uint256 private s_vestingStartTimestamp;
 
     /**
-     * @notice Timestamp when emergency withdrawal is unlocked.
-     */
-    uint256 private i_leftoversUnlockDelay;
-
-    /**
      * @notice Number of already released tokens
      */
     uint256 private s_released;
 
+    /**
+     * @notice Contract constructor.
+     * @param _owner Contract owner
+     * @param _wlth WLTH contract token address
+     * @param _beneficiary Address that can release vested tokens
+     * @param _allocation Total token allocation during vesting schedule
+     * @param _duration Total vesting duration in seconds
+     * @param _cadence Time after which the new tokens are released
+     * @param _leftoversUnlockDelay Delay when leftover tokens can be withdrawn after the vesting is ended.
+     * @param _vestingStartTimestamp Vesting start block's timestamp
+     */
     constructor(
         address _owner,
         address _wlth,
@@ -71,6 +90,12 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
         uint256 _leftoversUnlockDelay,
         uint256 _vestingStartTimestamp
     ) {
+        if (_owner == address(0)) revert SimpleVesting__OwnerZeroAddress();
+        if (_wlth == address(0)) revert SimpleVesting__WlthZeroAddress();
+        if (_beneficiary == address(0)) revert SimpleVesting__BeneficiaryZeroAddress();
+        if (_vestingStartTimestamp > 0 && _vestingStartTimestamp < block.timestamp)
+            revert SimpleVesting__PastVestingStartTimestamp();
+
         i_wlth = _wlth;
         i_allocation = _allocation;
         i_duration = _duration;
@@ -100,10 +125,13 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     /**
      * @inheritdoc ISimpleVesting
      */
-    function setBeneficiary(address _beneficiary) external onlyOwner {
-        s_beneficiary = _beneficiary;
+    function setBeneficiary(address _newBeneficiary) external onlyOwner {
+        if (_newBeneficiary == address(0)) revert SimpleVesting__BeneficiaryZeroAddress();
 
-        emit BeneficiaryChanged(s_beneficiary, _beneficiary);
+        address oldBeneficiary = s_beneficiary;
+        s_beneficiary = _newBeneficiary;
+
+        emit BeneficiaryChanged(oldBeneficiary, _newBeneficiary);
     }
 
     /**
@@ -140,12 +168,13 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     /**
      * @inheritdoc ISimpleVesting
      */
-    function setVestingStartTimestamp(uint256 _timestamp) external override {
+    function setVestingStartTimestamp(uint256 _timestamp) external override onlyOwner {
         if (s_vestingStartTimestamp != 0) revert SimpleVesting__VestingStartTimestampAlreadyDefined();
-
-        emit VestingStartTimestampSetted(_timestamp);
+        if (_timestamp < block.timestamp) revert SimpleVesting__PastVestingStartTimestamp();
 
         s_vestingStartTimestamp = _timestamp;
+
+        emit VestingStartTimestampSetted(_timestamp);
     }
 
     /**

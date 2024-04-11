@@ -25,37 +25,82 @@ error GenesisNFTLock__TokensEmptyIds();
  * @notice Contract representing the locking functionality for NFTs.
  */
 contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgradeable, ReentrancyGuardUpgradeable {
-    event ZkSyncNotified(
-        OperationType operationType,
-        uint8 indexed sieries,
-        uint256[] tokenIds,
-        address indexed to,
-        bytes32 indexed txHash
-    );
-
+    /**
+     * @notice Constant representing the tokens limit for a single lock and unlock operation.
+     */
     uint256 public constant TOKENS_LIMIT = 160;
 
+    /**
+     * @notice Genesis NFT series 1 address
+     */
     address private s_series1Nft;
+
+    /**
+     * @notice Genesis NFT series 2 address
+     */
     address private s_series2Nft;
 
+    /**
+     * @notice ZkSync bridge address
+     */
     IZkSync private s_zkSyncBridge;
+
+    /**
+     * @notice ZkSync mirror address for series 1
+     */
     address private s_zkSyncGenesisNFT1Mirror;
+
+    /**
+     * @notice ZkSync mirror address for series 2
+     */
     address private s_zkSyncGenesisNFT2Mirror;
 
+    /**
+     * @notice Gas limit for ZkSync transactions
+     */
     uint256 private s_zkSyncGasPerPubdataLimit;
 
+    /**
+     * @notice Locked tokens for series 1
+     */
     mapping(address => uint256[]) private s_series1LockedTokens;
+
+    /**
+     * @notice Locked tokens for series 2
+     */
     mapping(address => uint256[]) private s_series2LockedTokens;
+
+    /**
+     * @notice Owner of locked series 1 tokens
+     */
     mapping(uint256 => address) private s_series1LockedTokenOwner;
+
+    /**
+     * @notice Owner of locked series 2 tokens
+     */
     mapping(uint256 => address) private s_series2LockedTokenOwner;
+
+    /**
+     * @notice Index of locked series 1 tokens
+     */
     mapping(address => mapping(uint256 => uint256)) s_series1LockedTokenIndex;
+
+    /**
+     * @notice Index of locked series 2 tokens
+     */
     mapping(address => mapping(uint256 => uint256)) s_series2LockedTokenIndex;
 
+    /**
+     * @notice Check if the value is enough to cover the gas limit.
+     */
     modifier enoughGas(uint256 _value, uint256 _gasLimit) {
         if (_value < _gasLimit) revert GenesisNFTLock__NotEnoughGas();
         _;
     }
 
+    /**
+     * @notice Check if the number of tokens is within the limit.
+     */
     modifier tokensLimit(uint256 tokens) {
         if (tokens > TOKENS_LIMIT) {
             revert GenesisNFTLock__TokensLimitReached();
@@ -237,6 +282,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         }
 
         s_zkSyncBridge = IZkSync(_zkSyncBridge);
+
+        emit ZkSyncBridgeSet(_zkSyncBridge);
     }
 
     /**
@@ -248,6 +295,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         }
 
         s_zkSyncGenesisNFT1Mirror = _zkSyncMirror;
+
+        emit GenesisNftMirror1Set(_zkSyncMirror);
     }
 
     /**
@@ -259,6 +308,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
         }
 
         s_zkSyncGenesisNFT2Mirror = _zkSyncMirror;
+
+        emit GenesisNftMirror2Set(_zkSyncMirror);
     }
 
     /**
@@ -269,47 +320,8 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
             revert GenesisNFTLock__GasPerPubDataLimitZero();
         }
         s_zkSyncGasPerPubdataLimit = _zkSyncGasPerPubdataLimit;
-    }
 
-    /**
-     * @dev Notifies the ZkSync bridge about a series operation and initiates corresponding mirrored NFT changes.
-     * @param _operationType The type of operation (ASSIGN or UNASSIGN).
-     * @param _series The series number (1 or 2).
-     * @param _ids The array of token IDs involved in the operation.
-     * @param _recipient The address to which the operation is applied.
-     * @param _value The amount of value to be sent with the notification.
-     * @param _gasLimit The gas limit for the L2 transaction.
-     */
-    function _notifyZkSync(
-        OperationType _operationType,
-        uint8 _series,
-        uint256[] calldata _ids,
-        address _recipient,
-        uint256 _value,
-        uint256 _gasLimit
-    ) private {
-        address zkSyncMirror = _series == 1 ? s_zkSyncGenesisNFT1Mirror : s_zkSyncGenesisNFT2Mirror;
-        if (zkSyncMirror == address(0)) {
-            revert GenesisNFTLock__ZkSyncMirrorZeroAddress();
-        }
-        if (address(s_zkSyncBridge) == address(0)) {
-            revert GenesisNFTLock__ZkSyncBridgeZeroAddress();
-        }
-        bytes memory data = _operationType == OperationType.ASSIGN
-            ? abi.encodeWithSelector(IGeneisNFTMirror.assign.selector, _ids, _recipient)
-            : abi.encodeWithSelector(IGeneisNFTMirror.unassign.selector, _ids, _recipient);
-
-        bytes32 txHash = s_zkSyncBridge.requestL2Transaction{value: _value}(
-            zkSyncMirror,
-            0,
-            data,
-            _gasLimit,
-            s_zkSyncGasPerPubdataLimit,
-            new bytes[](0),
-            msg.sender
-        );
-
-        emit ZkSyncNotified(_operationType, _series, _ids, _recipient, txHash);
+        emit ZkSyncGasPerPubdataLimitSet(_zkSyncGasPerPubdataLimit);
     }
 
     /**
@@ -380,6 +392,47 @@ contract GenesisNFTLock is IGenesisNFTLock, OwnablePausable, ERC721HolderUpgrade
      */
     function series2LockedTokenOwner(uint256 _tokenId) external view override returns (address) {
         return s_series2LockedTokenOwner[_tokenId];
+    }
+
+    /**
+     * @dev Notifies the ZkSync bridge about a series operation and initiates corresponding mirrored NFT changes.
+     * @param _operationType The type of operation (ASSIGN or UNASSIGN).
+     * @param _series The series number (1 or 2).
+     * @param _ids The array of token IDs involved in the operation.
+     * @param _recipient The address to which the operation is applied.
+     * @param _value The amount of value to be sent with the notification.
+     * @param _gasLimit The gas limit for the L2 transaction.
+     */
+    function _notifyZkSync(
+        OperationType _operationType,
+        uint8 _series,
+        uint256[] calldata _ids,
+        address _recipient,
+        uint256 _value,
+        uint256 _gasLimit
+    ) private {
+        address zkSyncMirror = _series == 1 ? s_zkSyncGenesisNFT1Mirror : s_zkSyncGenesisNFT2Mirror;
+        if (zkSyncMirror == address(0)) {
+            revert GenesisNFTLock__ZkSyncMirrorZeroAddress();
+        }
+        if (address(s_zkSyncBridge) == address(0)) {
+            revert GenesisNFTLock__ZkSyncBridgeZeroAddress();
+        }
+        bytes memory data = _operationType == OperationType.ASSIGN
+            ? abi.encodeCall(IGeneisNFTMirror.assign, (_ids, _recipient))
+            : abi.encodeCall(IGeneisNFTMirror.unassign, (_ids, _recipient));
+
+        bytes32 txHash = s_zkSyncBridge.requestL2Transaction{value: _value}(
+            zkSyncMirror,
+            0,
+            data,
+            _gasLimit,
+            s_zkSyncGasPerPubdataLimit,
+            new bytes[](0),
+            msg.sender
+        );
+
+        emit ZkSyncNotified(_operationType, _series, _ids, _recipient, txHash);
     }
 
     uint256[48] private __gap;

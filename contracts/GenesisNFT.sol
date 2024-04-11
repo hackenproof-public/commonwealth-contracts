@@ -202,6 +202,10 @@ contract GenesisNFT is
             super.supportsInterface(interfaceId);
     }
 
+    function exists(uint256 _tokenId) external view returns (bool) {
+        return _exists(_tokenId);
+    }
+
     function _beforeTokenTransfer(
         address from,
         address to,

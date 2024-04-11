@@ -16,6 +16,36 @@ interface IStakingGenesisNFTVesting {
     }
 
     /**
+     * @notice Event emitted when rewards are released.
+     */
+    event Released(address indexed beneficiary, uint256 indexed amount);
+
+    /**
+     * @notice Event emitted when rewards are set for multiple accounts.
+     */
+    event RewardsSet(Rewards[] rewards);
+
+    /**
+     * @notice Event emitted when a wallet is set as lost.
+     */
+    event LostWalletSet(address indexed wallet);
+
+    /**
+     * @notice Event emitted when a wallet is reset from lost status.
+     */
+    event LostWalletReseted(address indexed wallet);
+
+    /**
+     * @notice Event emitted when emergency withdrawal is performed.
+     */
+    event EmergencyWithdrawalPerformed(address indexed from, address indexed to);
+
+    /**
+     * @notice Event emitted when distribution start timestamp is set.
+     */
+    event DistributionStartTimestampSet(uint256 timestamp);
+
+    /**
      * @notice Releases vested rewards to the caller.
      */
     function release() external;

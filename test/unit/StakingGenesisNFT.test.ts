@@ -59,6 +59,64 @@ describe('Staking Genesis NFT unit tests', () => {
       await expect(stakingGenesisNft.connect(deployer).pause()).to.be.reverted;
       await expect(stakingGenesisNft.connect(owner).pause()).not.to.be.reverted;
     });
+
+    it('Should revert when owner is the zero address', async () => {
+      const { stakingGenesisNft, deployer, largeGenesisNFT, smallGenesisNFT } = await loadFixture(
+        deployStakingGenesisNFT
+      );
+
+      await expect(
+        deployProxy(
+          'StakingGenesisNFT',
+          [
+            constants.AddressZero,
+            TIMESTAMP_IN_THE_FUTURE,
+            smallGenesisNFT.address,
+            largeGenesisNFT.address,
+            SECONDS_PER_DAY
+          ],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(stakingGenesisNft, 'OwnablePausable__OwnerAccountZeroAddress');
+    });
+
+    it('Should revert when small nft is the zero address', async () => {
+      const { stakingGenesisNft, deployer, owner, largeGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(
+        deployProxy(
+          'StakingGenesisNFT',
+          [owner.address, TIMESTAMP_IN_THE_FUTURE, constants.AddressZero, largeGenesisNFT.address, SECONDS_PER_DAY],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(stakingGenesisNft, 'StakingGenesisNft__SmallNftZeroAddress');
+    });
+
+    it('Should revert when large nft is the zero address', async () => {
+      const { stakingGenesisNft, deployer, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(
+        deployProxy(
+          'StakingGenesisNFT',
+          [owner.address, TIMESTAMP_IN_THE_FUTURE, smallGenesisNFT.address, constants.AddressZero, SECONDS_PER_DAY],
+          deployer
+        )
+      ).to.be.revertedWithCustomError(stakingGenesisNft, 'StakingGenesisNft__LargeNftZeroAddress');
+    });
+
+    it('Should revert when reinitializing', async () => {
+      const { stakingGenesisNft, owner, smallGenesisNFT } = await loadFixture(deployStakingGenesisNFT);
+
+      await expect(
+        stakingGenesisNft.initialize(
+          owner.address,
+          TIMESTAMP_IN_THE_FUTURE,
+          smallGenesisNFT.address,
+          smallGenesisNFT.address,
+          SECONDS_PER_DAY
+        )
+      ).to.be.revertedWith('Initializable: contract is already initialized');
+    });
   });
 
   describe('#setFinalTimestamp', () => {

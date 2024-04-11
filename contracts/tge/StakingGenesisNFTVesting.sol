@@ -10,8 +10,11 @@ import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 
 error StakingGenesisNFTVesting__OwnerZeroAddress();
 error StakingGenesisNFTVesting__WlthZeroAddress();
+error StakingGenesisNFTVesting__AddressFromZeroAddress();
+error StakingGenesisNFTVesting__AddressToZeroAddress();
 error StakingGenesisNFTVesting__DistributionNotStarted();
 error StakingGenesisNFTVesting__NotEnoughTokens();
+error StakingGenesisNFTVesting__PastDistributionStartTimestamp();
 error StakingGenesisNFTVesting__NoRewardsForUser(address account);
 error StakingGenesisNFTVesting__RewardsTooHigh(uint256 allocation, uint256 totalRewards);
 error StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet();
@@ -39,9 +42,9 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     uint256 private immutable i_allocation;
 
     /**
-     * @notice Timestamp when leftovers withdrawal is unlocked.
+     * @notice Delay when leftover tokens can be withdrawn after the vesting is ended.
      */
-    uint256 private i_leftoversUnlockDelay;
+    uint256 private immutable i_leftoversUnlockDelay;
 
     /**
      * @notice Timestamp when reward distribution starts.
@@ -79,36 +82,6 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     mapping(address => bool) private s_walletAccessLost;
 
     /**
-     * @notice Event emitted when rewards are released.
-     */
-    event Released(address indexed beneficiary, uint256 indexed amount);
-
-    /**
-     * @notice Event emitted when rewards are set for multiple accounts.
-     */
-    event RewardsSet(Rewards[] rewards);
-
-    /**
-     * @notice Event emitted when a wallet is set as lost.
-     */
-    event LostWalletSet(address indexed wallet);
-
-    /**
-     * @notice Event emitted when a wallet is reset from lost status.
-     */
-    event LostWalletReseted(address indexed wallet);
-
-    /**
-     * @notice Event emitted when emergency withdrawal is performed.
-     */
-    event EmergencyWithdrawalPerformed(address indexed from, address indexed to);
-
-    /**
-     * @notice Event emitted when distribution start timestamp is set.
-     */
-    event DistributionStartTimestampSet(uint256 timestamp);
-
-    /**
      * @notice Modifier to check if the reward distribution has started.
      */
     modifier distributionStarted() {
@@ -134,6 +107,8 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     ) {
         if (_owner == address(0)) revert StakingGenesisNFTVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert StakingGenesisNFTVesting__WlthZeroAddress();
+        if (_distributionStartTimestamp > 0 && _distributionStartTimestamp < block.timestamp)
+            revert StakingGenesisNFTVesting__PastDistributionStartTimestamp();
 
         i_wlth = IERC20(_wlth);
         i_allocation = _allocation;
@@ -147,7 +122,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
      */
     function release() external override {
         if (s_walletAccessLost[msg.sender]) revert StakingGenesisNFTVesting__WalletLost(msg.sender);
-        release(msg.sender, msg.sender);
+        _release(msg.sender, msg.sender);
     }
 
     /**
@@ -198,6 +173,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
      */
     function setDistributionStartTimestamp(uint256 _timestamp) external override onlyOwner {
         if (s_distributionStartTimestamp != 0) revert StakingGenesisNFTVesting__DistributionStartTimestampAlreadySet();
+        if (_timestamp < block.timestamp) revert StakingGenesisNFTVesting__PastDistributionStartTimestamp();
         s_distributionStartTimestamp = _timestamp;
 
         emit DistributionStartTimestampSet(_timestamp);
@@ -211,7 +187,7 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
 
         emit EmergencyWithdrawalPerformed(_from, _to);
 
-        release(_from, _to);
+        _release(_from, _to);
     }
 
     /**
@@ -319,8 +295,11 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
         return s_walletAccessLost[_wallet];
     }
 
-    function release(address _from, address _to) private distributionStarted {
+    function _release(address _from, address _to) private distributionStarted {
+        if (_from == address(0)) revert StakingGenesisNFTVesting__AddressFromZeroAddress();
+        if (_to == address(0)) revert StakingGenesisNFTVesting__AddressToZeroAddress();
         uint256 amount = releaseableAmount(_from);
+
         if (amount == 0) revert StakingGenesisNFTVesting__NoRewardsForUser(_from);
         if (amount > i_wlth.balanceOf(address(this))) revert StakingGenesisNFTVesting__NotEnoughTokens();
 

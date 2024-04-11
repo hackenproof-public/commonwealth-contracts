@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.18;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IGeneisNFTMirror} from "./interfaces/IGenesisNFTMirror.sol";
@@ -22,29 +21,68 @@ error GenesisNFTMirror__NoTokensAssigned(address account);
  * @notice Contract representing the mirror functionality for NFTs.
  */
 contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
-    event TokenMoved(uint256 indexed tokenId, address indexed to);
-    event TokensAssigned(uint256[] tokenId, address indexed to);
-    event TokensUnassigned(uint256[] tokenId, address indexed from);
-
+    /**
+     * @notice Constant representing the limit of tokens that can be assigned or unassigned at once.
+     */
     uint256 public constant TOKENS_LIMIT = 160;
 
+    /**
+     * @notice Address of the governor.
+     */
     address private s_governor;
 
+    /**
+     * @notice Name of the Genesis NFT.
+     */
     string private s_name;
+
+    /**
+     * @notice Symbol of the Genesis NFT.
+     */
     string private s_symbol;
 
+    /**
+     * @notice Array of all token IDs.
+     */
     uint256[] private s_allTokens;
+
+    /**
+     * @notice Mapping of token owners.
+     */
     mapping(uint256 => address) private s_tokenOwner;
+
+    /**
+     * @notice Mapping of token balances.
+     */
     mapping(address => uint256) private s_balances;
+
+    /**
+     * @notice Mapping of owned tokens.
+     */
     mapping(address => mapping(uint256 => uint256)) private s_ownedTokens;
+
+    /**
+     * @notice Mapping of owned tokens index.
+     */
     mapping(address => mapping(uint256 => uint256)) private s_ownedTokensIndex;
+
+    /**
+     * @notice Mapping of token existence.
+     */
     mapping(uint256 => bool) private s_tokenExist;
 
+    /**
+     * @notice Modifier to allow only the governor or the owner to call the function.
+     */
     modifier onlyGovernorOrOwner() {
         if (msg.sender != s_governor && msg.sender != owner()) revert GenesisNftMirror__AccessDenied();
         _;
     }
 
+    /**
+     * @notice Modifier to limit the number of tokens that can be assigned or unassigned at once.
+     * @param tokens Number of tokens to be assigned or unassigned.
+     */
     modifier tokensLimit(uint256 tokens) {
         if (tokens > TOKENS_LIMIT) {
             revert GenesisNFTMirror__TokensLimitReached();
@@ -166,6 +204,8 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
             revert GenesisNftMirror__GovernorZeroAddress();
         }
         s_governor = _governor;
+   
+        emit GovernorChanged(_governor);
     }
 
     /**
@@ -201,8 +241,11 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
      */
     function ownersOf(uint256[] calldata _tokensIds) public view override returns (TokenOwner[] memory) {
         TokenOwner[] memory owners = new TokenOwner[](_tokensIds.length);
-        for (uint256 i; i < _tokensIds.length; i++) {
+        for (uint256 i; i < _tokensIds.length;) {
             owners[i] = TokenOwner(_tokensIds[i], s_tokenOwner[_tokensIds[i]]);
+            unchecked {
+                i++;
+            }
         }
 
         return owners;

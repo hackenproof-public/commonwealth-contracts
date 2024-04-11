@@ -7,12 +7,27 @@ pragma solidity ^0.8.18;
  */
 interface IGeneisNFTMirror {
     /**
-     * @dev Struct for storing tokens' owners information.
+     * @notice Struct for storing tokens' owners information.
      */
     struct TokenOwner {
         uint256 tokenId; // Token id of the owner.
         address account; // Address of the account owning the token.
     }
+
+    /**
+     * @notice Event emitted when tokens are assigned to an account.
+     */
+    event TokensAssigned(uint256[] tokenId, address indexed to);
+
+    /**
+     * @notice Event emitted when tokens are unassigned from an account.
+     */
+    event TokensUnassigned(uint256[] tokenId, address indexed from);
+
+    /**
+     * @notice Event emitted when the governor address is changed.
+     */
+    event GovernorChanged(address governor);
 
     /**
      * @notice Assigns specified token IDs to a given account.

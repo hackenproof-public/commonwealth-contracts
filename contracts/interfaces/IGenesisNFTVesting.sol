@@ -12,6 +12,11 @@ interface IGenesisNFTVesting {
     event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId);
 
     /**
+     * @notice Event emitted when a vesting start timestamp was set after (not during) deployment.
+     */
+    event VestingStartTimestampSet(uint256 indexed timestamp);
+
+    /**
      * @notice Event emitted when a token is marked as lost.
      */
     event LostTokenSet(uint256 indexed tokenId, uint256 indexed series);
@@ -20,6 +25,13 @@ interface IGenesisNFTVesting {
      * @notice Event emitted when a token is unmarked as lost.
      */
     event LostTokenReseted(uint256 indexed tokenId, uint256 indexed series);
+
+    /**
+     * @notice Event emitted when bonus was setted up for certain NFTs.
+     * @param _tokenIds Array of Series 1 NFT token IDs.
+     * @param _flag describes if bonus was activated or deactivated
+     */
+    event BonusSetted(bool _flag, uint256[] indexed _tokenIds);
 
     /**
      * @notice Event emitted when an emergency withdrawal is performed.
@@ -47,8 +59,9 @@ interface IGenesisNFTVesting {
     /**
      * @notice Sets up bonus for Series 1 NFTs.
      * @param _series1tokenIds Array of Series 1 NFT token IDs.
+     * @param _flag defined if bonus should be given or revoked for NFTs defined in the array
      */
-    function setupBonus(uint256[] memory _series1tokenIds) external;
+    function setupBonus(uint256[] memory _series1tokenIds, bool _flag) external;
 
     /**
      * @notice Returns the unvested amount per NFT based on the given parameters.
