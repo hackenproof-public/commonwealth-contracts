@@ -103,7 +103,7 @@ const config: HardhatUserConfig = {
       verifyURL: env.ZKTESTNET_VERIFY_URL || ''
     },
     baseSepolia: {
-      url: "https://rpc.notadegen.com/base/sepolia",
+      url: "https://sepolia.base.org/",
       chainId: 84532,
       accounts: !!env.BASESEPOLIA_WALLET_PRIVATE_KEY ? [env.BASESEPOLIA_WALLET_PRIVATE_KEY] : [],
     },

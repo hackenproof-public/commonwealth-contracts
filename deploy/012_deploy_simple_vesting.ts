@@ -19,7 +19,7 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
     { name: 'cadence', value: deploymentCofing.nftVestingCadence },
     { name: 'allocation', value: deploymentCofing.genesisNftVestingAllocation },
     { name: 'leftoversUnlockDelay', value: deploymentCofing.leftoversUnlockDelay },
-    { name: 'vestingStartTimestamp', value: deploymentCofing.genesisNftVestingAllocation },
+    { name: 'vestingStartTimestamp', value: deploymentCofing.genesisNftVestingAllocation }
   ];
 
   await deploy(hre, 'GenesisNFTVesting', parameters);

@@ -192,7 +192,7 @@ contract InvestmentFund is
         if (_unlocker == address(0)) revert InvestmentFund__UnlockerZeroAddress();
         if (_currency == address(0)) revert InvestmentFund__CurrencyZeroAddress();
         if (_investmentNft == address(0)) revert InvestmentFund__InvestmentNftZeroAddress();
-        if (_stakingWlth == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
+        // if (_stakingWlth == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
         if (_feeDistributionAddresses.treasuryWallet == address(0)) revert InvestmentFund__TreasuryZeroAddress();
         if (_feeDistributionAddresses.lpPool == address(0)) revert InvestmentFund__LpPoolZeroAddress();
         if (_feeDistributionAddresses.burn == address(0)) revert InvestmentFund__BurnZeroAddress();
@@ -413,6 +413,15 @@ contract InvestmentFund is
     function closeFund() external onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CLOSED;
         emit FundClosed();
+    }
+
+    function setStakingWlth(address _stakingWlth) external onlyOwner {
+        if (_stakingWlth == address(0)) {
+            revert InvestmentFund__StakingWlthZeroAddress();
+        }
+
+        s_stakingWlth = IStakingWlth(_stakingWlth);
+        emit StakingWlthSet(_stakingWlth);
     }
 
     /**

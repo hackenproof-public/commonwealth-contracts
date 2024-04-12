@@ -486,7 +486,10 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert if investment fund is not registered', async () => {
       await staking.connect(owner).unregisterFund(fund.address);
-      await expect(staking.connect(user).unstake(fund.address, stake1.amount)).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+      await expect(staking.connect(user).unstake(fund.address, stake1.amount)).to.be.revertedWithCustomError(
+        staking,
+        'StakingWlth__InvestmentFundNotRegistered'
+      );
     });
 
     describe('when unstaked in Capital Raise Period', async () => {
@@ -679,7 +682,7 @@ describe('Staking WLTH unit tests', () => {
         // user sells NFTs with $200
         nft.getInvestmentValue.returns(toUsdc('1000'));
 
-        const timestampAfterStake1Finished = stake1Time + 2 * stake1.period +1;
+        const timestampAfterStake1Finished = stake1Time + 2 * stake1.period + 1;
         await time.increaseTo(timestampAfterStake1Finished);
 
         // unstake from various positions: ended(300 WLTH), unlocked(50 WLTH) and locked(100 WLTH)
@@ -969,9 +972,10 @@ describe('Staking WLTH unit tests', () => {
         staking.getDiscountInTimestamp(user.address, fund.address, Date.now())
       ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
 
-      await expect(
-        staking.getDiscount(user.address, fund.address)
-      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+      await expect(staking.getDiscount(user.address, fund.address)).to.be.revertedWithCustomError(
+        staking,
+        'StakingWlth__InvestmentFundNotRegistered'
+      );
     });
   });
 
@@ -1339,7 +1343,9 @@ describe('Staking WLTH unit tests', () => {
       const stakeTime = (await time.latest()) + 1000;
       const period = { start: stakeTime, duration: ONE_YEAR };
 
-      await expect(staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
   });
 
@@ -1667,7 +1673,10 @@ describe('Staking WLTH unit tests', () => {
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
         await staking.connect(owner).unregisterFund(fund.address);
 
-        await expect(staking.getPenalty(user.address, fund.address, stake.amount)).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+        await expect(staking.getPenalty(user.address, fund.address, stake.amount)).to.be.revertedWithCustomError(
+          staking,
+          'StakingWlth__InvestmentFundNotRegistered'
+        );
       });
     });
   });
@@ -1733,7 +1742,9 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert if investment fund not registered', async () => {
       await staking.connect(owner).unregisterFund(fund.address);
-      await expect(staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+      await expect(
+        staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
     });
   });
 });

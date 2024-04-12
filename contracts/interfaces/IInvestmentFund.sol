@@ -138,6 +138,12 @@ interface IInvestmentFund {
     event FundClosed();
 
     /**
+     * @notice Emitted when staking WLTH contract is set
+     * @param stakingWlth Address of staking WLTH contract
+     */
+    event StakingWlthSet(address indexed stakingWlth);
+
+    /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:

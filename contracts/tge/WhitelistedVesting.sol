@@ -506,7 +506,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
             uint256 currentReleaseableAmount = releaseableAmountPerWallet(_beneficiary);
             if (_amount > currentReleaseableAmount)
                 revert WhitelistedVesting__NotEnoughTokensVested(_amount, currentReleaseableAmount);
-                toRelease = _amount;
+            toRelease = _amount;
         } else toRelease = availableTokensAmount;
 
         s_released += toRelease;
