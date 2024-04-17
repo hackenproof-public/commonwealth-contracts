@@ -3,7 +3,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { StakingGenesisNFT } from '../typechain-types';
+import { getEnvByNetwork } from '../scripts/utils';
 
 type Reward = {
   account: string;
@@ -11,31 +11,23 @@ type Reward = {
   series2Rewards: string;
 };
 
-const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  const csvFilePath = __dirname + '/../data/stakingRewards.csv';
+const checkFreeFundAirdropWallets: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+  const csvFilePath = __dirname + '/../data/freeFundAirdopAddresses.csv';
   const delimiter = ',';
-  // const provider = ethers.getDefaultProvider();
-  const provider = new ethers.providers.JsonRpcProvider(
-    'https://eth-mainnet.g.alchemy.com/v2/STmaoEYiJ6TPXyYJgVaWAxumyRWxv2xm'
-  );
+  const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
+  const provider = new ethers.providers.JsonRpcProvider(rpc);
 
-  const stakingGenesisNFTVesting = (await ethers.getContractAt(
-    'StakingGenesisNFT',
-    '0xAB14624691d0D1b62F9797368104Ef1F8C20dF83'
-  )) as StakingGenesisNFT;
   const addresses: string[] = [];
 
   const data: any = { owners: [] };
 
-  const readStream = await fs
+  const readStream = fs
     .createReadStream(csvFilePath)
     .pipe(parse({ separator: delimiter }))
     .on('data', (row) => {
-      const address = row['Address'];
-      const legacy = row['legacySeries1Balance'];
-      // const gen2Staked = row['series2Staked'];
+      const address = row['address'];
 
-      if (legacy > 0) {
+      if (address !== 'NULL') {
         addresses.push(address);
       }
     });
@@ -58,7 +50,7 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     data.owners.push = addresses;
 
     if (data.owners.length > 0) {
-      fs.writeFileSync('staked.json', JSON.stringify(data, null, 2), 'utf8');
+      fs.writeFileSync('freeFundAirdropWalletsCheck.json', JSON.stringify(data, null, 2), 'utf8');
     }
   };
 
@@ -69,5 +61,5 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log('Done');
 };
 
-export default setupRewards;
-setupRewards.tags = ['checkStake'];
+export default checkFreeFundAirdropWallets;
+checkFreeFundAirdropWallets.tags = ['checkFreeFundAirdropWallets'];

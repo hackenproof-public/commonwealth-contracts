@@ -3,6 +3,7 @@ import fs from 'fs';
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { getEnvByNetwork } from '../scripts/utils';
 import { StakingGenesisNFT } from '../typechain-types';
 
 type Reward = {
@@ -11,13 +12,11 @@ type Reward = {
   series2Rewards: string;
 };
 
-const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const checkStakedAndLegacyOwners: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const csvFilePath = __dirname + '/../data/stakingRewards.csv';
   const delimiter = ',';
-  // const provider = ethers.getDefaultProvider();
-  const provider = new ethers.providers.JsonRpcProvider(
-    'https://eth-mainnet.g.alchemy.com/v2/STmaoEYiJ6TPXyYJgVaWAxumyRWxv2xm'
-  );
+  const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
+  const provider = new ethers.providers.JsonRpcProvider(rpc);
 
   const stakingGenesisNFTVesting = (await ethers.getContractAt(
     'StakingGenesisNFT',
@@ -33,9 +32,10 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     .on('data', (row) => {
       const address = row['Address'];
       const legacy = row['legacySeries1Balance'];
-      // const gen2Staked = row['series2Staked'];
+      const gen1Staked = row['series1Staked'];
+      const gen2Staked = row['series2Staked'];
 
-      if (legacy > 0) {
+      if (legacy > 0 || gen1Staked > 0 || gen2Staked > 0) {
         addresses.push(address);
       }
     });
@@ -58,7 +58,7 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     data.owners.push = addresses;
 
     if (data.owners.length > 0) {
-      fs.writeFileSync('staked.json', JSON.stringify(data, null, 2), 'utf8');
+      fs.writeFileSync('stakedAndLegacyAddresses.json', JSON.stringify(data, null, 2), 'utf8');
     }
   };
 
@@ -69,5 +69,5 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log('Done');
 };
 
-export default setupRewards;
-setupRewards.tags = ['checkStake'];
+export default checkStakedAndLegacyOwners;
+checkStakedAndLegacyOwners.tags = ['checkStakedAndLegacyOwners'];

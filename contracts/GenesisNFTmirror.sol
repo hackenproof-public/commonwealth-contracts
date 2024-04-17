@@ -204,7 +204,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
             revert GenesisNftMirror__GovernorZeroAddress();
         }
         s_governor = _governor;
-   
+
         emit GovernorChanged(_governor);
     }
 
@@ -241,7 +241,7 @@ contract GenesisNFTMirror is IGeneisNFTMirror, OwnablePausable {
      */
     function ownersOf(uint256[] calldata _tokensIds) public view override returns (TokenOwner[] memory) {
         TokenOwner[] memory owners = new TokenOwner[](_tokensIds.length);
-        for (uint256 i; i < _tokensIds.length;) {
+        for (uint256 i; i < _tokensIds.length; ) {
             owners[i] = TokenOwner(_tokensIds[i], s_tokenOwner[_tokensIds[i]]);
             unchecked {
                 i++;

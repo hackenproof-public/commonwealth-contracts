@@ -535,7 +535,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 stakingPositionsBufferAmount
     ) private view returns (uint256) {
         uint256 remainingAmount = amount;
-        Position[] memory endedPosistions = _getFilteredBufferPositions(stakingPositionsBuffer, stakeIds, _isPositionEnded);
+        Position[] memory endedPosistions = _getFilteredBufferPositions(
+            stakingPositionsBuffer,
+            stakeIds,
+            _isPositionEnded
+        );
         for (uint256 i; i < endedPosistions.length && remainingAmount > 0; ) {
             Position memory pos = endedPosistions[i];
             uint256 toUnstake = Math.min(remainingAmount, pos.amountInWlth - pos.unstakedEnded);
@@ -571,11 +575,15 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         Position[] memory stakingPositionsBuffer,
         uint256[] memory stakeIds,
         uint256 stakingPositionsBufferAmount,
-        address account, 
+        address account,
         address fund
     ) private view returns (uint256) {
         uint256 investmentSize = _getCurrentInvestment(account, fund);
-        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getUnlockedBufferedTokens(stakingPositionsBuffer, stakeIds, investmentSize);
+        (uint256 totalCount, uint256[] memory ids, uint256[] memory counts) = _getUnlockedBufferedTokens(
+            stakingPositionsBuffer,
+            stakeIds,
+            investmentSize
+        );
 
         uint256 toUnstake = Math.min(amount, totalCount);
         (uint256 totalToUnstake, uint256[] memory amountsToUnstake) = _getTokensToUnstake(toUnstake, ids, counts);
@@ -936,7 +944,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return discount / EXTRA_EIGHTEEN_ZEROS;
     }
 
-    function _getTotalTargetDiscountBuffered(Position[] memory bufferedPositions, uint256[] memory stakeIds, uint256 investmentSize) private view returns (uint256) {
+    function _getTotalTargetDiscountBuffered(
+        Position[] memory bufferedPositions,
+        uint256[] memory stakeIds,
+        uint256 investmentSize
+    ) private view returns (uint256) {
         uint256 discount;
         for (uint256 i; i < stakeIds.length; ) {
             Position memory position = bufferedPositions[i];
@@ -1146,11 +1158,17 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return _getFilteredPositions(account, fund, _isPositionOpen);
     }
 
-    function _getNonEmptyBufferedPositions(Position[] memory bufferedPositions, uint256[] memory stakeIds) private view returns (Position[] memory) {
+    function _getNonEmptyBufferedPositions(
+        Position[] memory bufferedPositions,
+        uint256[] memory stakeIds
+    ) private view returns (Position[] memory) {
         return _getFilteredBufferPositions(bufferedPositions, stakeIds, _isPositionNonEmpty);
     }
 
-    function _getOpenBufferedPositions(Position[] memory bufferedPositions, uint256[] memory stakeIds) private view returns (Position[] memory) {
+    function _getOpenBufferedPositions(
+        Position[] memory bufferedPositions,
+        uint256[] memory stakeIds
+    ) private view returns (Position[] memory) {
         return _getFilteredBufferPositions(bufferedPositions, stakeIds, _isPositionOpen);
     }
 

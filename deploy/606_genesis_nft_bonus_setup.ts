@@ -4,6 +4,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { confirmYesOrNo } from '../scripts/utils';
 import { getZkSyncSingerWallet } from '../utils/zkSyncWallet';
 
+//TODO take data from excel file
 const genesisNftBonusSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   console.log('Setup started');
 

@@ -239,14 +239,14 @@ const zkTestnetStageConfig: networkConfigItem = {
 
 const sepoliaZkTestnetDevConfig: networkConfigItem = {
   ...zkSyncTestnet,
-  uniswapQuaterV2Address: '0x81AEc3591556319C6B0E002B7c5b5BFBE20d03Ee',
-  uniswapSwapRouterV2Address: '0xEE3bb9e0cFE017795d46a38fc46C8d41bCAD9149'
+  uniswapQuaterV2Address: '0x36dE03984CB77473A5d2DC2C3F4c6aB8191dA486',
+  uniswapSwapRouterV2Address: '0xE48E42b938ED8F47046Aa7E8085A054c8d45A990'
 };
 
 const sepoliaZkTestnetStageConfig: networkConfigItem = {
   ...zkSyncTestnet,
-  uniswapQuaterV2Address: '0x2437C6b81eeB54596Db072ec676a0a6acE4b535e',
-  uniswapSwapRouterV2Address: '0x2E8Cede0931667f313045d83626ef495A9671DB7',
+  uniswapQuaterV2Address: '0x36dE03984CB77473A5d2DC2C3F4c6aB8191dA486',
+  uniswapSwapRouterV2Address: '0xE48E42b938ED8F47046Aa7E8085A054c8d45A990',
   stakingTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
   communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
   investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
@@ -294,7 +294,7 @@ const baseSepoliaConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1712591984
+  genesisNftVestingStartTimestamp: 1713012602
 };
 
 const baseSepoliaDevConfig: networkConfigItem = {

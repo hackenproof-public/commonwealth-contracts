@@ -9,6 +9,10 @@ import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
 import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
 
+error GenesisNFT__ZeroAddress();
+error GenesisNFT__LengthMismatch();
+error GenesisNFT__ZeroAmount();
+
 /**
  * @title Genesis NFT contract
  */
@@ -24,9 +28,9 @@ contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    address private _owner;
-    string private _tokenURI;
-    uint256 private _series;
+    address private s_owner;
+    string private s_tokenURI;
+    uint256 private s_series;
 
     /**
      * @notice Emitted when token URI is changed
@@ -42,68 +46,97 @@ contract GenesisNFT is
 
     /**
      * @notice Initializes the contract
-     * @param name_ NFT collection name
-     * @param symbol_ NFT collection symbol
-     * @param series_ Genesis NFT series number
-     * @param owner_ Address of contract owner
-     * @param royaltyAccount Address where to send royalty
-     * @param royaltyValue Royalty value in basis points
+     * @param _name NFT collection name
+     * @param _symbol NFT collection symbol
+     * @param _series Genesis NFT series number
+     * @param _owner Address of contract owner
+     * @param _royaltyAccount Address where to send royalty
+     * @param _royaltyValue Royalty value in basis points
+     * @param _tokenUri Base token URI
      */
     function initialize(
-        string memory name_,
-        string memory symbol_,
-        uint256 series_,
-        address owner_,
-        address royaltyAccount,
-        uint96 royaltyValue,
-        string memory tokenUri
+        string memory _name,
+        string memory _symbol,
+        uint256 _series,
+        address _owner,
+        address _royaltyAccount,
+        uint96 _royaltyValue,
+        string memory _tokenUri
     ) public initializer {
-        __ERC721_init(name_, symbol_);
+        __ERC721_init(_name, _symbol);
         __ERC721Enumerable_init();
         __Pausable_init();
         __AccessControlEnumerable_init();
         __ERC2981_init();
         __ERC721Holder_init();
 
-        require(owner_ != address(0), "Owner account is zero address");
+        if (_owner == address(0)) revert GenesisNFT__ZeroAddress();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, owner_);
-        _grantRole(MINTER_ROLE, owner_);
-        _grantRole(PAUSER_ROLE, owner_);
+        _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+        _grantRole(MINTER_ROLE, _owner);
+        _grantRole(PAUSER_ROLE, _owner);
 
-        _owner = owner_;
-        _tokenURI = tokenUri;
-        _series = series_;
+        s_owner = _owner;
+        s_tokenURI = _tokenUri;
+        s_series = _series;
 
-        _setDefaultRoyalty(royaltyAccount, royaltyValue);
+        _setDefaultRoyalty(_royaltyAccount, _royaltyValue);
     }
 
     /**
-     * @inheritdoc IGenesisNFT
+     * @inheritdoc IERC721Mintable
      */
-    function getSeries() external view returns (uint256) {
-        return _series;
+    function mint(address _recipient, uint256 _amount) external onlyRole(MINTER_ROLE) {
+        if (_recipient == address(0)) revert GenesisNFT__ZeroAddress();
+        if (_amount == 0) revert GenesisNFT__ZeroAmount();
+
+        uint256 startId = totalSupply();
+        for (uint256 i = 0; i < _amount; i++) {
+            _safeMint(_recipient, startId + i);
+        }
+    }
+
+    /**
+     * @notice Mints tokens with specific IDs
+     * @param _recipient Address to mint tokens to
+     * @param _tokenIds Array of token IDs to mint
+     */
+    function mintWithIds(address _recipient, uint256[] memory _tokenIds) external onlyRole(MINTER_ROLE) {
+        if (_recipient == address(0)) revert GenesisNFT__ZeroAddress();
+
+        for (uint256 i = 0; i < _tokenIds.length; ) {
+            _safeMint(_recipient, _tokenIds[i]);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc IERC721Mintable
+     */
+    function mintBatch(address[] memory _recipients, uint256[] memory _amounts) external onlyRole(MINTER_ROLE) {
+        _validateMintBatch(_recipients, _amounts);
+
+        uint256 startId = totalSupply();
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            for (uint256 j = 0; j < _amounts[i]; j++) {
+                _safeMint(_recipients[i], startId + j);
+            }
+            startId += _amounts[i];
+        }
     }
 
     /**
      * @notice Sets contract owner account
      * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
-     * @param newOwner Address of new contract owner
+     * @param _newOwner Address of new contract owner
      */
-    function setOwner(address newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newOwner != address(0), "New owner is zero address");
+    function setOwner(address _newOwner) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_newOwner == address(0)) revert GenesisNFT__ZeroAddress();
 
-        _owner = newOwner;
-    }
-
-    /**
-     * @notice Returns contract owner
-     * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
-     * @dev It is not equivalent of contract admin and has no special rights by itself. Roles are managed by AccessControl contract
-     * @return Contract owner
-     */
-    function owner() external view returns (address) {
-        return _owner;
+        emit OwnershipTransferred(s_owner, _newOwner);
+        s_owner = _newOwner;
     }
 
     /**
@@ -121,75 +154,73 @@ contract GenesisNFT is
     }
 
     /**
-     * @inheritdoc IERC721Mintable
-     */
-    function mint(address recipient, uint256 amount) external onlyRole(MINTER_ROLE) {
-        require(recipient != address(0), "Recipient is zero address");
-
-        uint256 startId = totalSupply();
-        for (uint256 i = 0; i < amount; i++) {
-            _safeMint(recipient, startId + i);
-        }
-    }
-
-    /**
-     * @inheritdoc IERC721Mintable
-     */
-    function mintBatch(address[] memory recipients, uint256[] memory amounts) external onlyRole(MINTER_ROLE) {
-        _validateMintBatch(recipients, amounts);
-
-        uint256 startId = totalSupply();
-        for (uint256 i = 0; i < recipients.length; i++) {
-            for (uint256 j = 0; j < amounts[i]; j++) {
-                _safeMint(recipients[i], startId + j);
-            }
-            startId += amounts[i];
-        }
-    }
-
-    /**
      * @notice Burns token with id `tokenId`. Limited only to admin role
-     * @param tokenId Token ID
+     * @param _tokenId Token ID
      */
-    function burn(uint256 tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _burn(tokenId);
+    function burn(uint256 _tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _burn(_tokenId);
+    }
+
+    /**
+     * @notice Sets metadata URI for all tokens
+     * @param _uri New metadata URI
+     */
+    function setTokenURI(string calldata _uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        s_tokenURI = _uri;
+        emit TokenURIChanged(msg.sender, _uri);
     }
 
     /**
      * @notice Returns list of owners balances
-     * @param accounts List of addresses for which to return balance
+     * @param _accounts List of addresses for which to return balance
      * @return List of owners balances
      */
-    function balanceOfBatch(address[] calldata accounts) external view returns (uint256[] memory) {
-        uint256[] memory balances = new uint256[](accounts.length);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            balances[i] = balanceOf(accounts[i]);
+    function balanceOfBatch(address[] calldata _accounts) external view returns (uint256[] memory) {
+        uint256[] memory balances = new uint256[](_accounts.length);
+        for (uint256 i = 0; i < _accounts.length; i++) {
+            balances[i] = balanceOf(_accounts[i]);
         }
         return balances;
     }
 
     /**
-     * @notice Sets metadata URI for all tokens
-     * @param uri New metadata URI
+     * @notice Checks if token with id `tokenId` exists
+     * @param _tokenId Token ID
      */
-    function setTokenURI(string calldata uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _tokenURI = uri;
-        emit TokenURIChanged(msg.sender, uri);
+    function exists(uint256 _tokenId) external view returns (bool) {
+        return _exists(_tokenId);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */
+    function getSeries() external view returns (uint256) {
+        return s_series;
+    }
+
+    /**
+     * @notice Returns contract owner
+     * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
+     * @dev It is not equivalent of contract admin and has no special rights by itself. Roles are managed by AccessControl contract
+     * @return Contract owner
+     */
+    function owner() external view returns (address) {
+        return s_owner;
     }
 
     /**
      * @inheritdoc IERC721MetadataUpgradeable
      */
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        _requireMinted(tokenId);
-        return _tokenURI;
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        _requireMinted(_tokenId);
+        return s_tokenURI;
     }
 
     /**
      * @inheritdoc IERC165Upgradeable
      */
     function supportsInterface(
-        bytes4 interfaceId
+        bytes4 _interfaceId
     )
         public
         view
@@ -197,36 +228,33 @@ contract GenesisNFT is
         returns (bool)
     {
         return
-            interfaceId == type(IERC721Mintable).interfaceId ||
-            interfaceId == type(IGenesisNFT).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
-    function exists(uint256 _tokenId) external view returns (bool) {
-        return _exists(_tokenId);
+            _interfaceId == type(IERC721Mintable).interfaceId ||
+            _interfaceId == type(IGenesisNFT).interfaceId ||
+            super.supportsInterface(_interfaceId);
     }
 
     function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 batchSize
+        address _from,
+        address _to,
+        uint256 _tokenId,
+        uint256 _batchSize
     ) internal override whenNotPaused {
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
     }
 
-    function _burn(uint256 tokenId) internal override {
-        super._burn(tokenId);
-        _resetTokenRoyalty(tokenId);
+    function _burn(uint256 _tokenId) internal override {
+        super._burn(_tokenId);
+        _resetTokenRoyalty(_tokenId);
     }
 
-    function _validateMintBatch(address[] memory recipients, uint256[] memory amounts) private pure {
-        require(recipients.length == amounts.length, "Recipients and amounts length mismatch");
-        for (uint256 i = 0; i < recipients.length; i++) {
-            require(recipients[i] != address(0), "Recipient is zero address");
-            require(amounts[i] > 0, "Tokens amount is equal to zero");
+    function _validateMintBatch(address[] memory _recipients, uint256[] memory _amounts) private pure {
+        if (_recipients.length != _amounts.length) revert GenesisNFT__LengthMismatch();
+
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            if (_recipients[i] == address(0)) revert GenesisNFT__ZeroAddress();
+            if (_amounts[i] == 0) revert GenesisNFT__ZeroAmount();
         }
     }
 
-    uint256[47] private __gap;
+    uint256[48] private __gap;
 }

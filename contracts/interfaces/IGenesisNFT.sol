@@ -11,6 +11,13 @@ interface IGenesisNFT {
     event TokenMoved(uint256 indexed tokenId, address indexed to, bytes32 indexed txHash);
 
     /**
+     * @notice Emitted when the contract owner changes
+     * @param previousOwner address of the previous owner
+     * @param newOwner address of the new owner
+     */
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
      * @notice Returns Genesis NFT series number
      * @return Genesis NFT series number
      */
