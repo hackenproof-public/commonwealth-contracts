@@ -10,7 +10,6 @@ import { deploy } from '../utils/deployment';
 const deployFreeFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
   const deploymentConfig = getDeploymentConfig();
-  console.log('test');
   //Needs to be configure for every Fund deployment
   const nftName = 'Free Fund Slice NFT';
   const nftSymbol = 'FFSL';

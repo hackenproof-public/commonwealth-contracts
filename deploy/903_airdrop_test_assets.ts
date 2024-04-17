@@ -49,13 +49,13 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
 
     // await tx.wait();
 
-    // console.log('Wlth airdrop');
-    // const wlthTx = await wlth.transfer(receiver, wlthAmount);
-    // await wlthTx.wait();
+    console.log('Wlth airdrop');
+    const wlthTx = await wlth.transfer(receiver, wlthAmount);
+    await wlthTx.wait();
 
-    // console.log('Usdc airdrop');
-    // const usdcTx = await usdc.mint(receiver, usdcAmount);
-    // await usdcTx.wait();
+    console.log('Usdc airdrop');
+    const usdcTx = await usdc.mint(receiver, usdcAmount);
+    await usdcTx.wait();
 
     console.log(receiver);
     console.log('Gen1 airdrop');

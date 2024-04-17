@@ -269,8 +269,8 @@ const baseSepoliaConfig: networkConfigItem = {
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
-  uniswapQuaterV2Address: '0xb8687F610b5e7c3357Ff0eB5318E6f083532Af17',
-  uniswapSwapRouterV2Address: '0x141a36E0FdAc580bD934D2144AE354149464bC7e',
+  uniswapQuaterV2Address: '0xe49E4Eb94646ae12287DA0deaA8C2009BE3B2F71',
+  uniswapSwapRouterV2Address: '0x405B79393225fdc5E41628d7787E18E5EEA54A1C',
   zeroPointThreeFeeTier: '3000',
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
@@ -281,10 +281,10 @@ const baseSepoliaConfig: networkConfigItem = {
   stakingNFTRewardPerios: 86400,
   investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   investmentFundManagementFee: 1000,
-  nftVestingCadence: FIFTY_DAYS / 100,
-  nftVestingDuration: FIFTY_DAYS,
+  nftVestingCadence: (ONE_DAY * 5) / 120,
+  nftVestingDuration: ONE_DAY * 5,
   nftVestingStartTimestamp: 1711324800,
-  stakingRewardsDistributionStartTimestamp: 1712568616,
+  stakingRewardsDistributionStartTimestamp: 1713339270,
   stakingRewardsLeftoversUnlockDelay: 604800,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
@@ -294,7 +294,7 @@ const baseSepoliaConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1713012602
+  genesisNftVestingStartTimestamp: 1713343202
 };
 
 const baseSepoliaDevConfig: networkConfigItem = {
