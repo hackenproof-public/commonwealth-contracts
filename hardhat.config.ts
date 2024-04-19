@@ -103,12 +103,12 @@ const config: HardhatUserConfig = {
       verifyURL: env.ZKTESTNET_VERIFY_URL || ''
     },
     baseSepolia: {
-      url: "https://sepolia.base.org/",
+      url: env.BASESEPOLIA_RPC_URL || '',
       chainId: 84532,
       accounts: !!env.BASESEPOLIA_WALLET_PRIVATE_KEY ? [env.BASESEPOLIA_WALLET_PRIVATE_KEY] : [],
     },
     base: {
-      url: 'https://mainnet.base.org',
+      url: env.BASE_RPC_URL || '',
       chainId: 8453,
       accounts: !!env.BASE_WALLET_PRIVATE_KEY ? [env.BASE_WALLET_PRIVATE_KEY] : [],
     },

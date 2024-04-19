@@ -54,10 +54,23 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
   const out = async () => {
     console.log('Setting up rewards');
+    let setupFinished = false;
+    let startIndex = 0;
+    let endIndex = 300;
 
-    const tx = await stakingGenesisNFTVesting.setRewards(rewards);
-    console.log('Transaction hash:', tx.hash);
-    await tx.wait();
+    do {
+      const partialRewards = rewards.slice(startIndex, endIndex);
+
+      console.log(
+        `Setting up rewards from address ${rewards[startIndex].account} to address ${rewards[endIndex - 1].account}`
+      );
+      const tx = await stakingGenesisNFTVesting.setRewards(partialRewards);
+      await tx.wait();
+
+      startIndex = endIndex;
+      setupFinished = endIndex === rewards.length;
+      endIndex = endIndex + 300 < rewards.length ? (endIndex += 300) : rewards.length;
+    } while (!setupFinished);
   };
 
   await out();

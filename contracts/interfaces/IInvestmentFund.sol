@@ -144,6 +144,18 @@ interface IInvestmentFund {
     event StakingWlthSet(address indexed stakingWlth);
 
     /**
+     * @notice Emitted when max percentage wallet investment limit is set
+     * @param maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
+     */
+    event MaxPercentageWalletInvestmentLimitSet(uint256 indexed maxPercentageWalletInvestmentLimit);
+
+    /**
+     * @notice Emitted when unlocker address is set
+     * @param unlocker Address of payout unlocker
+     */
+    event UnlockerSet(address indexed unlocker);
+
+    /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:
@@ -214,6 +226,11 @@ interface IInvestmentFund {
     function removeProject(address _project) external;
 
     /**
+     * @notice Close fund
+     */
+    function closeFund() external;
+
+    /**
      * @notice Provides 'amount' number of USD Coin tokens to be distributed between investors.
      *
      * Emits a {ProfitProvided} event.
@@ -221,6 +238,24 @@ interface IInvestmentFund {
      * @param _amount Amount of tokens provided within payout
      */
     function provideProfit(uint256 _amount) external;
+
+    /**
+     * @notice Sets staking WLTH contract address.
+     * @param _stakingWlth Address of staking WLTH contract
+     */
+    function setStakingWlth(address _stakingWlth) external;
+
+    /**
+     * @notice Sets the maximum percentage of wallet investment limit.
+     * @param _maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
+     */
+    function setMaxPercentageWalletInvestmentLimit(uint256 _maxPercentageWalletInvestmentLimit) external;
+
+    /**
+     * @notice Sets the address of payout unlocker.
+     * @param _unlocker Address of payout unlocker
+     */
+    function setUnlocker(address _unlocker) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.

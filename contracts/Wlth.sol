@@ -15,11 +15,11 @@ contract Wlth is ERC20, IWlth {
 
     /**
      * @notice WLTH constructor
-     * @param name Name of the token
-     * @param symbol Symbol of the token
+     * @param _name Name of the token
+     * @param _symbol Symbol of the token
      */
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _mint(_msgSender(), 1e9 * 1e18); // 1 billion WLTH
+    constructor(string memory _name, string memory _symbol, address _wallet) ERC20(_name, _symbol) {
+        _mint(_wallet, 1e9 * 1e18); // 1 billion WLTH
     }
 
     /**

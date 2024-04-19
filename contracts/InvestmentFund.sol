@@ -410,18 +410,46 @@ contract InvestmentFund is
         emit ProfitProvided(address(this), _amount, initialCarryFee, blockData.number);
     }
 
-    function closeFund() external onlyAllowedStates onlyOwner {
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function closeFund() external override onlyAllowedStates onlyOwner {
         currentState = LibFund.STATE_CLOSED;
         emit FundClosed();
     }
 
-    function setStakingWlth(address _stakingWlth) external onlyOwner {
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function setStakingWlth(address _stakingWlth) external override onlyOwner {
         if (_stakingWlth == address(0)) {
             revert InvestmentFund__StakingWlthZeroAddress();
         }
 
         s_stakingWlth = IStakingWlth(_stakingWlth);
         emit StakingWlthSet(_stakingWlth);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function setMaxPercentageWalletInvestmentLimit(
+        uint256 _maxPercentageWalletInvestmentLimit
+    ) external override onlyOwner {
+        s_maxPercentageWalletInvestmentLimit = _maxPercentageWalletInvestmentLimit;
+        emit MaxPercentageWalletInvestmentLimitSet(_maxPercentageWalletInvestmentLimit);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function setUnlocker(address _unlocker) external override onlyOwner {
+        if (_unlocker == address(0)) {
+            revert InvestmentFund__UnlockerZeroAddress();
+        }
+
+        s_unlocker = _unlocker;
+        emit UnlockerSet(_unlocker);
     }
 
     /**

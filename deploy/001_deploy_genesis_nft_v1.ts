@@ -20,4 +20,4 @@ const deployGenesisNftV1: DeployFunction = async (hre: HardhatRuntimeEnvironment
 };
 
 export default deployGenesisNftV1;
-deployGenesisNftV1.tags = ['genesisNFTV1', 'genesisNFT', 'all', 'beta'];
+deployGenesisNftV1.tags = ['genesisNFTV1', 'all', 'beta'];

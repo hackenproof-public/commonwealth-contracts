@@ -7,14 +7,15 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployFreeFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
   const deploymentConfig = getDeploymentConfig();
+
   //Needs to be configure for every Fund deployment
-  const nftName = "Priceless Fund 'Slice'";
-  const nftSymbol = 'PRICELESS';
-  const fundName = 'Priceless Fund';
-  const cap = toUsdc('1350000');
+  const nftName = 'test nftName';
+  const nftSymbol = 'TSYM';
+  const fundName = 'asdadasdasd';
+  const cap = toUsdc('2000000');
 
   if (!nftName || !nftSymbol || !fundName || !cap) {
     throw Error(' Please configure nfName, nftSymbol, fundName and cap in the Investment Fund deployment script.');
@@ -56,38 +57,40 @@ const deployFreeFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
     },
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap },
-    { name: 'maxPercentageWalletInvestmentLimit', value: 2000 }
+    { name: 'maxPercentageWalletInvestmentLimit', value: 200 } // 200 = 2%
   ];
 
-  const freeFund = await deploy(hre, 'FreeFund', fundParameters, true, false);
+  const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
 
-  if (freeFund) {
-    await registerMinter(nft.address, freeFund.address);
-    await addToFundRegistry(fundRegistry, freeFund.address);
+  if (investmentFund) {
+    await registerMinter(nft.address, investmentFund.address);
+    await addToFundRegistry(fundRegistry, investmentFund.address);
   }
 };
 
-export default deployFreeFund;
-deployFreeFund.tags = ['freeFund'];
+export default deployFirstFund;
+deployFirstFund.tags = ['firstFund'];
 
-async function addToFundRegistry(fundRegistryAddress: string, freeFundAddress: string) {
-  console.log(`Registering Free Fund: ${freeFundAddress} in InvestmentFundRegistry: ${fundRegistryAddress}`);
+async function addToFundRegistry(fundRegistryAddress: string, investmentFundAddress: string) {
+  console.log(`Registering InvestmentFund: ${investmentFundAddress} in InvestmentFundRegistry: ${fundRegistryAddress}`);
 
   const fundRegistry = await ethers.getContractAt('InvestmentFundRegistry', fundRegistryAddress);
 
-  await fundRegistry.addFund(freeFundAddress);
+  await fundRegistry.addFund(investmentFundAddress);
 
-  console.log('Free Fund successfully registered in InvestmentFundRegistry');
+  console.log('InvestmentFund successfully registered in InvestmentFundRegistry');
 }
 
-async function registerMinter(freeFundNftAddress: string, freeFundAddress: string) {
-  console.log(`Registering Free Fund: ${freeFundAddress} as minter for InvestmentNFT: ${freeFundNftAddress}`);
+async function registerMinter(investmentFundNftAddress: string, investmentFundAddress: string) {
+  console.log(
+    `Registering InvestmentFund: ${investmentFundAddress} as minter for InvestmentNFT: ${investmentFundNftAddress}`
+  );
   const investmentNFT: InvestmentNFT = (await ethers.getContractAt(
     'InvestmentNFT',
-    freeFundNftAddress
+    investmentFundNftAddress
   )) as InvestmentNFT;
 
-  await investmentNFT.addMinter(freeFundAddress);
+  await investmentNFT.addMinter(investmentFundAddress);
 
-  console.log('Successfully registered Free Fund as minter for InvestmentNFT');
+  console.log('Successfully registered InvestmentFund as minter for InvestmentNFT');
 }

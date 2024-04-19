@@ -54,6 +54,7 @@ export interface networkConfigItem {
   genesisNftV2TokenUri: string;
   wlthName: string;
   wlthSymbol: string;
+  wlthWallet: string;
   uniswapQuaterV2Address: string;
   uniswapSwapRouterV2Address: string;
   zeroPointThreeFeeTier: string;
@@ -109,6 +110,7 @@ const localConfig: networkConfigItem = {
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
+  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   uniswapQuaterV2Address: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
   uniswapSwapRouterV2Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
   zeroPointThreeFeeTier: '3000',
@@ -151,6 +153,7 @@ const goerliConfig: networkConfigItem = {
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
+  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   uniswapQuaterV2Address: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
   uniswapSwapRouterV2Address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   zeroPointThreeFeeTier: '3000',
@@ -193,6 +196,7 @@ const zkSyncTestnet: networkConfigItem = {
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
+  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   uniswapQuaterV2Address: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
   uniswapSwapRouterV2Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
   zeroPointThreeFeeTier: '3000',
@@ -269,6 +273,7 @@ const baseSepoliaConfig: networkConfigItem = {
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
+  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   uniswapQuaterV2Address: '0xe49E4Eb94646ae12287DA0deaA8C2009BE3B2F71',
   uniswapSwapRouterV2Address: '0x405B79393225fdc5E41628d7787E18E5EEA54A1C',
   zeroPointThreeFeeTier: '3000',
@@ -284,7 +289,7 @@ const baseSepoliaConfig: networkConfigItem = {
   nftVestingCadence: (ONE_DAY * 5) / 120,
   nftVestingDuration: ONE_DAY * 5,
   nftVestingStartTimestamp: 1711324800,
-  stakingRewardsDistributionStartTimestamp: 1713339270,
+  stakingRewardsDistributionStartTimestamp: 1713508866,
   stakingRewardsLeftoversUnlockDelay: 604800,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
@@ -297,6 +302,48 @@ const baseSepoliaConfig: networkConfigItem = {
   genesisNftVestingStartTimestamp: 1713343202
 };
 
+const baseConfig: networkConfigItem = {
+  genesisNftS1Name: 'Common Wealth Genesis NFT Series 1',
+  genesisNFTS1Symbol: 'CWOGS1',
+  genesisNftS2Name: 'Common Wealth Genesis NFT Series 2 ',
+  genesisNFTS2Symbol: 'CWOGS2',
+  genesisNftV1Series: 1,
+  genesisNftV2Series: 2,
+  ownerAccount: '0xbe7A65e6B0A252C71a666CaC8cA2e3c2D741F4aF',
+  genesisNftRoyalty: 650,
+  genesisNftRoyaltyAccount: '', //TODO
+  genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
+  genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
+  wlthName: '', //TODO
+  wlthSymbol: '', //TODO
+  wlthWallet: '', //TODO
+  uniswapQuaterV2Address: '', //Not used
+  uniswapSwapRouterV2Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
+  zeroPointThreeFeeTier: '', //TODO
+  stakingTransactionFee: 100,
+  stakingTreasuryWallet: '',
+  communityFundWallet: '', //TODO
+  maxDiscount: 3000,
+  periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
+  coefficients: [5000, 3750, 3125, 2500],
+  stakingNFTRewardPerios: 0, // Not used
+  investmentFundTreasuryWallet: '', //TODO
+  investmentFundManagementFee: 1000,
+  nftVestingCadence: 0, //TODO
+  nftVestingDuration: 0, //TODO,
+  nftVestingStartTimestamp: 0, //TODO
+  stakingRewardsDistributionStartTimestamp: 0, //TODO
+  stakingRewardsLeftoversUnlockDelay: 0, //TODO
+  genesisNftRevenueAddress: '', //TODO
+  lpPoolAddress: '', //TODO
+  burnAddress: '', //TODO
+  stakingRewardsAllocation: parseEther('0'), //TODO
+  unlocker: '', //TODO
+  zkSyncGasPerPubdataLimit: 0, //Not used
+  genesisNftVestingAllocation: parseEther('0'), //TODO
+  genesisNftVestingLeftoversUnlockDelay: 0, //TODO
+  genesisNftVestingStartTimestamp: 0 //TODO
+};
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig
 };
@@ -341,5 +388,9 @@ export const networkConfig: networkConfigInfo = {
     ...baseSepoliaConfig,
     dev: { ...baseSepoliaDevConfig },
     stage: { ...baseSepoliaStageConfig }
+  },
+
+  8453: {
+    ...baseConfig
   }
 };

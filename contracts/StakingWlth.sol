@@ -152,10 +152,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     /**
      * @inheritdoc IStakingWlth
      */
-    function unstake(address fund, uint256 amountToUnstake) external nonReentrant {
-        _validateUnstake(_msgSender(), fund, amountToUnstake);
+    function unstake(address fund, uint256 amount) external nonReentrant {
+        _validateUnstake(_msgSender(), fund, amount);
 
         uint256 penalty;
+        uint256 amountToUnstake = amount;
 
         if (_isFundInCRP(fund)) {
             _unstakeFromAllPositions(_msgSender(), fund, amountToUnstake);
@@ -173,7 +174,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             }
         }
 
-        uint256 fee = Math.mulDiv(((amountToUnstake - penalty) * 99) / 100, transactionFee, BASIS_POINT_DIVISOR);
+        uint256 fee = Math.mulDiv(((amount - penalty) * 99) / 100, transactionFee, BASIS_POINT_DIVISOR);
 
         if (penalty > 0) {
             IWlth(token).burn((((penalty * 99) / 100) * 99) / 100);
@@ -184,9 +185,9 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             IERC20Upgradeable(token).safeTransfer(communityFund, fee);
         }
 
-        emit TokensUnstaked(_msgSender(), fund, amountToUnstake);
+        emit TokensUnstaked(_msgSender(), fund, amount);
 
-        IERC20Upgradeable(token).safeTransfer(_msgSender(), (amountToUnstake * 99) / 100 - fee - (penalty * 99) / 100);
+        IERC20Upgradeable(token).safeTransfer(_msgSender(), (amount * 99) / 100 - fee - (penalty * 99) / 100);
     }
 
     function getUnstakeSimulation(address fund, uint256 amountToUnstake) external view returns (uint256, uint256) {

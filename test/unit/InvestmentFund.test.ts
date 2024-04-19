@@ -318,50 +318,51 @@ describe('InvestmentFund', () => {
         ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__InvestmentNftZeroAddress');
       });
 
-      it('Should revert when staking address is zero address', async () => {
-        const {
-          deployer,
-          owner,
-          unlocker,
-          treasuryWallet,
-          lpPool,
-          burnAddr,
-          communityFund,
-          genesisNftRevenue,
-          investmentFund,
-          usdc,
-          investmentNft,
-          fundName,
-          managementFee,
-          cap,
-          maxPercentageWalletInvestmentLimit
-        } = await loadFixture(deployInvestmentFund);
+      //TODO Uncoment when staking is on production
+      // it('Should revert when staking address is zero address', async () => {
+      //   const {
+      //     deployer,
+      //     owner,
+      //     unlocker,
+      //     treasuryWallet,
+      //     lpPool,
+      //     burnAddr,
+      //     communityFund,
+      //     genesisNftRevenue,
+      //     investmentFund,
+      //     usdc,
+      //     investmentNft,
+      //     fundName,
+      //     managementFee,
+      //     cap,
+      //     maxPercentageWalletInvestmentLimit
+      //   } = await loadFixture(deployInvestmentFund);
 
-        await expect(
-          deployProxy(
-            'InvestmentFund',
-            [
-              owner.address,
-              unlocker.address,
-              fundName,
-              usdc.address,
-              investmentNft.address,
-              ethers.constants.AddressZero,
-              {
-                treasuryWallet: treasuryWallet.address,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
-              managementFee,
-              cap,
-              maxPercentageWalletInvestmentLimit
-            ],
-            deployer
-          )
-        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__StakingWlthZeroAddress');
-      });
+      //   await expect(
+      //     deployProxy(
+      //       'InvestmentFund',
+      //       [
+      //         owner.address,
+      //         unlocker.address,
+      //         fundName,
+      //         usdc.address,
+      //         investmentNft.address,
+      //         ethers.constants.AddressZero,
+      //         {
+      //           treasuryWallet: treasuryWallet.address,
+      //           lpPool: lpPool.address,
+      //           burn: burnAddr.address,
+      //           communityFund: communityFund.address,
+      //           genesisNftRevenue: genesisNftRevenue.address
+      //         },
+      //         managementFee,
+      //         cap,
+      //         maxPercentageWalletInvestmentLimit
+      //       ],
+      //       deployer
+      //     )
+      //   ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__StakingWlthZeroAddress');
+      // });
 
       it('Should revert when treasuryWallet address is zero address', async () => {
         const {
@@ -1671,6 +1672,88 @@ describe('InvestmentFund', () => {
         await expect(investmentFund.connect(user1).withdraw())
           .to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__NoFundsAvailable')
           .withArgs(user1.address);
+      });
+    });
+  });
+
+  describe('Set the staking wlth contract', () => {
+    describe('Success', () => {
+      it('Should set the staking contract', async () => {
+        const { owner, investmentFund, staking } = await loadFixture(deployInvestmentFund);
+
+        expect(await investmentFund.connect(owner).setStakingWlth(staking.address))
+          .to.emit(investmentFund, 'StakingWlthSet')
+          .withArgs(staking.address);
+        expect(await investmentFund.stakingWlth()).to.be.equal(staking.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund, staking } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(user1).setStakingWlth(staking.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it("Should revert when zero address is passed as the staking contract's address", async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          investmentFund.connect(owner).setStakingWlth(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__StakingWlthZeroAddress');
+      });
+    });
+  });
+
+  describe('Set the max investment percentage limit', () => {
+    describe('Success', () => {
+      it('Should set the max percentage investment limit', async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        expect(await investmentFund.connect(owner).setMaxPercentageWalletInvestmentLimit(50))
+          .to.emit(investmentFund, 'MaxInvestmentPercentageSet')
+          .withArgs(50);
+        expect(await investmentFund.maxPercentageWalletInvestmentLimit()).to.be.equal(50);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund, staking } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(user1).setMaxPercentageWalletInvestmentLimit(50)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
+
+  describe('Set the payouts unlocker', () => {
+    describe('Success', () => {
+      it('Should set the unlocker', async () => {
+        const { owner, investmentFund, unlocker } = await loadFixture(deployInvestmentFund);
+
+        expect(await investmentFund.connect(owner).setUnlocker(unlocker.address))
+          .to.emit(investmentFund, 'PayoutsUnlockerSet')
+          .withArgs(unlocker.address);
+        expect(await investmentFund.unlocker()).to.be.equal(unlocker.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund, unlocker } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(user1).setUnlocker(unlocker.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it("Should revert when zero address is passed as the unlocker contract's address", async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          investmentFund.connect(owner).setUnlocker(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__UnlockerZeroAddress');
       });
     });
   });
