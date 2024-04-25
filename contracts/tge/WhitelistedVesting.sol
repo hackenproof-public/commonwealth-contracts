@@ -28,6 +28,8 @@ error WhitelistedVesting__NoSurplus(uint256 balance, uint256 released, uint256 a
 error WhitelistedVesting__VestingStartTimestampAlreadyDefined();
 error WhitelistedVesting__PastVestingStartTimestamp();
 error WhitelistedVesting__PastCadenceModificationNotAllowed();
+error WhitelistedVesting__InvalidSingleCadanceWalletAllocation();
+error WhitelistedVesting__WalletClaimedWithPenalty();
 
 /**
  * @title WhitelistedVesting
@@ -52,7 +54,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
     address private immutable i_communityFund;
 
     /**
-     * @notice Timestamp when emergency withdrawal is unlocked.
+     * @notice Cadences amount
      */
     uint256 private immutable i_cadenceAmount;
 
@@ -120,6 +122,11 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @notice WLTH allocation distribution per wallet
      */
     mapping(address => mapping(uint256 => uint256)) private s_distribution;
+
+    /**
+     * @notice Indicates if wallet has claimed with penalty
+     */
+    mapping(address => bool) private s_claimedWithPenalty;
 
     /**
      * @notice controls if function is enabled only in case of gamified vesting
@@ -199,12 +206,16 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      */
     function releaseWithPenalty(uint256 _amount, address _beneficiary) external override gamified afterVestingStart {
         _release(_amount, _beneficiary, true);
+        s_claimedWithPenalty[_beneficiary] = true;
     }
 
     /**
      * @inheritdoc IWhitelistedVesting
      */
     function deactivateAddress(address _wallet) external override onlyOwner {
+        if (s_claimedWithPenalty[_wallet]) {
+            revert WhitelistedVesting__WalletClaimedWithPenalty();
+        }
         uint256 cadenceNumber = block.timestamp < s_vestingStartTimestamp ? 0 : actualCadence();
 
         s_totalWalletsAllocation -= (s_distribution[_wallet][i_cadenceAmount] - s_distribution[_wallet][cadenceNumber]);
@@ -232,6 +243,9 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         uint256 _allocation,
         uint256[] calldata _distribution
     ) external override onlyOwner {
+        if (s_claimedWithPenalty[_whitelistedAddress]) {
+            revert WhitelistedVesting__WalletClaimedWithPenalty();
+        }
         uint256 currentCadence = actualCadence();
         uint256 cadencesAvailableToSetup = block.timestamp < s_vestingStartTimestamp
             ? i_cadenceAmount
@@ -241,9 +255,21 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         if (_allocation > i_allocation - s_totalWalletsAllocation) revert WhitelistedVesting__TotalAllocationMismatch();
         if (_allocation != _distribution[_distribution.length - 1])
             revert WhitelistedVesting__TotalAllocationPerWalletMismatch();
+
         for (uint i; i < _distribution.length; ) {
             if (s_cadenceAllocation[i] + _distribution[i] > s_tokenReleaseDistribution[i])
                 revert WhitelistedVesting__TotalAllocationPerCadenceMismatch();
+            unchecked {
+                i++;
+            }
+        }
+
+        uint256 buffer;
+        for (uint i = 0; i < _distribution.length - 1; ) {
+            buffer = _distribution[i];
+            if (buffer <= _distribution[i + 1]) {
+                buffer = _distribution[i + 1];
+            } else revert WhitelistedVesting__InvalidDistributionArrayAllocation();
             unchecked {
                 i++;
             }
@@ -276,12 +302,22 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         uint256 _cadenceNumber,
         uint256 _amount
     ) external override onlyOwner {
+        if (s_claimedWithPenalty[_wallet]) revert WhitelistedVesting__WalletClaimedWithPenalty();
         uint256 walletAllocationBeforeChange = s_distribution[_wallet][_cadenceNumber];
         uint256 givenCadenceAllocation = s_cadenceAllocation[_cadenceNumber];
         if (actualCadence() > _cadenceNumber) revert WhitelistedVesting__PastCadenceModificationNotAllowed();
         if (givenCadenceAllocation - walletAllocationBeforeChange + _amount >= vestedAmountToCadence(_cadenceNumber))
             revert WhitelistedVesting__TotalAllocationPerCadenceMismatch();
-
+        if (
+            (_cadenceNumber == 0 && _amount > s_distribution[_wallet][1]) ||
+            (_cadenceNumber == i_cadenceAmount && _amount < s_distribution[_wallet][_cadenceNumber - 1]) ||
+            (_cadenceNumber > 0 &&
+                _cadenceNumber < i_cadenceAmount &&
+                (_amount < s_distribution[_wallet][_cadenceNumber - 1] ||
+                    _amount > s_distribution[_wallet][_cadenceNumber + 1]))
+        ) {
+            revert WhitelistedVesting__InvalidSingleCadanceWalletAllocation();
+        }
         s_distribution[_wallet][_cadenceNumber] = _amount;
         s_cadenceAllocation[_cadenceNumber] += _amount >= walletAllocationBeforeChange
             ? _amount - walletAllocationBeforeChange
@@ -378,7 +414,10 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         if (block.timestamp < s_vestingStartTimestamp) {
             return 0;
         } else {
-            return s_distribution[_wallet][actualCadence()];
+            return
+                s_claimedWithPenalty[_wallet]
+                    ? s_distribution[_wallet][i_cadenceAmount]
+                    : s_distribution[_wallet][actualCadence()];
         }
     }
 
@@ -515,7 +554,6 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
 
         uint256 penaltyAmount = _penalty ? calculatePenalty(toRelease, _beneficiary) : 0;
         emit Released(_beneficiary, toRelease, penaltyAmount);
-
         IERC20(i_wlth).safeTransfer(_beneficiary, toRelease - penaltyAmount);
 
         if (penaltyAmount > 0) {

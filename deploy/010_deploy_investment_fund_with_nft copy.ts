@@ -15,7 +15,7 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
   const nftName = 'RWA Investment Fund NFT';
   const nftSymbol = 'RWAIF';
   const fundName = 'Real World Asset Investment Fund';
-  const cap = toUsdc('6000000');
+  const cap = toUsdc('10000000');
 
   if (!nftName || !nftSymbol || !fundName || !cap) {
     throw Error(' Please configure nfName, nftSymbol, fundName and cap in the Investment Fund deployment script.');
@@ -30,7 +30,9 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
-    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty }
+    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
+    { name: 'minimumValue', value: deploymentConfig.defaultMinimumInvestment }
+
   ];
 
   const nft = await deploy(hre, 'InvestmentNFT', nftParameters, true, false);
@@ -58,7 +60,8 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     },
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap },
-    { name: 'maxPercentageWalletInvestmentLimit', value: 200 }
+    { name: 'maxPercentageWalletInvestmentLimit', value: 200 },
+    { name: 'minimumInvestment', value: deploymentConfig.defaultMinimumInvestment }
   ];
 
   const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);

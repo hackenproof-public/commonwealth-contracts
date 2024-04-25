@@ -1,7 +1,9 @@
+import { NonceManager } from '@ethersproject/experimental';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers, network } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { getEnvByNetwork } from '../scripts/utils';
 import { toUsdc } from '../test/utils';
 import { GenesisNFT, USDC, Wlth } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
@@ -15,18 +17,20 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
   const genesisNFTV1Address = await getContractAddress(network.config.chainId!, 'GenesisNFTV1');
   const genesisNFTV2Address = await getContractAddress(network.config.chainId!, 'GenesisNFTV2');
 
-  const provider = new ethers.providers.JsonRpcProvider(
-    'https://base-sepolia.g.alchemy.com/v2/PtDweHWxzkO1laGzgPFBGPTzVBKRvMWz'
+  const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
+  const provider = new ethers.providers.JsonRpcProvider(rpc);
+
+  const wallet = new NonceManager(
+    new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', hre.network.name)!, provider)
   );
-  const wallet = new ethers.Wallet('f1a503f2394a2445abc84a65e6a4e28c4496b65b0c6e28a63ad8b924cb1b7232', provider);
 
   const wlth: Wlth = (await ethers.getContractAt('Wlth', wlthAddress, wallet)) as Wlth;
   const usdc: USDC = (await ethers.getContractAt('USDC', usdcAddress, wallet)) as USDC;
   const genesisNFT1: GenesisNFT = (await ethers.getContractAt('GenesisNFT', genesisNFTV1Address, wallet)) as GenesisNFT;
   const genesisNFT2: GenesisNFT = (await ethers.getContractAt('GenesisNFT', genesisNFTV2Address, wallet)) as GenesisNFT;
 
-  console.log(wallet.address);
-  console.log(await provider.getBalance(wallet.address));
+  console.log(wallet);
+  console.log(await provider.getBalance(await wallet.getAddress()));
 
   const wlthAmount = parseEther('10000000');
   const usdcAmount = toUsdc('2000000');

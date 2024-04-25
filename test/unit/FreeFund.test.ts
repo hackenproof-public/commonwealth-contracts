@@ -38,6 +38,7 @@ describe('FreeFund', () => {
     const managementFee = 0;
     const cap = toUsdc('1000000');
     const maxPercentageWalletInvestmentLimit = 0;
+    const minimumInvestment = toUsdc('50');
 
     const feeDistributionAddresses = {
       treasuryWallet: treasuryWallet.address,
@@ -80,7 +81,8 @@ describe('FreeFund', () => {
         feeDistributionAddresses,
         managementFee,
         cap,
-        maxPercentageWalletInvestmentLimit
+        maxPercentageWalletInvestmentLimit,
+        minimumInvestment
       ],
       deployer
     );
@@ -103,6 +105,7 @@ describe('FreeFund', () => {
       managementFee,
       cap,
       maxPercentageWalletInvestmentLimit,
+      minimumInvestment,
       tokenUri,
       user1,
       user2,
@@ -128,7 +131,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         const details = await freeFund.getDetails();
@@ -147,6 +151,7 @@ describe('FreeFund', () => {
         expect(await freeFund.managementFee()).to.be.equal(managementFee);
         expect(await freeFund.cap()).to.be.equal(cap);
         expect(await freeFund.maxPercentageWalletInvestmentLimit()).to.be.equal(maxPercentageWalletInvestmentLimit);
+        expect(await freeFund.minimumInvestment()).to.be.equal(minimumInvestment);
         expect(await freeFund.totalIncome()).to.be.equal(0);
         expect(await freeFund.payouts()).to.have.lengthOf(0);
         expect(parseBytes32String(await freeFund.currentState())).to.equal(FundState.FundsIn);
@@ -178,6 +183,7 @@ describe('FreeFund', () => {
         getInterfaceId(IInvestmentFund__factory.createInterface());
         expect(parseBytes32String(details.state)).to.be.equal(FundState.FundsIn);
         expect(details.maxPercentageWalletInvestmentLimit).to.be.equal(maxPercentageWalletInvestmentLimit);
+        expect(details.minimumInvestment).to.be.equal(minimumInvestment);
       });
     });
 
@@ -198,7 +204,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -220,7 +227,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -243,7 +251,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -265,7 +274,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -288,7 +298,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -310,57 +321,61 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
         ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__InvestmentNftZeroAddress');
       });
 
-      it('Should revert when staking address is zero address', async () => {
-        const {
-          deployer,
-          owner,
-          unlocker,
-          treasuryWallet,
-          lpPool,
-          burnAddr,
-          communityFund,
-          genesisNftRevenue,
-          freeFund,
-          usdc,
-          investmentNft,
-          fundName,
-          managementFee,
-          cap,
-          maxPercentageWalletInvestmentLimit
-        } = await loadFixture(deployInvestmentFund);
+      //TODO Uncoment when staking is on production
+      // it('Should revert when staking address is zero address', async () => {
+      //   const {
+      //     deployer,
+      //     owner,
+      //     unlocker,
+      //     treasuryWallet,
+      //     lpPool,
+      //     burnAddr,
+      //     communityFund,
+      //     genesisNftRevenue,
+      //     freeFund,
+      //     usdc,
+      //     investmentNft,
+      //     fundName,
+      //     managementFee,
+      //     cap,
+      //     maxPercentageWalletInvestmentLimit,
+      //     minimumInvestment
+      //   } = await loadFixture(deployInvestmentFund);
 
-        await expect(
-          deployProxy(
-            'FreeFund',
-            [
-              owner.address,
-              unlocker.address,
-              fundName,
-              usdc.address,
-              investmentNft.address,
-              ethers.constants.AddressZero,
-              {
-                treasuryWallet: treasuryWallet.address,
-                lpPool: lpPool.address,
-                burn: burnAddr.address,
-                communityFund: communityFund.address,
-                genesisNftRevenue: genesisNftRevenue.address
-              },
-              managementFee,
-              cap,
-              maxPercentageWalletInvestmentLimit
-            ],
-            deployer
-          )
-        ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
-      });
+      //   await expect(
+      //     deployProxy(
+      //       'FreeFund',
+      //       [
+      //         owner.address,
+      //         unlocker.address,
+      //         fundName,
+      //         usdc.address,
+      //         investmentNft.address,
+      //         ethers.constants.AddressZero,
+      //         {
+      //           treasuryWallet: treasuryWallet.address,
+      //           lpPool: lpPool.address,
+      //           burn: burnAddr.address,
+      //           communityFund: communityFund.address,
+      //           genesisNftRevenue: genesisNftRevenue.address
+      //         },
+      //         managementFee,
+      //         cap,
+      //         maxPercentageWalletInvestmentLimit,
+      //         minimumInvestment
+      //       ],
+      //       deployer
+      //     )
+      //   ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
+      // });
 
       it('Should revert when treasuryWallet address is zero address', async () => {
         const {
@@ -378,7 +393,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -400,7 +416,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -423,7 +440,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -445,7 +463,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -468,7 +487,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -490,7 +510,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -513,7 +534,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -535,7 +557,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -558,7 +581,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -580,7 +604,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -603,7 +628,8 @@ describe('FreeFund', () => {
           staking,
           fundName,
           managementFee,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -625,7 +651,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               0,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -648,7 +675,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -673,7 +701,8 @@ describe('FreeFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -682,7 +711,6 @@ describe('FreeFund', () => {
 
       it('Should revert when initialize again', async () => {
         const {
-          deployer,
           owner,
           unlocker,
           treasuryWallet,
@@ -697,7 +725,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -717,7 +746,8 @@ describe('FreeFund', () => {
             },
             managementFee,
             cap,
-            maxPercentageWalletInvestmentLimit
+            maxPercentageWalletInvestmentLimit,
+            minimumInvestment
           )
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
@@ -1583,6 +1613,111 @@ describe('FreeFund', () => {
         await expect(freeFund.connect(user1).withdraw())
           .to.be.revertedWithCustomError(freeFund, 'InvestmentFund__NoFundsAvailable')
           .withArgs(user1.address);
+      });
+    });
+  });
+
+  describe('Set the staking wlth contract', () => {
+    describe('Success', () => {
+      it('Should set the staking contract', async () => {
+        const { owner, freeFund, staking } = await loadFixture(deployInvestmentFund);
+
+        expect(await freeFund.connect(owner).setStakingWlth(staking.address))
+          .to.emit(freeFund, 'StakingWlthSet')
+          .withArgs(staking.address);
+        expect(await freeFund.stakingWlth()).to.be.equal(staking.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, freeFund, staking } = await loadFixture(deployInvestmentFund);
+
+        await expect(freeFund.connect(user1).setStakingWlth(staking.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it("Should revert when zero address is passed as the staking contract's address", async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          freeFund.connect(owner).setStakingWlth(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
+      });
+    });
+  });
+
+  describe('Set the max investment percentage limit', () => {
+    describe('Success', () => {
+      it('Should set the max percentage investment limit', async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        expect(await freeFund.connect(owner).setMaxPercentageWalletInvestmentLimit(50))
+          .to.emit(freeFund, 'MaxInvestmentPercentageSet')
+          .withArgs(50);
+        expect(await freeFund.maxPercentageWalletInvestmentLimit()).to.be.equal(50);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, freeFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(freeFund.connect(user1).setMaxPercentageWalletInvestmentLimit(50)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
+
+  describe('Set the minimum investment amount', () => {
+    describe('Success', () => {
+      it('Should set the minimum investment amount', async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        expect(await freeFund.connect(owner).setMinimumInvestment(50))
+          .to.emit(freeFund, 'MinimumInvestmentSet')
+          .withArgs(50);
+        expect(await freeFund.minimumInvestment()).to.be.equal(50);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, freeFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(freeFund.connect(user1).setMinimumInvestment(50)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
+
+  describe('Set the payouts unlocker', () => {
+    describe('Success', () => {
+      it('Should set the unlocker', async () => {
+        const { owner, freeFund, unlocker } = await loadFixture(deployInvestmentFund);
+
+        expect(await freeFund.connect(owner).setUnlocker(unlocker.address))
+          .to.emit(freeFund, 'PayoutsUnlockerSet')
+          .withArgs(unlocker.address);
+        expect(await freeFund.unlocker()).to.be.equal(unlocker.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, freeFund, unlocker } = await loadFixture(deployInvestmentFund);
+
+        await expect(freeFund.connect(user1).setUnlocker(unlocker.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it("Should revert when zero address is passed as the unlocker contract's address", async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(freeFund.connect(owner).setUnlocker(ethers.constants.AddressZero)).to.be.revertedWithCustomError(
+          freeFund,
+          'InvestmentFund__UnlockerZeroAddress'
+        );
       });
     });
   });

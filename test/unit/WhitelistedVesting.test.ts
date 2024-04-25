@@ -1064,6 +1064,138 @@ describe('Whitelisted vesting unit tests', () => {
       );
     });
 
+    it('Should revert when deactivate a wallet which already claimed with penalty', async () => {
+      const {
+        whitelistedVesting,
+        vestingStartTimestamp,
+        owner,
+        beneficiary1,
+        wlth,
+        allocation,
+        tokenReleaseDistribution
+      } = await loadFixture(deploySimpleVesting);
+      wlth.transfer.returns(true);
+      wlth.balanceOf.returns(allocation);
+
+      expect(
+        await whitelistedVesting
+          .connect(owner)
+          .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution)
+      );
+
+      await time.increaseTo(vestingStartTimestamp + 1);
+      await whitelistedVesting.connect(beneficiary1).releaseWithPenalty(allocation, beneficiary1.address);
+
+      await expect(
+        whitelistedVesting.connect(owner).deactivateAddress(beneficiary1.address)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__WalletClaimedWithPenalty');
+    });
+
+    it('Should revert when resetup a wallet which already claimed with penalty', async () => {
+      const { whitelistedVesting, vestingStartTimestamp, owner, beneficiary1, wlth } = await loadFixture(
+        deploySimpleVesting
+      );
+      wlth.transfer.returns(true);
+      const allocation = toWlth('100');
+      wlth.balanceOf.returns(allocation);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      const secondAllocation = toWlth('200');
+      const secondDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('200')
+      ];
+
+      expect(
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution)
+      );
+
+      await time.increaseTo(vestingStartTimestamp + 1);
+      await whitelistedVesting.connect(beneficiary1).releaseWithPenalty(allocation, beneficiary1.address);
+
+      await expect(
+        whitelistedVesting
+          .connect(owner)
+          .whitelistedWalletSetup(beneficiary1.address, secondAllocation, secondDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__WalletClaimedWithPenalty');
+    });
+
+    it('Should revert when setup wallet and cadane lower then previous', async () => {
+      const { whitelistedVesting, vestingStartTimestamp, owner, beneficiary1, wlth } = await loadFixture(
+        deploySimpleVesting
+      );
+      wlth.transfer.returns(true);
+      const allocation = toWlth('100');
+      wlth.balanceOf.returns(allocation);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await expect(
+        whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
     it('Should remove single address from the whitelist before vesting start', async () => {
       const { whitelistedVesting, owner, beneficiary1, allocation, tokenReleaseDistribution, vestingStartTimestamp } =
         await loadFixture(deploySimpleVesting);
@@ -1153,6 +1285,249 @@ describe('Whitelisted vesting unit tests', () => {
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__PastCadenceModificationNotAllowed');
     });
 
+    it('Should revert if try to set wallet allocation for a wallet which already claimed with penalty', async () => {
+      const { wlth, whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(
+        deploySimpleVesting
+      );
+
+      const newAmount = toWlth('51');
+      const allocation = toWlth('100');
+      const cadenceNumber = 7;
+      wlth.transfer.returns(true);
+      wlth.balanceOf.returns(allocation);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
+      await time.increaseTo(vestingStartTimestamp);
+
+      await whitelistedVesting.connect(beneficiary1).releaseWithPenalty(allocation, beneficiary1.address);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__WalletClaimedWithPenalty');
+    });
+
+    it('Should revert if max cadence and amount lower then previous', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      const newAmount = toWlth('1');
+      const allocation = toWlth('100');
+      const cadenceNumber = 19;
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+    });
+
+    it('Should revert if cadence between fist and last and amount lower then previous', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      const newAmount = toWlth('1');
+      const allocation = toWlth('100');
+      const cadenceNumber = 8;
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+    });
+
+    it('Should revert if cadence between fist and last and amount higher then next', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      const newAmount = toWlth('101');
+      const allocation = toWlth('100');
+      const cadenceNumber = 8;
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+    });
+
+    it('Should revert if first cadence amount lower then next', async () => {
+      const {
+        wlth,
+        communityFund,
+        leftoversUnlockDelay,
+        vestingStartTimestamp,
+        allocation,
+        deployer,
+        owner,
+        beneficiary1
+      } = await loadFixture(deploySimpleVesting);
+
+      const adjustedTokenReleaseDistribution = [
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('6960000'),
+        toWlth('12180000'),
+        toWlth('17400000'),
+        toWlth('22620000'),
+        toWlth('27840000'),
+        toWlth('33060000'),
+        toWlth('38280000'),
+        toWlth('43500000'),
+        toWlth('48720000'),
+        toWlth('53940000'),
+        toWlth('59160000'),
+        toWlth('64380000'),
+        toWlth('69600000')
+      ];
+
+      const whitelistedVesting: WhitelistedVesting = await deploy(
+        'WhitelistedVesting',
+        [
+          gamification,
+          owner.address,
+          wlth.address,
+          communityFund.address,
+          allocation,
+          duration,
+          cadence,
+          leftoversUnlockDelay,
+          vestingStartTimestamp,
+          adjustedTokenReleaseDistribution
+        ],
+        deployer
+      );
+
+      const newAmount = toWlth('1');
+      const userAllocation = toWlth('100');
+      const cadenceNumber = 0;
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting
+        .connect(owner)
+        .whitelistedWalletSetup(beneficiary1.address, userAllocation, distribution);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+    });
+
     it('Should revert if try to set wallet allocation for past cadence', async () => {
       const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
 
@@ -1235,10 +1610,10 @@ describe('Whitelisted vesting unit tests', () => {
       ).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('Should increase wallet allocation for specific cadence', async () => {
+    it('Should decrease wallet allocation for specific cadence', async () => {
       const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
 
-      const newAmount = toWlth('101');
+      const newAmount = toWlth('50');
       const allocation = toWlth('100');
       const cadenceNumber = 7; // end of cadence 6 means start of cadence 7
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
@@ -1269,6 +1644,48 @@ describe('Whitelisted vesting unit tests', () => {
       await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
 
       await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber);
+
+      expect(
+        await whitelistedVesting
+          .connect(owner)
+          .setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
+      )
+        .to.emit(whitelistedVesting, 'CadenceAllocationForWalletChanged')
+        .withArgs(beneficiary1.address, cadenceNumber, newAmount);
+    });
+
+    it('Should increase wallet allocation for specific cadence', async () => {
+      const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
+
+      const newAmount = toWlth('200');
+      const allocation = toWlth('100');
+      const cadenceNumber = 19; // end of cadence 6 means start of cadence 7
+      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
 
       expect(
         await whitelistedVesting

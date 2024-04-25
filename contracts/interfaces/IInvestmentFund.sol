@@ -24,6 +24,7 @@ interface IInvestmentFund {
         Payout[] payouts;
         bytes32 state;
         uint256 maxPercentageWalletInvestmentLimit;
+        uint256 minimumInvestment;
     }
 
     /**
@@ -150,6 +151,12 @@ interface IInvestmentFund {
     event MaxPercentageWalletInvestmentLimitSet(uint256 indexed maxPercentageWalletInvestmentLimit);
 
     /**
+     * Emmited when minimum investment amount is set
+     * @param minimumInvetment Minimum investment amount
+     */
+    event MinimumInvestmentSet(uint256 indexed minimumInvetment);
+
+    /**
      * @notice Emitted when unlocker address is set
      * @param unlocker Address of payout unlocker
      */
@@ -250,6 +257,12 @@ interface IInvestmentFund {
      * @param _maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
      */
     function setMaxPercentageWalletInvestmentLimit(uint256 _maxPercentageWalletInvestmentLimit) external;
+
+    /**
+     * @notice Sets the minimum investment amount.
+     * @param _minimumInvestment Minimum investment amount
+     */
+    function setMinimumInvestment(uint256 _minimumInvestment) external;
 
     /**
      * @notice Sets the address of payout unlocker.
@@ -374,9 +387,14 @@ interface IInvestmentFund {
     function userNextPayout(address _wallet) external view returns (uint256);
 
     /**
-     * @notice Returns total investment
+     * @notice Returns maximum investment percentage investment
      */
     function maxPercentageWalletInvestmentLimit() external view returns (uint256);
+
+    /**
+     * @notice Returns minimum investment amount
+     */
+    function minimumInvestment() external view returns (uint256);
 
     /**
      * @notice Returns total investment

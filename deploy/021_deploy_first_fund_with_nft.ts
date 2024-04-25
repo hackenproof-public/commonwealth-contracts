@@ -29,7 +29,8 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
-    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty }
+    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
+    { name: 'minimumValue', value: deploymentConfig.alphaFundMinimumInvestment }
   ];
 
   const nft = await deploy(hre, 'InvestmentNFT', nftParameters, true, false);
@@ -57,7 +58,8 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     },
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap },
-    { name: 'maxPercentageWalletInvestmentLimit', value: 200 } // 200 = 2%
+    { name: 'maxPercentageWalletInvestmentLimit', value: 200 }, // 200 = 2%
+    { name: 'minimumInvestment', value: deploymentConfig.alphaFundMinimumInvestment } // 200 = 2%
   ];
 
   const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);

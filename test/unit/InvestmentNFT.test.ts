@@ -17,6 +17,7 @@ describe('Investment NFT unit tests', () => {
   );
   const name = 'Common Wealth Investment NFT';
   const symbol = 'CWI';
+  const minimumValue = toUsdc('50');
 
   let owner: SignerWithAddress;
   let user: SignerWithAddress;
@@ -29,10 +30,11 @@ describe('Investment NFT unit tests', () => {
 
   const deployFixture = async () => {
     const [deployer, owner, user, minter, royaltyWallet] = await ethers.getSigners();
+    const minimumValue = toUsdc('50');
 
     const investmentNft: InvestmentNFT = await deployProxy(
       'InvestmentNFT',
-      [name, symbol, owner.address, royaltyWallet.address, royalty],
+      [name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue],
       deployer
     );
     await investmentNft.connect(owner).addMinter(minter.address);
@@ -53,6 +55,7 @@ describe('Investment NFT unit tests', () => {
       expect(await investmentNft.getInvestors()).to.deep.equal([]);
       expect(await investmentNft.supportsInterface(IInvestmentNFTId)).to.equal(true);
       expect(await investmentNft.royaltyInfo(0, 1000)).to.deep.equal([royaltyWallet.address, 65]);
+      expect(await investmentNft.minimumValue()).to.be.equal(minimumValue);
     });
 
     it('Should revert deployment if owner is zero address', async () => {
@@ -60,7 +63,11 @@ describe('Investment NFT unit tests', () => {
       const [deployer] = await ethers.getSigners();
 
       await expect(
-        deployProxy('InvestmentNFT', [name, symbol, constants.AddressZero, royaltyWallet.address, royalty], deployer)
+        deployProxy(
+          'InvestmentNFT',
+          [name, symbol, constants.AddressZero, royaltyWallet.address, royalty, minimumValue],
+          deployer
+        )
       ).to.be.revertedWithCustomError(investmentNft, 'OwnablePausable__OwnerAccountZeroAddress');
     });
 
@@ -68,8 +75,20 @@ describe('Investment NFT unit tests', () => {
       const { owner, royaltyWallet, deployer } = await loadFixture(deployFixture);
 
       await expect(
-        deployProxy('InvestmentNFT', [name, symbol, owner.address, royaltyWallet.address, 10001], deployer)
+        deployProxy(
+          'InvestmentNFT',
+          [name, symbol, owner.address, royaltyWallet.address, 10001, minimumValue],
+          deployer
+        )
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
+    });
+
+    it('Should revert when initialize again', async () => {
+      const { owner, investmentNft, royaltyWallet, royalty } = await loadFixture(deployFixture);
+
+      await expect(
+        investmentNft.initialize(name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue)
+      ).to.be.revertedWith('Initializable: contract is already initialized');
     });
   });
 
@@ -89,11 +108,11 @@ describe('Investment NFT unit tests', () => {
       expect(await investmentNft.tokenValue(tokenId)).to.equal(amount);
     });
 
-    it('Should revert minting if a value less than 50 USDC', async () => {
+    it('Should revert minting if a value less than minimum', async () => {
       const { investmentNft, user, minter } = await loadFixture(deployFixture);
 
       await expect(
-        investmentNft.connect(minter).mint(user.address, toUsdc('49'), tokenUri)
+        investmentNft.connect(minter).mint(user.address, minimumValue.sub(1), tokenUri)
       ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvestmentTooLow');
     });
 
@@ -220,9 +239,9 @@ describe('Investment NFT unit tests', () => {
         ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__SplitLimitExceeded');
       });
 
-      it('Should revert splitting NFT if a value less than 50 USDC', async () => {
+      it('Should revert splitting NFT if a value less than minimum', async () => {
         await expect(
-          investmentNft.connect(user).split(tokenId, [toUsdc('49'), toUsdc('71')], [tokenUri, tokenUri])
+          investmentNft.connect(user).split(tokenId, [minimumValue.sub(1), toUsdc('71')], [tokenUri, tokenUri])
         ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvestmentTooLow');
       });
     });

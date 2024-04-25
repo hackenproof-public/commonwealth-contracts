@@ -11,7 +11,6 @@ import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/util
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
-import {MINIMUM_INVESTMENT} from "./libraries/Constants.sol";
 
 error InvestmentNft__AlreadyMinter();
 error InvestmentNft__NotMinter();
@@ -38,6 +37,11 @@ contract InvestmentNFT is
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     uint256 private constant SPLIT_LIMIT = 10;
+
+    /**
+     * @notice Minimum investment value
+     */
+    uint256 public minimumValue;
 
     /**
      * @notice Investment value assigned to token
@@ -69,7 +73,8 @@ contract InvestmentNFT is
         string memory symbol,
         address owner,
         address royaltyAccount,
-        uint96 royaltyValue
+        uint96 royaltyValue,
+        uint256 _minimumValue
     ) public initializer {
         __Context_init();
         __ERC165_init();
@@ -81,6 +86,7 @@ contract InvestmentNFT is
         _setDefaultRoyalty(royaltyAccount, royaltyValue);
 
         _minters[owner] = true;
+        minimumValue = _minimumValue;
     }
 
     /**
@@ -128,7 +134,7 @@ contract InvestmentNFT is
      */
     function mint(address to, uint256 value, string calldata tokenUri) external whenNotPaused {
         if (!_minters[_msgSender()]) revert InvestmentNft__NotMinter();
-        if (value < MINIMUM_INVESTMENT) revert InvestmentNft__InvestmentTooLow();
+        if (value < minimumValue) revert InvestmentNft__InvestmentTooLow();
         _mintWithURI(to, value, tokenUri);
     }
 
@@ -250,8 +256,9 @@ contract InvestmentNFT is
         if (values.length > SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
         if (values.length != tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
         uint256 valuesSum = 0;
+        uint256 minimumNftValue = minimumValue;
         for (uint256 i; i < values.length; ) {
-            if (values[i] < MINIMUM_INVESTMENT) revert InvestmentNft__InvestmentTooLow();
+            if (values[i] < minimumNftValue) revert InvestmentNft__InvestmentTooLow();
             valuesSum += values[i];
             unchecked {
                 i++;

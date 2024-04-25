@@ -10,7 +10,7 @@ import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
 import {IProject} from "./interfaces/IProject.sol";
 import {LibFund} from "./libraries/LibFund.sol";
-import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE, MINIMUM_INVESTMENT} from "./libraries/Constants.sol";
+import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE} from "./libraries/Constants.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {StateMachine} from "./StateMachine.sol";
@@ -123,6 +123,11 @@ contract InvestmentFund is
     uint256 private s_maxPercentageWalletInvestmentLimit;
 
     /**
+     * @notice Minimum investment value
+     */
+    uint256 internal s_minimumInvestment;
+
+    /**
      * @notice Fund name
      */
     string private s_name;
@@ -168,6 +173,9 @@ contract InvestmentFund is
      * @param _feeDistributionAddresses Addresses of fee distribution wallets
      * @param _managementFee Management fee value
      * @param _cap Cap value
+     * @param _maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
+     *
+     *
      */
     function initialize(
         address _owner,
@@ -179,7 +187,8 @@ contract InvestmentFund is
         FeeDistributionAddresses memory _feeDistributionAddresses,
         uint16 _managementFee,
         uint256 _cap,
-        uint256 _maxPercentageWalletInvestmentLimit
+        uint256 _maxPercentageWalletInvestmentLimit,
+        uint256 _minimumInvestment
     ) public virtual initializer {
         __Context_init();
         {
@@ -217,6 +226,7 @@ contract InvestmentFund is
         s_managementFee = _managementFee;
         s_cap = _cap;
         s_maxPercentageWalletInvestmentLimit = _maxPercentageWalletInvestmentLimit;
+        s_minimumInvestment = _minimumInvestment;
 
         _initializeStates();
     }
@@ -228,7 +238,7 @@ contract InvestmentFund is
         uint240 _amount,
         string calldata _tokenUri
     ) external virtual override onlyAllowedStates nonReentrant {
-        if (_amount < MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
+        if (_amount < s_minimumInvestment) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
 
         IInvestmentNFT investmentNFT = s_investmentNft;
@@ -443,6 +453,14 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
+    function setMinimumInvestment(uint256 _minimumInvestment) external override onlyOwner {
+        s_minimumInvestment = _minimumInvestment;
+        emit MinimumInvestmentSet(_minimumInvestment);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
     function setUnlocker(address _unlocker) external override onlyOwner {
         if (_unlocker == address(0)) {
             revert InvestmentFund__UnlockerZeroAddress();
@@ -500,7 +518,8 @@ contract InvestmentFund is
                 s_totalIncome,
                 s_payouts,
                 currentState,
-                s_maxPercentageWalletInvestmentLimit
+                s_maxPercentageWalletInvestmentLimit,
+                s_minimumInvestment
             );
     }
 
@@ -628,6 +647,13 @@ contract InvestmentFund is
      */
     function maxPercentageWalletInvestmentLimit() external view override returns (uint256) {
         return s_maxPercentageWalletInvestmentLimit;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
+    function minimumInvestment() external view override returns (uint256) {
+        return s_minimumInvestment;
     }
 
     /**

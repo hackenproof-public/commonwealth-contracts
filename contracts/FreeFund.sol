@@ -34,7 +34,8 @@ contract FreeFund is InvestmentFund {
         FeeDistributionAddresses memory _feeDistributionAddresses,
         uint16,
         uint256 _cap,
-        uint256
+        uint256,
+        uint256 _minimumInvestment
     ) public override initializer {
         super.initialize(
             _owner,
@@ -46,7 +47,8 @@ contract FreeFund is InvestmentFund {
             _feeDistributionAddresses,
             0,
             _cap,
-            0
+            0,
+            _minimumInvestment
         );
 
         allowFunction(LibFund.STATE_FUNDS_IN, this.airdropInvestmentNFT.selector);
@@ -71,7 +73,7 @@ contract FreeFund is InvestmentFund {
         address _wallet,
         string calldata _tokenUri
     ) external onlyOwner onlyAllowedStates {
-        if (_amount <= MINIMUM_INVESTMENT) revert InvestmentFund__InvestmentTooLow();
+        if (_amount <= s_minimumInvestment) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
 
         IInvestmentNFT nft = s_investmentNft;

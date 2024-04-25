@@ -24,9 +24,6 @@ describe('Genesis NFT Vesting unit tests', function () {
 
     const leftoversUnlockDelay = ONE_YEAR_IN_SECONDS;
 
-    // const genesisNFTSeries1Mirror: FakeContract<IGeneisNFTMirror> = await smock.fake('GenesisNFTMirror');
-    // const genesisNFTSeries2Mirror: FakeContract<IGeneisNFTMirror> = await smock.fake('GenesisNFTMirror');
-
     const genesisNFTSeries1Mirror: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
     const genesisNFTSeries2Mirror: FakeContract<GenesisNFT> = await smock.fake('GenesisNFT');
 
@@ -50,7 +47,6 @@ describe('Genesis NFT Vesting unit tests', function () {
     const bonus = await genesisNFTVesting.BONUS();
     const series1MaxReward = await genesisNFTVesting.SERIES_1_MAX_REWARD();
     const series2MaxReward = await genesisNFTVesting.SERIES_2_MAX_REWARD();
-    //await genesisNFTVesting.connect(owner).setVestingStartTimestamp(vestingStartTimestamp);
 
     const user1Series1Tokens = [0, 1, 2];
     const user1Series2Tokens = [5, 6];
@@ -605,6 +601,28 @@ describe('Genesis NFT Vesting unit tests', function () {
         expect(await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(left);
       });
 
+      it('Should return 0 if claimed with penalty for an nft series 1', async () => {
+        const { user1, genesisNFTVesting, user1Series1Tokens, vestingStartTimestamp, ONE_MONTH_IN_SECONDS } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS);
+        await genesisNFTVesting.connect(user1).releaseAllAvailable([0], [], user1.address, true);
+
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(0);
+      });
+
+      it('Should return 0 if claimed with emergency for an nft series 1', async () => {
+        const { owner, user1, genesisNFTVesting, vestingStartTimestamp, ONE_MONTH_IN_SECONDS } = await loadFixture(
+          deployGenesisNFTVesting
+        );
+
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS);
+        await genesisNFTVesting.connect(owner).setLostToken(true, 0);
+        await genesisNFTVesting.connect(owner).emergencyWithdraw(true, 0, user1.address);
+
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(true, 0)).to.be.equal(0);
+      });
+
       it('Should return max unvested amount for an nft series 2 if nothing vested yet', async () => {
         const { genesisNFTVesting, user1Series2Tokens, vestingStartTimestamp, series2MaxReward } = await loadFixture(
           deployGenesisNFTVesting
@@ -636,6 +654,28 @@ describe('Genesis NFT Vesting unit tests', function () {
         const left = series2MaxReward.sub(rewardsAfterMonth);
 
         expect(await genesisNFTVesting.unvestedAmountPerNFT(false, user2Series1Tokens[0])).to.be.equal(left);
+      });
+
+      it('Should return 0 if claimed with penalty for an nft series 2', async () => {
+        const { user1, genesisNFTVesting, user1Series2Tokens, vestingStartTimestamp, ONE_MONTH_IN_SECONDS } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS);
+        await genesisNFTVesting.connect(user1).releaseAllAvailable([], [5], user1.address, true);
+
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(0);
+      });
+
+      it('Should return 0 if claimed with emergency for an nft series 2', async () => {
+        const { owner, user1, genesisNFTVesting, vestingStartTimestamp, ONE_MONTH_IN_SECONDS } = await loadFixture(
+          deployGenesisNFTVesting
+        );
+
+        await time.increaseTo(vestingStartTimestamp + ONE_MONTH_IN_SECONDS);
+        await genesisNFTVesting.connect(owner).setLostToken(false, 0);
+        await genesisNFTVesting.connect(owner).emergencyWithdraw(false, 0, user1.address);
+
+        expect(await genesisNFTVesting.unvestedAmountPerNFT(false, 0)).to.be.equal(0);
       });
     });
 
@@ -1410,6 +1450,29 @@ describe('Genesis NFT Vesting unit tests', function () {
         expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(series1MaxReward);
       });
 
+      it('Should return max if claimed with penalty for series 1', async () => {
+        const { user1, genesisNFTVesting, user1Series1Tokens, vestingStartTimestamp, duration, series1MaxReward } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration);
+        await genesisNFTVesting
+          .connect(user1)
+          .releasePerNFT(true, user1Series1Tokens[0], series1MaxReward, user1.address, true);
+
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(series1MaxReward);
+      });
+
+      it('Should return max if emergency withdraw for series 1', async () => {
+        const { owner, user1, genesisNFTVesting, vestingStartTimestamp, duration, series1MaxReward } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration);
+        await genesisNFTVesting.connect(owner).setLostToken(true, 0);
+        await genesisNFTVesting.connect(owner).emergencyWithdraw(true, 0, user1.address);
+
+        expect(await genesisNFTVesting.vestedAmountPerNFT(true, 0)).to.be.equal(series1MaxReward);
+      });
+
       it("Should return all vested tokens for a user's nft from series 2", async () => {
         const { genesisNFTVesting, user1Series2Tokens, vestingStartTimestamp, duration, series2MaxReward } =
           await loadFixture(deployGenesisNFTVesting);
@@ -1447,7 +1510,6 @@ describe('Genesis NFT Vesting unit tests', function () {
           owner,
           user1Series1Tokens,
           vestingStartTimestamp,
-          duration,
           series1MaxReward,
           bonus,
           ONE_MONTH_IN_SECONDS
@@ -1461,6 +1523,29 @@ describe('Genesis NFT Vesting unit tests', function () {
         const totalRewards = rewardsAfterMonth.add(bonus.div(2));
 
         expect(await genesisNFTVesting.vestedAmountPerNFT(true, user1Series1Tokens[0])).to.be.equal(totalRewards);
+      });
+
+      it('Should return max if claimed with penalty for series 2', async () => {
+        const { user1, genesisNFTVesting, user1Series2Tokens, vestingStartTimestamp, duration, series2MaxReward } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration);
+        await genesisNFTVesting
+          .connect(user1)
+          .releasePerNFT(false, user1Series2Tokens[0], series2MaxReward, user1.address, true);
+
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, user1Series2Tokens[0])).to.be.equal(series2MaxReward);
+      });
+
+      it('Should return max if emergency withdraw for series 2', async () => {
+        const { owner, user1, genesisNFTVesting, vestingStartTimestamp, duration, series2MaxReward } =
+          await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration);
+        await genesisNFTVesting.connect(owner).setLostToken(false, 0);
+        await genesisNFTVesting.connect(owner).emergencyWithdraw(false, 0, user1.address);
+
+        expect(await genesisNFTVesting.vestedAmountPerNFT(false, 0)).to.be.equal(series2MaxReward);
       });
     });
     describe('Reverts', () => {

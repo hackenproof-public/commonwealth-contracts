@@ -1,5 +1,6 @@
 import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
+import { toUsdc } from './test/utils';
 
 export const developmentChains = [31337];
 
@@ -84,6 +85,9 @@ export interface networkConfigItem {
   genesisNftVestingAllocation: BigNumber;
   genesisNftVestingLeftoversUnlockDelay: number;
   genesisNftVestingStartTimestamp: number;
+  defaultMinimumInvestment: BigNumber;
+  pricelessFundMinimumInvestment: BigNumber;
+  alphaFundMinimumInvestment: BigNumber;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -136,7 +140,10 @@ const localConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 0,
-  genesisNftVestingStartTimestamp: 1699971572
+  genesisNftVestingStartTimestamp: 1699971572,
+  pricelessFundMinimumInvestment: toUsdc('50'),
+  defaultMinimumInvestment: toUsdc('50'),
+  alphaFundMinimumInvestment: toUsdc('50')
 };
 
 const goerliConfig: networkConfigItem = {
@@ -179,7 +186,11 @@ const goerliConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 0,
-  genesisNftVestingStartTimestamp: 1700049600
+  genesisNftVestingStartTimestamp: 1700049600,
+  pricelessFundMinimumInvestment: toUsdc('50'),
+  defaultMinimumInvestment: toUsdc('50'),
+  alphaFundMinimumInvestment: toUsdc('50')
+
 };
 
 const zkSyncTestnet: networkConfigItem = {
@@ -222,7 +233,11 @@ const zkSyncTestnet: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1711411200
+  genesisNftVestingStartTimestamp: 1711411200,
+  pricelessFundMinimumInvestment: toUsdc('50'),
+  defaultMinimumInvestment: toUsdc('50'),
+  alphaFundMinimumInvestment: toUsdc('50')
+
 };
 
 const zkTestnetDevConfig: networkConfigItem = {
@@ -299,7 +314,11 @@ const baseSepoliaConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 800,
   genesisNftVestingAllocation: parseEther('24000000'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1713343202
+  genesisNftVestingStartTimestamp: 1713343202,
+  pricelessFundMinimumInvestment: toUsdc('50'),
+  defaultMinimumInvestment: toUsdc('50'),
+  alphaFundMinimumInvestment: toUsdc('50')
+
 };
 
 const baseConfig: networkConfigItem = {
@@ -342,7 +361,11 @@ const baseConfig: networkConfigItem = {
   zkSyncGasPerPubdataLimit: 0, //Not used
   genesisNftVestingAllocation: parseEther('0'), //TODO
   genesisNftVestingLeftoversUnlockDelay: 0, //TODO
-  genesisNftVestingStartTimestamp: 0 //TODO
+  genesisNftVestingStartTimestamp: 0, //TODO,
+  pricelessFundMinimumInvestment: toUsdc('50'),
+  defaultMinimumInvestment: toUsdc('50'),
+  alphaFundMinimumInvestment: toUsdc('50')
+
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig

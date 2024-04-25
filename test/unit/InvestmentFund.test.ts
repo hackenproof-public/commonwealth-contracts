@@ -38,6 +38,7 @@ describe('InvestmentFund', () => {
     const managementFee = 1000;
     const cap = toUsdc('1000000');
     const maxPercentageWalletInvestmentLimit = 2000;
+    const minimumInvestment = toUsdc('50');
 
     const feeDistributionAddresses = {
       treasuryWallet: treasuryWallet.address,
@@ -80,7 +81,8 @@ describe('InvestmentFund', () => {
         feeDistributionAddresses,
         managementFee,
         cap,
-        maxPercentageWalletInvestmentLimit
+        maxPercentageWalletInvestmentLimit,
+        minimumInvestment
       ],
       deployer
     );
@@ -103,6 +105,7 @@ describe('InvestmentFund', () => {
       managementFee,
       cap,
       maxPercentageWalletInvestmentLimit,
+      minimumInvestment,
       tokenUri,
       user1,
       user2,
@@ -128,7 +131,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         const details = await investmentFund.getDetails();
@@ -149,6 +153,7 @@ describe('InvestmentFund', () => {
         expect(await investmentFund.maxPercentageWalletInvestmentLimit()).to.be.equal(
           maxPercentageWalletInvestmentLimit
         );
+        expect(await investmentFund.minimumInvestment()).to.be.equal(minimumInvestment);
         expect(await investmentFund.totalIncome()).to.be.equal(0);
         expect(await investmentFund.payouts()).to.have.lengthOf(0);
         expect(parseBytes32String(await investmentFund.currentState())).to.equal(FundState.FundsIn);
@@ -179,6 +184,7 @@ describe('InvestmentFund', () => {
         getInterfaceId(IInvestmentFund__factory.createInterface());
         expect(parseBytes32String(details.state)).to.be.equal(FundState.FundsIn);
         expect(details.maxPercentageWalletInvestmentLimit).to.be.equal(maxPercentageWalletInvestmentLimit);
+        expect(details.minimumInvestment).to.be.equal(minimumInvestment);
       });
     });
 
@@ -199,7 +205,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -221,7 +228,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -244,7 +252,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -266,7 +275,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -289,7 +299,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -311,7 +322,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -335,7 +347,8 @@ describe('InvestmentFund', () => {
       //     fundName,
       //     managementFee,
       //     cap,
-      //     maxPercentageWalletInvestmentLimit
+      //     maxPercentageWalletInvestmentLimit,
+      //     minimumInvestment
       //   } = await loadFixture(deployInvestmentFund);
 
       //   await expect(
@@ -358,6 +371,7 @@ describe('InvestmentFund', () => {
       //         managementFee,
       //         cap,
       //         maxPercentageWalletInvestmentLimit
+      //         minimumInvestment
       //       ],
       //       deployer
       //     )
@@ -380,7 +394,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -402,7 +417,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -425,7 +441,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -447,7 +464,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -470,7 +488,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -492,7 +511,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -515,7 +535,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -537,7 +558,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -560,7 +582,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -582,7 +605,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -605,7 +629,8 @@ describe('InvestmentFund', () => {
           staking,
           fundName,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -627,7 +652,8 @@ describe('InvestmentFund', () => {
               },
               10001,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -650,7 +676,8 @@ describe('InvestmentFund', () => {
           staking,
           fundName,
           managementFee,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -672,7 +699,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               0,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -695,7 +723,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -720,7 +749,8 @@ describe('InvestmentFund', () => {
               },
               managementFee,
               cap,
-              maxPercentageWalletInvestmentLimit
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment
             ],
             deployer
           )
@@ -744,7 +774,8 @@ describe('InvestmentFund', () => {
           fundName,
           managementFee,
           cap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -764,7 +795,8 @@ describe('InvestmentFund', () => {
             },
             managementFee,
             cap,
-            maxPercentageWalletInvestmentLimit
+            maxPercentageWalletInvestmentLimit,
+            minimumInvestment
           )
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
@@ -1719,9 +1751,31 @@ describe('InvestmentFund', () => {
     });
     describe('Reverts', () => {
       it('Should revert when not called by the owner', async () => {
-        const { user1, investmentFund, staking } = await loadFixture(deployInvestmentFund);
+        const { user1, investmentFund } = await loadFixture(deployInvestmentFund);
 
         await expect(investmentFund.connect(user1).setMaxPercentageWalletInvestmentLimit(50)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+    });
+  });
+
+  describe('Set the minimum investment amount', () => {
+    describe('Success', () => {
+      it('Should set the minimum investment amount', async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        expect(await investmentFund.connect(owner).setMinimumInvestment(50))
+          .to.emit(investmentFund, 'MinimumInvestmentSet')
+          .withArgs(50);
+        expect(await investmentFund.minimumInvestment()).to.be.equal(50);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(user1).setMinimumInvestment(50)).to.be.revertedWith(
           'Ownable: caller is not the owner'
         );
       });
