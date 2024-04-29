@@ -328,7 +328,6 @@ describe('FreeFund', () => {
           )
         ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__InvestmentNftZeroAddress');
       });
-
       //TODO Uncoment when staking is on production
       // it('Should revert when staking address is zero address', async () => {
       //   const {
@@ -376,7 +375,6 @@ describe('FreeFund', () => {
       //     )
       //   ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
       // });
-
       it('Should revert when treasuryWallet address is zero address', async () => {
         const {
           deployer,

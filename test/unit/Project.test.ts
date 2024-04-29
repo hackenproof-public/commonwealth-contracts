@@ -221,11 +221,13 @@ describe('Project unit tests', () => {
   describe('#sellVestedToInvestmentFund()', () => {
     it('Should revert if amount is zero', async () => {
       const { project, owner } = await loadFixture(deployProject);
-
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.revertedWithCustomError(
-        project,
-        'Project__AmountLessOrEqualZero'
-      );
+      const _amount = 0;
+      const _fee = 500;
+      const _sqrtPriceLimitX96 = 0;
+      const _amountOutMinimum = 0;
+      await expect(
+        project.connect(owner).sellVestedToInvestmentFund(_amount, _fee, _sqrtPriceLimitX96, _amountOutMinimum)
+      ).to.be.revertedWithCustomError(project, 'Project__AmountLessOrEqualZero');
     });
 
     it('Should revert if vesting contract is zero address', async () => {
@@ -246,26 +248,25 @@ describe('Project unit tests', () => {
         deployer
       );
 
-      await expect(project.connect(owner).sellVestedToInvestmentFund(1, 0)).to.be.revertedWithCustomError(
-        project,
-        'Project__VestingZeroAddress'
-      );
-    });
-
-    it('Should revert if vested contract do not release any tokens', async () => {
-      const { project, owner } = await loadFixture(deployProject);
-
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.revertedWithCustomError(
-        project,
-        'Project__AmountLessOrEqualZero'
-      );
+      const _amount = 1;
+      const _fee = 500;
+      const _sqrtPriceLimitX96 = 0;
+      const _amountOutMinimum = 0;
+      await expect(
+        project.connect(owner).sellVestedToInvestmentFund(_amount, _fee, _sqrtPriceLimitX96, _amountOutMinimum)
+      ).to.be.revertedWithCustomError(project, 'Project__VestingZeroAddress');
     });
 
     it('Should revert if swap fails', async () => {
       const { project, owner, swapper } = await loadFixture(deployProject);
       swapper.swap.returns(false);
-
-      await expect(project.connect(owner).sellVestedToInvestmentFund(0, 0)).to.be.reverted;
+      const _amount = 1;
+      const _fee = 500;
+      const _sqrtPriceLimitX96 = 0;
+      const _amountOutMinimum = 0;
+      await expect(
+        project.connect(owner).sellVestedToInvestmentFund(_amount, _fee, _sqrtPriceLimitX96, _amountOutMinimum)
+      ).to.be.reverted;
     });
 
     it('Should revert providing zero profit to investment fund', async () => {
@@ -290,6 +291,7 @@ describe('Project unit tests', () => {
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       investmentNft.supportsInterface.returns(true);
+      const minimumInvestment = toUsdc('50');
       const investmentFund: InvestmentFund = await deployProxy(
         'InvestmentFund',
         [
@@ -302,7 +304,8 @@ describe('Project unit tests', () => {
           feeDistributionAddresses,
           defaultManagementFee,
           defaultInvestmentCap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         ],
         deployer
       );
@@ -313,12 +316,19 @@ describe('Project unit tests', () => {
         deployer
       );
 
+      const _amount = 1;
+      const _fee = 500;
+      const _sqrtPriceLimitX96 = 0;
+      const _amountOutMinimum = 0;
+
       const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
       await project.connect(owner).setVesting(vesting.address);
 
       await investmentFund.connect(owner).addProject(owner.address);
       swapper.swap.returns(0);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(100, 0)).to.be.reverted;
+      await expect(
+        project.connect(owner).sellVestedToInvestmentFund(_amount, _fee, _sqrtPriceLimitX96, _amountOutMinimum)
+      ).to.be.reverted;
     });
 
     it('Should revert providing profit if addres is not registered as project', async () => {
@@ -344,6 +354,7 @@ describe('Project unit tests', () => {
       const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       investmentNft.supportsInterface.returns(true);
+      const minimumInvestment = toUsdc('50');
       const investmentFund: InvestmentFund = await deployProxy(
         'InvestmentFund',
         [
@@ -356,7 +367,8 @@ describe('Project unit tests', () => {
           feeDistributionAddresses,
           defaultManagementFee,
           defaultInvestmentCap,
-          maxPercentageWalletInvestmentLimit
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment
         ],
         deployer
       );
@@ -367,12 +379,19 @@ describe('Project unit tests', () => {
         deployer
       );
 
+      const _amount = 100;
+      const _fee = 500;
+      const _sqrtPriceLimitX96 = 0;
+      const _amountOutMinimum = 0;
+
       const vesting: FakeContract<PeriodicVesting> = await smock.fake('PeriodicVesting');
       vesting.getVestedToken.returns(usdc.address);
       await project.connect(owner).setVesting(vesting.address);
       usdc.balanceOf.returns(100);
       swapper.swap.returns(100);
-      await expect(project.connect(owner).sellVestedToInvestmentFund(100, 0)).to.be.reverted;
+      await expect(
+        project.connect(owner).sellVestedToInvestmentFund(_amount, _fee, _sqrtPriceLimitX96, _amountOutMinimum)
+      ).to.be.reverted;
     });
   });
 });

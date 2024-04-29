@@ -22,17 +22,40 @@ interface ISwapper {
     );
 
     /**
+     * @notice Emitted when changed the SwapRouter02 address
+     * @param oldAddress old SwapRouter02 address
+     * @param newAddress new SwapRouter02 address
+     */
+    event SwapRouterSet(address indexed oldAddress, address indexed newAddress);
+
+    /**
      * @notice Executes a DeFi swap from a sourceToken to targetToken
-     * @param amountIn amount of sourceToken to be used to initialise a swap
-     * @param sourceToken address of ERC20 contract for a source token
-     * @param targetToken address of ERC20 contract for a target token
-     * @param slippageLimit percentage of slippage
-     * @return amountOut amount of targetToken acquired after the swap
+     * @param _amountIn amount of sourceToken to be used to initialise a swap
+     * @param _sourceToken address of ERC20 contract for a source token
+     * @param _targetToken address of ERC20 contract for a target token
+     * @param _amountOutMinimum percentage of slippage
+     * @param _sqrtPriceLimitX96 slippage protection
+     * @return _amountOut amount of targetToken acquired after the swap
      */
     function swap(
-        uint256 amountIn,
-        address sourceToken,
-        address targetToken,
-        uint256 slippageLimit
-    ) external returns (uint256 amountOut);
+        uint256 _amountIn,
+        address _sourceToken,
+        address _targetToken,
+        uint24 _feeTier,
+        uint256 _amountOutMinimum,
+        uint160 _sqrtPriceLimitX96
+    ) external returns (uint256 _amountOut);
+
+    /**
+     * @notice returns the SwapRouter02 address
+     * @return The SwapRouter02 address
+     */
+    function getIV3SwapRouterAddress() external view returns (address);
+
+    /**
+     * @notice sets new SwapRouter02 address
+     * @param _newSwapRouter new SwapRouter02 address
+     */
+
+    function setIV3SwapRouterAddress(address _newSwapRouter) external;
 }

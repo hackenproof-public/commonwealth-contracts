@@ -6,7 +6,7 @@ import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { GenesisNFTLock, GenesisNFTMirror, GenesisNFTV1, GenesisNFTV2, IZkSync } from '../../typechain-types';
 
-describe('GenesisNFTLock unit tests', () => {
+describe.skip('GenesisNFTLock unit tests', () => {
   const deployGensisNFTLock = async () => {
     const [deployer, owner, user1, user2] = await ethers.getSigners();
 

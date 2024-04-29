@@ -9,7 +9,7 @@ import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils
 import {EnumerableMapUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableMapUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
-import {IDexQuoter} from "./interfaces/IDexQuoter.sol";
+import {IUniswapWlthPrice} from "./interfaces/IUniswapWlthPrice.sol";
 import {IInvestmentFund} from "./interfaces/IInvestmentFund.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
@@ -20,7 +20,7 @@ import {BASIS_POINT_DIVISOR, EXTRA_EIGHTEEN_ZEROS} from "./libraries/Constants.s
 
 error StakingWlth__TokenZeroAddress();
 error StakingWlth__UsdcTokenZeroAddress();
-error StakingWlth__DexQuoterZeroAddress();
+error StakingWlth__UniswapWlthPriceZeroAddress();
 error StakingWlth__CommunityFundZeroAddress();
 error StakingWlth__DurationsCoeffecientsLenghtsMismatch();
 error StakingWlth__DurationCoeffecientsSetError();
@@ -51,7 +51,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     address public treasury;
     address public communityFund;
     uint256 public maxDiscount;
-    IDexQuoter public dexQuoter;
+    IUniswapWlthPrice public uniswapWlthPrice;
     CountersUpgradeable.Counter public counter;
 
     mapping(uint256 => Position) private stakingPositions;
@@ -70,7 +70,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
      * @param owner Contract owner
      * @param token_ Address of token to be staked
      * @param usdc_ Address of USDC token
-     * @param dexQuoter_ Address of DEX quoter
+     * @param uniswapWlthPrice_ Address of DEX quoter
      * @param fee_ Fee amount in basis points
      * @param maxDiscount_ Maximum fee discount in basis points
      * @param durations List of supported staking durations in seconds
@@ -80,7 +80,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         address owner,
         address token_,
         address usdc_,
-        address dexQuoter_,
+        address uniswapWlthPrice_,
         uint256 fee_,
         address communityFund_,
         uint256 maxDiscount_,
@@ -89,7 +89,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     ) public initializer {
         if (token_ == address(0)) revert StakingWlth__TokenZeroAddress();
         if (usdc_ == address(0)) revert StakingWlth__UsdcTokenZeroAddress();
-        if (dexQuoter_ == address(0)) revert StakingWlth__DexQuoterZeroAddress();
+        if (uniswapWlthPrice_ == address(0)) revert StakingWlth__UniswapWlthPriceZeroAddress();
         if (communityFund_ == address(0)) revert StakingWlth__CommunityFundZeroAddress();
         if (durations.length != coefficients.length) revert StakingWlth__DurationsCoeffecientsLenghtsMismatch();
 
@@ -99,7 +99,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
 
         token = token_;
         usdc = usdc_;
-        dexQuoter = IDexQuoter(dexQuoter_);
+        uniswapWlthPrice = IUniswapWlthPrice(uniswapWlthPrice_);
         transactionFee = fee_;
         communityFund = communityFund_;
         maxDiscount = maxDiscount_;
@@ -125,7 +125,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 investment = _getCurrentInvestment(_msgSender(), fund);
         uint256 totalTargetDiscount = _getTotalTargetDiscount(_msgSender(), fund);
 
-        (uint256 amountInUsdc, , , ) = dexQuoter.quote(token, usdc, amount);
+        uint256 amountInUsdc = uniswapWlthPrice.estimateAmountOut(uint128(amount));
         uint256 discountFromStake = _calculateTargetDiscount(amountInUsdc, duration, investment) / EXTRA_EIGHTEEN_ZEROS;
 
         if (discountFromStake <= 0) revert StakingWlth__ZeroTargetDiscount();

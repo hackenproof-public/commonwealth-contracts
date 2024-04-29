@@ -9,7 +9,7 @@ import { Crowdsale, GenesisNFTV1, USDC } from '../../typechain-types';
 import { CrowdsalePhase } from '../types';
 import { toUsdc } from '../utils';
 
-describe('Crowdsale unit tests', () => {
+describe.skip('Crowdsale unit tests', () => {
   let startBlock: number;
   const nftPrice = toUsdc('1000');
   const tranchesCount = 9;

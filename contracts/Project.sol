@@ -122,19 +122,24 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
     /**
      * @inheritdoc IProject
      */
-    function sellVestedToInvestmentFund(uint256 amount, uint256 slippageLimit) external onlyOwner {
-        if (amount <= 0) revert Project__AmountLessOrEqualZero();
+    function sellVestedToInvestmentFund(
+        uint256 _amount,
+        uint24 _fee,
+        uint160 _sqrtPriceLimitX96,
+        uint256 _amountOutMinimum
+    ) external onlyOwner {
+        if (_amount <= 0) revert Project__AmountLessOrEqualZero();
         if (address(vesting) == address(0)) revert Project__VestingZeroAddress();
 
-        vesting.release(amount);
+        vesting.release(_amount);
 
-        address sourceToken = vesting.getVestedToken();
-        address targetToken = IInvestmentFund(investmentFund).getDetails().currency;
+        address inputToken = vesting.getVestedToken();
+        address outputToken = IInvestmentFund(investmentFund).getDetails().currency;
 
-        IERC20Upgradeable(sourceToken).safeIncreaseAllowance(address(swapper), amount);
-        uint256 amountOut = swapper.swap(amount, sourceToken, targetToken, slippageLimit);
+        IERC20Upgradeable(inputToken).safeIncreaseAllowance(address(swapper), _amount);
+        uint256 amountOut = swapper.swap(_amount, inputToken, outputToken, _fee, _amountOutMinimum, _sqrtPriceLimitX96);
 
-        IERC20Upgradeable(targetToken).safeIncreaseAllowance(address(investmentFund), amountOut);
+        IERC20Upgradeable(outputToken).safeIncreaseAllowance(address(investmentFund), amountOut);
         IInvestmentFund(investmentFund).provideProfit(amountOut);
     }
 

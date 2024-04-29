@@ -105,6 +105,7 @@ const config: HardhatUserConfig = {
     baseSepolia: {
       url: env.BASESEPOLIA_RPC_URL || '',
       chainId: 84532,
+      gas: 21000000,
       accounts: !!env.BASESEPOLIA_WALLET_PRIVATE_KEY ? [env.BASESEPOLIA_WALLET_PRIVATE_KEY] : [],
     },
     base: {

@@ -6,7 +6,7 @@ import { BigNumber, constants } from 'ethers';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapQuoter, Wlth } from '../../typechain-types';
+import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapWlthPrice, Wlth } from '../../typechain-types';
 import { DEFAULT_TRANSACTION_FEE } from '../constants';
 import { FundState } from '../types';
 import { getStakeIdFromTx, toUsdc, toWlth } from '../utils';
@@ -28,7 +28,7 @@ describe('Staking WLTH unit tests', () => {
 
   let staking: StakingWlth;
   let wlth: FakeContract<Wlth>;
-  let quoter: FakeContract<UniswapQuoter>;
+  let oracle: FakeContract<UniswapWlthPrice>;
   let fund: FakeContract<InvestmentFund>;
   let nft: FakeContract<InvestmentNFT>;
   let deployer: SignerWithAddress;
@@ -39,14 +39,14 @@ describe('Staking WLTH unit tests', () => {
     const [deployer, owner, user] = await ethers.getSigners();
 
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-    const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+    const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
     const staking: StakingWlth = await deployProxy(
       'StakingWlth',
       [
         owner.address,
         wlth.address,
         usdc,
-        quoter.address,
+        oracle.address,
         defaultFee,
         defaultCommunityFund,
         maxDiscount,
@@ -56,11 +56,11 @@ describe('Staking WLTH unit tests', () => {
       deployer
     );
 
-    return { staking, wlth, usdc, quoter, deployer, owner, user };
+    return { staking, wlth, usdc, oracle, deployer, owner, user };
   };
 
   const setup = async () => {
-    const { staking, wlth, usdc, quoter, deployer, owner, user } = await loadFixture(deployStaking);
+    const { staking, wlth, usdc, oracle, deployer, owner, user } = await loadFixture(deployStaking);
 
     const fund: FakeContract<InvestmentFund> = await smock.fake('InvestmentFund');
     const nft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -69,26 +69,26 @@ describe('Staking WLTH unit tests', () => {
     fund.investmentNft.reset();
     nft.getInvestmentValue.reset();
     wlth.transferFrom.reset();
-    quoter.quote.reset();
+    oracle.estimateAmountOut.reset();
 
-    return { staking, wlth, usdc, quoter, fund, nft, deployer, owner, user };
+    return { staking, wlth, usdc, oracle, fund, nft, deployer, owner, user };
   };
 
-  const initializeFakes = (investmentValueReturn: BigNumber, quoteReturn?: BigNumber) => {
+  const initializeFakes = (investmentValueReturn: BigNumber, oracleReturn?: BigNumber) => {
     fund.currentState.reset();
     fund.investmentNft.reset();
     nft.getInvestmentValue.reset();
     wlth.transferFrom.reset();
     wlth.transfer.reset();
-    quoter.quote.reset();
+    oracle.estimateAmountOut.reset();
 
     fund.currentState.returns(formatBytes32String(FundState.FundsIn));
     fund.investmentNft.returns(nft.address);
     nft.getInvestmentValue.returns(investmentValueReturn);
     wlth.transferFrom.returns(true);
     wlth.transfer.returns(true);
-    if (quoteReturn !== undefined) {
-      quoter.quote.returns([quoteReturn, 0, 0, 0]);
+    if (oracleReturn !== undefined) {
+      oracle.estimateAmountOut.returns(oracleReturn);
     }
   };
 
@@ -104,7 +104,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -112,7 +112,7 @@ describe('Staking WLTH unit tests', () => {
             constants.AddressZero,
             wlth.address,
             usdc,
-            quoter.address,
+            oracle.address,
             defaultFee,
             defaultCommunityFund,
             maxDiscount,
@@ -128,7 +128,7 @@ describe('Staking WLTH unit tests', () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -136,7 +136,7 @@ describe('Staking WLTH unit tests', () => {
             owner.address,
             constants.AddressZero,
             usdc,
-            quoter.address,
+            oracle.address,
             defaultFee,
             defaultCommunityFund,
             maxDiscount,
@@ -152,7 +152,7 @@ describe('Staking WLTH unit tests', () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, wlth] = await ethers.getSigners();
 
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -176,7 +176,7 @@ describe('Staking WLTH unit tests', () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, wlth] = await ethers.getSigners();
 
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -193,7 +193,7 @@ describe('Staking WLTH unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(staking, 'StakingWlth__DexQuoterZeroAddress');
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__UniswapWlthPriceZeroAddress');
     });
 
     it('Should revert deploying if community fund is zero address', async () => {
@@ -201,7 +201,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -209,7 +209,7 @@ describe('Staking WLTH unit tests', () => {
             owner.address,
             wlth.address,
             usdc,
-            quoter.address,
+            oracle.address,
             defaultFee,
             constants.AddressZero,
             maxDiscount,
@@ -226,7 +226,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -234,7 +234,7 @@ describe('Staking WLTH unit tests', () => {
             owner.address,
             wlth.address,
             usdc,
-            quoter.address,
+            oracle.address,
             defaultFee,
             defaultCommunityFund,
             maxDiscount,
@@ -251,7 +251,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapQuoter> = await smock.fake('UniswapQuoter');
+      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -310,7 +310,7 @@ describe('Staking WLTH unit tests', () => {
     const investmentSize = toUsdc('1200');
 
     before(async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       initializeFakes(investmentSize);
       await staking.connect(owner).registerFund(fund.address);
@@ -325,7 +325,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should emit event on stake', async () => {
       const stake = { amount: toWlth('600'), period: ONE_YEAR };
-      quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('300'));
 
       await expect(staking.connect(user).stake(fund.address, stake.amount, stake.period))
         .to.emit(staking, 'TokensStaked')
@@ -334,7 +334,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should create staking position', async () => {
       const stake = { amount: toWlth('600'), period: ONE_YEAR };
-      quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('300'));
 
       const stakeTime = (await time.latest()) + 100;
       await time.setNextBlockTimestamp(stakeTime);
@@ -356,7 +356,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert staking if fund not registered', async () => {
       const stake = { amount: toWlth('600'), duration: ONE_YEAR };
-      quoter.quote.returns([stake.amount, 0, 0, 0]);
+      oracle.estimateAmountOut.returns(stake.amount);
 
       await staking.connect(owner).unregisterFund(fund.address);
       await expect(
@@ -366,7 +366,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert staking if invalid staking amount', async () => {
       const stake = { amount: 0, duration: ONE_YEAR };
-      quoter.quote.returns([stake.amount, 0, 0, 0]);
+      oracle.estimateAmountOut.returns(stake.amount);
 
       await expect(
         staking.connect(user).stake(fund.address, stake.amount, stake.duration)
@@ -375,7 +375,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert staking if invalid staking duration', async () => {
       const stake = { amount: toWlth('600'), duration: 0 };
-      quoter.quote.returns([stake.amount, 0, 0, 0]);
+      oracle.estimateAmountOut.returns(stake.amount);
 
       await expect(
         staking.connect(user).stake(fund.address, stake.amount, stake.duration)
@@ -384,7 +384,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert staking if target discount is equal to zero', async () => {
       const stake = { amount: toWlth('600'), duration: ONE_YEAR };
-      quoter.quote.returns([0, 0, 0, 0]); // gives zero discount
+      oracle.estimateAmountOut.returns(0); // gives zero discount
 
       await expect(
         staking.connect(user).stake(fund.address, stake.amount, stake.duration)
@@ -393,7 +393,7 @@ describe('Staking WLTH unit tests', () => {
 
     it('Should revert staking if target discount exceeds maximum value', async () => {
       const stake = { amount: toWlth('601'), duration: ONE_YEAR }; // half of investment value + 1
-      quoter.quote.returns([toUsdc('601'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('601'));
 
       await expect(
         staking.connect(user).stake(fund.address, stake.amount, stake.duration)
@@ -403,9 +403,9 @@ describe('Staking WLTH unit tests', () => {
     it('Should revert staking if total target discount exceeds maximum value', async () => {
       const stake1 = { amount: toWlth('600'), duration: ONE_YEAR };
       const stake2 = { amount: toWlth('100'), duration: ONE_YEAR };
-      quoter.quote.returnsAtCall(0, [toUsdc('300'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('300'));
       // discount reaches max value at total stakes worth of half investment value, in that case 600 USDC
-      quoter.quote.returnsAtCall(1, [toUsdc('301'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('301'));
 
       await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
       await expect(
@@ -422,8 +422,8 @@ describe('Staking WLTH unit tests', () => {
       fund2.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund2.investmentNft.returns(nft2.address);
       nft2.getInvestmentValue.returns(investmentSize);
-      quoter.quote.returnsAtCall(0, [toUsdc('600'), 0, 0, 0]);
-      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('600'));
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('100'));
 
       await staking.connect(owner).registerFund(fund2.address);
       await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
@@ -445,12 +445,12 @@ describe('Staking WLTH unit tests', () => {
     const stake1 = { amount: toWlth('300'), period: ONE_YEAR };
 
     before(async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       initializeFakes(investmentSize, stake1.amount);
 
       await staking.connect(owner).registerFund(fund.address);
-      quoter.quote.returnsAtCall(0, [toUsdc('300'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('300'));
 
       await time.setNextBlockTimestamp((await time.latest()) + 100);
       const tx = await staking.connect(user).stake(fund.address, stake1.amount, stake1.period);
@@ -510,7 +510,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should not collect early unstaking penalty for any position', async () => {
         const stake2 = { amount: toWlth('100'), period: TWO_YEARS };
 
-        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('100'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
 
         const toUnstake = toWlth('150');
@@ -527,7 +527,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should simulate not collect early unstaking penalty for any position', async () => {
         const stake2 = { amount: toWlth('100'), period: TWO_YEARS };
 
-        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('100'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
 
         const toUnstake = toWlth('150');
@@ -546,7 +546,7 @@ describe('Staking WLTH unit tests', () => {
         it(`Should subtract average from all positions [unstake=${item.unstake}]`, async () => {
           const stake2 = { amount: toWlth('100'), period: TWO_YEARS };
 
-          quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+          oracle.estimateAmountOut.returns(toUsdc('100'));
           const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
           const stake2Id = await getStakeIdFromTx(tx, staking.address);
 
@@ -620,7 +620,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should not collect unstaking penalty from multiple stakes if unlocked tokens are available', async () => {
         const stake2 = { amount: toWlth('100'), period: TWO_YEARS };
 
-        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('100'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
 
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
@@ -672,7 +672,7 @@ describe('Staking WLTH unit tests', () => {
       it.skip('Should simulate proper unstaking penalty if positions are finished, unlocked and locked', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
-        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('150'));
         const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
         const stake2Id = getStakeIdFromTx(tx, staking.address);
         const stake2Time = (await staking.getPositionDetails(stake2Id)).period.start.toNumber();
@@ -695,7 +695,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should collect proper unstaking penalty if positions are finished, unlocked and locked', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
-        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('150'));
         const tx = await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
         const stake2Id = getStakeIdFromTx(tx, staking.address);
         const stake2Time = (await staking.getPositionDetails(stake2Id)).period.start.toNumber();
@@ -735,7 +735,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should collect no penalty if finished tokens cover maximum discount', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
-        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('150'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
 
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
@@ -756,7 +756,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should simulate no penalty if finished tokens cover maximum discount', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
-        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('150'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.period);
 
         fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
@@ -779,14 +779,14 @@ describe('Staking WLTH unit tests', () => {
 
   describe('#getDiscountInTimestamp()', () => {
     it('Should return constant discount if staked in CRP', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -801,14 +801,14 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return linear discount if staked in CDP', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -823,7 +823,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return correct discount if staked multiple times', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
       const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
 
@@ -831,8 +831,8 @@ describe('Staking WLTH unit tests', () => {
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
-      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('100'));
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('100'));
 
       const stake1Time = Date.now() + 1000;
       const stake2Time = stake1Time + TWO_YEARS;
@@ -857,7 +857,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return maximum discount if staked multiple times and sold all NFTs', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
       const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
 
@@ -865,8 +865,8 @@ describe('Staking WLTH unit tests', () => {
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
-      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('100'));
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('100'));
 
       const stake1Time = Date.now() + 1000;
       const stake2Time = stake1Time + TWO_YEARS;
@@ -890,14 +890,14 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should increase discount up to max value if decreased investment size after stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -921,14 +921,14 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should decrease discount if increased investment size after stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -947,14 +947,14 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return zero discount if timestamp before stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -981,7 +981,7 @@ describe('Staking WLTH unit tests', () => {
 
   describe('#getDiscountFromPreviousInvestmentInTimestamp()', () => {
     it('Should return constant discount if staked in CRP', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
@@ -989,7 +989,7 @@ describe('Staking WLTH unit tests', () => {
       nft.getInvestmentValue.returns(toUsdc('1000'));
       nft.getPastInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -1022,7 +1022,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return linear discount if staked in CDP', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
@@ -1031,7 +1031,7 @@ describe('Staking WLTH unit tests', () => {
       nft.getPastInvestmentValue.returns(toUsdc('1000'));
 
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -1064,7 +1064,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return correct discount if staked multiple times', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
       const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
 
@@ -1074,8 +1074,8 @@ describe('Staking WLTH unit tests', () => {
       nft.getPastInvestmentValue.returns(toUsdc('1000'));
 
       wlth.transferFrom.returns(true);
-      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
-      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('100'));
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('100'));
 
       const stake1Time = Date.now() + 1000;
       const stake2Time = stake1Time + TWO_YEARS;
@@ -1126,7 +1126,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return maximum discount if staked multiple times and sold all NFTs', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake1 = { amount: toWlth('100'), period: FOUR_YEARS };
       const stake2 = { amount: toWlth('100'), period: ONE_YEAR };
 
@@ -1134,8 +1134,8 @@ describe('Staking WLTH unit tests', () => {
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returnsAtCall(0, [toUsdc('100'), 0, 0, 0]);
-      quoter.quote.returnsAtCall(1, [toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returnsAtCall(0, toUsdc('100'));
+      oracle.estimateAmountOut.returnsAtCall(1, toUsdc('100'));
 
       const stake1Time = Date.now() + 1000;
       const stake2Time = stake1Time + TWO_YEARS;
@@ -1159,7 +1159,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should not increase discount for previous investment if decreased investment size after stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
@@ -1167,7 +1167,7 @@ describe('Staking WLTH unit tests', () => {
       nft.getInvestmentValue.returns(toUsdc('2000'));
       nft.getPastInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -1199,7 +1199,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should not decrease discount for previous investment if increased investment size after stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
@@ -1207,7 +1207,7 @@ describe('Staking WLTH unit tests', () => {
       nft.getInvestmentValue.returns(toUsdc('2000'));
       nft.getPastInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -1227,7 +1227,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return zero discount if timestamp before stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('500'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsIn));
@@ -1235,7 +1235,7 @@ describe('Staking WLTH unit tests', () => {
       nft.getInvestmentValue.returns(toUsdc('2000'));
       nft.getPastInvestmentValue.returns(toUsdc('2000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('500'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('500'));
 
       await staking.connect(owner).registerFund(fund.address);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -1305,14 +1305,14 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should return correct discount estimation in CDP after stake', async () => {
-      const { staking, wlth, quoter, fund, nft, owner, user } = await setup();
+      const { staking, wlth, oracle, fund, nft, owner, user } = await setup();
       const stake = { amount: toWlth('100'), period: ONE_YEAR };
 
       fund.currentState.returns(formatBytes32String(FundState.FundsDeployed));
       fund.investmentNft.returns(nft.address);
       nft.getInvestmentValue.returns(toUsdc('1000'));
       wlth.transferFrom.returns(true);
-      quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('100'));
 
       await staking.connect(owner).registerFund(fund.address);
 
@@ -1358,13 +1358,13 @@ describe('Staking WLTH unit tests', () => {
       const stake = { amount: toWlth('600'), duration: ONE_YEAR };
 
       before(async () => {
-        ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+        ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
         initializeFakes(investmentSize, stake.amount);
 
         await staking.connect(owner).registerFund(fund.address);
 
-        quoter.quote.returns([toUsdc('600'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('600'));
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 
         restorer = await takeSnapshot();
@@ -1411,16 +1411,16 @@ describe('Staking WLTH unit tests', () => {
       const stake2 = { amount: toWlth('75'), duration: FOUR_YEARS };
 
       before(async () => {
-        ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+        ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
         initializeFakes(investmentSize);
 
         await staking.connect(owner).registerFund(fund.address);
 
-        quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('300'));
         await staking.connect(user).stake(fund.address, stake1.amount, stake1.duration);
 
-        quoter.quote.returns([toUsdc('75'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('75'));
         await staking.connect(user).stake(fund.address, stake2.amount, stake2.duration);
 
         restorer = await takeSnapshot();
@@ -1480,7 +1480,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should revert returning total unlocked tokens if fund not registered', async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       await expect(staking.getReleasedTokens(user.address, fund.address)).to.be.revertedWithCustomError(
         staking,
@@ -1489,7 +1489,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should revert returning tokens unlocked by position end', async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       await expect(
         staking.getReleasedTokensFromEndedPositions(user.address, fund.address)
@@ -1497,7 +1497,7 @@ describe('Staking WLTH unit tests', () => {
     });
 
     it('Should revert returning tokens unlocked by investment size decrease', async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       await expect(
         staking.getReleasedTokensFromOpenPositions(user.address, fund.address)
@@ -1510,7 +1510,7 @@ describe('Staking WLTH unit tests', () => {
     const investmentSize = toUsdc('1200');
 
     before(async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       initializeFakes(investmentSize);
       await staking.connect(owner).registerFund(fund.address);
@@ -1527,7 +1527,7 @@ describe('Staking WLTH unit tests', () => {
       const stake = { amount: toWlth('100'), duration: ONE_YEAR };
       //const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
-      quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('100'));
 
       await time.setNextBlockTimestamp(stakeTime);
       await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
@@ -1541,7 +1541,7 @@ describe('Staking WLTH unit tests', () => {
       const stake = { amount: toWlth('100'), duration: ONE_YEAR };
       //const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
-      quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('100'));
 
       await time.setNextBlockTimestamp(stakeTime);
       await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
@@ -1559,7 +1559,7 @@ describe('Staking WLTH unit tests', () => {
       const stake = { amount: toWlth('100'), duration: ONE_YEAR };
       //const stakeWithFee = getStakeWithFee(stake.amount);
       const stakeTime = Date.now() + 100;
-      quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('100'));
 
       await time.setNextBlockTimestamp(stakeTime);
       await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
@@ -1576,7 +1576,7 @@ describe('Staking WLTH unit tests', () => {
     it('Should omit empty positions when returning staking duration', async () => {
       const stake = { amount: toWlth('100'), duration: ONE_YEAR };
       //const stakeWithFee = getStakeWithFee(stake.amount);
-      quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('100'));
 
       await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
       await staking.connect(user).unstake(fund.address, stake.amount);
@@ -1590,7 +1590,7 @@ describe('Staking WLTH unit tests', () => {
     const investmentSize = toUsdc('1200');
 
     before(async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       initializeFakes(investmentSize);
       await staking.connect(owner).registerFund(fund.address);
@@ -1611,7 +1611,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should return 0 penalty', async () => {
         const stake = { amount: toWlth('300'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('100'));
 
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 
@@ -1627,7 +1627,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should return 0 penalty if fund is in position is finished', async () => {
         const stake = { amount: toWlth('300'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('300'));
 
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 
@@ -1638,7 +1638,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should return correct penalty if position is active and no tokens unlocked', async () => {
         const stake = { amount: toWlth('300'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('300'));
 
         const stakeTime = Date.now() + 1000;
         await time.setNextBlockTimestamp(stakeTime);
@@ -1651,7 +1651,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should return correct penalty if position is active and tokens unlocked', async () => {
         const stake = { amount: toWlth('300'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('300'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('300'));
 
         const stakeTime = Date.now() + 1000;
         await time.setNextBlockTimestamp(stakeTime);
@@ -1668,7 +1668,7 @@ describe('Staking WLTH unit tests', () => {
       it('Should revert if investment fund not registered', async () => {
         const stake = { amount: toWlth('300'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('100'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('100'));
 
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
         await staking.connect(owner).unregisterFund(fund.address);
@@ -1686,7 +1686,7 @@ describe('Staking WLTH unit tests', () => {
     const investmentSize = toUsdc('1200');
 
     before(async () => {
-      ({ staking, wlth, quoter, fund, nft, deployer, owner, user } = await setup());
+      ({ staking, wlth, oracle, fund, nft, deployer, owner, user } = await setup());
 
       initializeFakes(investmentSize);
       await staking.connect(owner).registerFund(fund.address);
@@ -1709,7 +1709,7 @@ describe('Staking WLTH unit tests', () => {
       it(`Should return required stake for max discount if stake is done [state=${state}]`, async () => {
         const stake = { amount: toWlth('150'), duration: ONE_YEAR };
         //const stakeWithFee = getStakeWithFee(stake.amount);
-        quoter.quote.returns([toUsdc('150'), 0, 0, 0]);
+        oracle.estimateAmountOut.returns(toUsdc('150'));
         fund.currentState.returns(formatBytes32String(state));
 
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
@@ -1723,7 +1723,7 @@ describe('Staking WLTH unit tests', () => {
     it('Should return zero required stake for max discount if max stake is done', async () => {
       const stake = { amount: toWlth('600'), duration: ONE_YEAR };
       //const stakeWithFee = getStakeWithFee(stake.amount);
-      quoter.quote.returns([toUsdc('600'), 0, 0, 0]);
+      oracle.estimateAmountOut.returns(toUsdc('600'));
 
       await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 

@@ -56,9 +56,9 @@ export interface networkConfigItem {
   wlthName: string;
   wlthSymbol: string;
   wlthWallet: string;
-  uniswapQuaterV2Address: string;
-  uniswapSwapRouterV2Address: string;
-  zeroPointThreeFeeTier: string;
+  uniswapWlthUsdcPoolAddress: string;
+  uniswapSwapRouterV3Address: string;
+  feeTier: string;
   wlth?: string;
   usdc?: string;
   usdt?: string;
@@ -115,9 +115,9 @@ const localConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapQuaterV2Address: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
-  uniswapSwapRouterV2Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
-  zeroPointThreeFeeTier: '3000',
+  uniswapWlthUsdcPoolAddress: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
+  uniswapSwapRouterV3Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
+  feeTier: '3000',
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
@@ -161,9 +161,9 @@ const goerliConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapQuaterV2Address: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
-  uniswapSwapRouterV2Address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-  zeroPointThreeFeeTier: '3000',
+  uniswapWlthUsdcPoolAddress: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
+  uniswapSwapRouterV3Address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+  feeTier: '3000',
   stakingTransactionFee: 200,
   stakingTreasuryWallet: '0x', //TODO define the address
   communityFundWallet: '0x',
@@ -208,9 +208,9 @@ const zkSyncTestnet: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapQuaterV2Address: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
-  uniswapSwapRouterV2Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
-  zeroPointThreeFeeTier: '3000',
+  uniswapWlthUsdcPoolAddress: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
+  uniswapSwapRouterV3Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
+  feeTier: '3000',
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
@@ -246,8 +246,8 @@ const zkTestnetDevConfig: networkConfigItem = {
 
 const zkTestnetStageConfig: networkConfigItem = {
   ...zkSyncTestnet,
-  uniswapQuaterV2Address: '0x0a1c2C1794A32FfD51Fd3f983C936B695539c47C',
-  uniswapSwapRouterV2Address: '0x7f1c5573D44FA5F8B128a2f2a13A0dF29fcafd15',
+  uniswapWlthUsdcPoolAddress: '0x0a1c2C1794A32FfD51Fd3f983C936B695539c47C',
+  uniswapSwapRouterV3Address: '0x7f1c5573D44FA5F8B128a2f2a13A0dF29fcafd15',
   stakingTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
   communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
   investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
@@ -258,14 +258,14 @@ const zkTestnetStageConfig: networkConfigItem = {
 
 const sepoliaZkTestnetDevConfig: networkConfigItem = {
   ...zkSyncTestnet,
-  uniswapQuaterV2Address: '0x36dE03984CB77473A5d2DC2C3F4c6aB8191dA486',
-  uniswapSwapRouterV2Address: '0xE48E42b938ED8F47046Aa7E8085A054c8d45A990'
+  uniswapWlthUsdcPoolAddress: '0x81AEc3591556319C6B0E002B7c5b5BFBE20d03Ee',
+  uniswapSwapRouterV3Address: '0xEE3bb9e0cFE017795d46a38fc46C8d41bCAD9149'
 };
 
 const sepoliaZkTestnetStageConfig: networkConfigItem = {
   ...zkSyncTestnet,
-  uniswapQuaterV2Address: '0x36dE03984CB77473A5d2DC2C3F4c6aB8191dA486',
-  uniswapSwapRouterV2Address: '0xE48E42b938ED8F47046Aa7E8085A054c8d45A990',
+  uniswapWlthUsdcPoolAddress: '0x2437C6b81eeB54596Db072ec676a0a6acE4b535e',
+  uniswapSwapRouterV3Address: '0x2E8Cede0931667f313045d83626ef495A9671DB7',
   stakingTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
   communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
   investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
@@ -289,9 +289,9 @@ const baseSepoliaConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapQuaterV2Address: '0xe49E4Eb94646ae12287DA0deaA8C2009BE3B2F71',
-  uniswapSwapRouterV2Address: '0x405B79393225fdc5E41628d7787E18E5EEA54A1C',
-  zeroPointThreeFeeTier: '3000',
+  uniswapWlthUsdcPoolAddress: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+  uniswapSwapRouterV3Address: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4', //SwapRouter02
+  feeTier: '500',
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',

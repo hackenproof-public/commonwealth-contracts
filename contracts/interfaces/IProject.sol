@@ -39,9 +39,17 @@ interface IProject {
 
     /**
      * @notice Sells amount of vested tokens to a given investment fund
-     * @param amount amount of vested tokens to be sold
+     * @param _amount amount of vested tokens to be sold
+     * @param _fee fee tier
+     * @param _sqrtPriceLimitX96 amount of vested tokens to be sold
+     * @param _amountOutMinimum minimum amount of tokens expected to get after the swap
      */
-    function sellVestedToInvestmentFund(uint256 amount, uint256 slippageLimit) external;
+    function sellVestedToInvestmentFund(
+        uint256 _amount,
+        uint24 _fee,
+        uint160 _sqrtPriceLimitX96,
+        uint256 _amountOutMinimum
+    ) external;
 
     /**
      * @notice Returns funds allocation for this project
