@@ -15,15 +15,21 @@ const airdropFreeFundNfts: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   const csvFilePath = __dirname + '/../data/freeFundAirdrop.csv';
   const delimiter = ',';
   const addresses: string[] = [];
-  const tokenUri = undefined; //'ipfs://QmT8rv43PKmqqkC5Fb9FhJWEzpUim1jU5s8bhDyw2TQG1a';
 
-  const investmentNFTAddress = undefined;
-  const amount = undefined;
+  const investmentNFTAddress = '0x47E48acD43841fc454fad197e37EcB14f782bA69';
+
+  // TOKEN URIS FOR DIFFERENT TIERS
+  // const tokenUri = 'ipfs://QmPYRnKnwT989AWUC2EWGNYbLxvwYvp6sghmAqUcMJy52N';       // TIER1
+  // const tokenUri = 'ipfs://QmYfwXRC3BEPz2dHcFLK1MKrF9SwcnH9A5TrkJoyMp3eQQ';       // TIER2
+  const tokenUri = 'ipfs://QmNoQCWdHtxWtG8cqHA13kRGA7FEeS8QKcdSGmEokW4fsk';       // TIER3
+
+  // AMOUNTS FOR DIFFERENT TIERS
+  // const amount = toUsdc('10000');    // TIER1
+  // const amount = toUsdc('5000');     // TIER2
+  const amount = toUsdc('1000');     // TIER3
 
   if (!investmentNFTAddress || !tokenUri || !amount) {
-    throw Error(
-      'Please configure investmentNFTAddress, pinataApiKey, pinataSecretApiKey and amount in the airdrop script.'
-    );
+    throw Error('Please configure investmentNFTAddress and amount in the airdrop script.');
   }
 
   const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
@@ -62,7 +68,7 @@ const airdropFreeFundNfts: DeployFunction = async (hre: HardhatRuntimeEnvironmen
         const tx = await nft.mint(addresses[i], amount, tokenUri, { gasLimit: requiredGas.mul(2) });
         await tx.wait();
 
-        console.log(`NFT minted for user: ${addresses[i]} with amount: ${amount.toString()} and tokenUri: ${tokenUri}`);
+        console.log(`NFT minted for user: ${addresses[i]} with amount: ${amount} and tokenUri: ${tokenUri} and tx hash: ${tx.hash}`);
       } catch (error) {
         console.log('Something went wrong', error);
         process.exit(1);

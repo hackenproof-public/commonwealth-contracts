@@ -330,34 +330,34 @@ const baseConfig: networkConfigItem = {
   genesisNftV2Series: 2,
   ownerAccount: '0xbe7A65e6B0A252C71a666CaC8cA2e3c2D741F4aF',
   genesisNftRoyalty: 650,
-  genesisNftRoyaltyAccount: '', //TODO
+  genesisNftRoyaltyAccount: '0xa653879692D4D0e6b6E0847ceDd58eAD2F1CC136',
   genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
-  wlthName: '', //TODO
-  wlthSymbol: '', //TODO
-  wlthWallet: '', //TODO
+  wlthName: 'Common Wealth Token',
+  wlthSymbol: 'WLTH',
+  wlthWallet: '0xE73e27BB167997e886060D5C6eE0ddd7B4736aC6',
   uniswapQuaterV2Address: '', //Not used
   uniswapSwapRouterV2Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
   zeroPointThreeFeeTier: '', //TODO
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '',
-  communityFundWallet: '', //TODO
+  communityFundWallet: '0xA205fD6A798A9Ba8b107A00b8A6a5Af742d6aCb5',
   maxDiscount: 3000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
   stakingNFTRewardPerios: 0, // Not used
-  investmentFundTreasuryWallet: '', //TODO
+  investmentFundTreasuryWallet: '0x990eCdf73704f9114Ee28710D171132b5Cfdc6f0', // RevenueWallet
   investmentFundManagementFee: 1000,
   nftVestingCadence: 0, //TODO
   nftVestingDuration: 0, //TODO,
   nftVestingStartTimestamp: 0, //TODO
   stakingRewardsDistributionStartTimestamp: 0, //TODO
   stakingRewardsLeftoversUnlockDelay: 0, //TODO
-  genesisNftRevenueAddress: '', //TODO
-  lpPoolAddress: '', //TODO
-  burnAddress: '', //TODO
+  genesisNftRevenueAddress: '0x990eCdf73704f9114Ee28710D171132b5Cfdc6f0',
+  lpPoolAddress: '0x9028D3620936a47D153768FfeCB490aF620C2d77',
+  burnAddress: '0xa35EAc64300d551F9872A155c1F6ca48451473af', //BurnWallet
   stakingRewardsAllocation: parseEther('0'), //TODO
-  unlocker: '', //TODO
+  unlocker: '0xbe7A65e6B0A252C71a666CaC8cA2e3c2D741F4aF',
   zkSyncGasPerPubdataLimit: 0, //Not used
   genesisNftVestingAllocation: parseEther('0'), //TODO
   genesisNftVestingLeftoversUnlockDelay: 0, //TODO

@@ -12,10 +12,10 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
   const deploymentConfig = getDeploymentConfig();
 
   //Needs to be configure for every Fund deployment
-  const nftName = 'test nftName';
-  const nftSymbol = 'TSYM';
-  const fundName = 'asdadasdasd';
-  const cap = toUsdc('2000000');
+  const nftName = "Alpha Fund 'Slice'";
+  const nftSymbol = 'ALPHA';
+  const fundName = 'Alpha Fund';
+  const cap = toUsdc('6000000');
 
   if (!nftName || !nftSymbol || !fundName || !cap) {
     throw Error(' Please configure nfName, nftSymbol, fundName and cap in the Investment Fund deployment script.');

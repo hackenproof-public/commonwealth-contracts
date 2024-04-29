@@ -56,7 +56,7 @@ const deployFreeFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
         genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
       }
     },
-    { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
+    { name: 'managementFee', value: 0 },
     { name: 'cap', value: cap },
     { name: 'maxPercentageWalletInvestmentLimit', value: 200 },
     { name: 'minimumInvestment', value: deploymentConfig.pricelessFundMinimumInvestment }
