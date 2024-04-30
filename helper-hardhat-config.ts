@@ -190,7 +190,6 @@ const goerliConfig: networkConfigItem = {
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
   alphaFundMinimumInvestment: toUsdc('50')
-
 };
 
 const zkSyncTestnet: networkConfigItem = {
@@ -237,7 +236,6 @@ const zkSyncTestnet: networkConfigItem = {
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
   alphaFundMinimumInvestment: toUsdc('50')
-
 };
 
 const zkTestnetDevConfig: networkConfigItem = {
@@ -317,8 +315,7 @@ const baseSepoliaConfig: networkConfigItem = {
   genesisNftVestingStartTimestamp: 1713343202,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('50')
-
+  alphaFundMinimumInvestment: toUsdc('20')
 };
 
 const baseConfig: networkConfigItem = {
@@ -336,9 +333,9 @@ const baseConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xE73e27BB167997e886060D5C6eE0ddd7B4736aC6',
-  uniswapQuaterV2Address: '', //Not used
-  uniswapSwapRouterV2Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
-  zeroPointThreeFeeTier: '', //TODO
+  uniswapWlthUsdcPoolAddress: '', //TODO
+  uniswapSwapRouterV3Address: '', //TODO
+  feeTier: '', //TODO
   stakingTransactionFee: 100,
   stakingTreasuryWallet: '',
   communityFundWallet: '0xA205fD6A798A9Ba8b107A00b8A6a5Af742d6aCb5',
@@ -364,8 +361,7 @@ const baseConfig: networkConfigItem = {
   genesisNftVestingStartTimestamp: 0, //TODO,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('50')
-
+  alphaFundMinimumInvestment: toUsdc('20')
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig

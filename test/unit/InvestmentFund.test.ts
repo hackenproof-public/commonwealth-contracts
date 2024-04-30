@@ -1782,6 +1782,37 @@ describe('InvestmentFund', () => {
     });
   });
 
+  describe('Increase cap', () => {
+    describe('Success', () => {
+      it('Should increase cap', async () => {
+        const { owner, investmentFund, cap } = await loadFixture(deployInvestmentFund);
+
+        expect(await investmentFund.connect(owner).increaseCapTo(cap.add(toUsdc('100000'))))
+          .to.emit(investmentFund, 'CapIncreased')
+          .withArgs(50);
+        expect(await investmentFund.cap()).to.be.equal(cap.add(toUsdc('100000')));
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund, cap } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(user1).increaseCapTo(cap.add(toUsdc('100000')))).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it('Should revert when cap smaller then previous', async () => {
+        const { owner, investmentFund, cap } = await loadFixture(deployInvestmentFund);
+
+        await expect(investmentFund.connect(owner).increaseCapTo(cap.sub(1))).to.be.revertedWithCustomError(
+          investmentFund,
+          'InvestmentFund__InvalidInvestmentCap'
+        );
+      });
+    });
+  });
+
   describe('Set the payouts unlocker', () => {
     describe('Success', () => {
       it('Should set the unlocker', async () => {

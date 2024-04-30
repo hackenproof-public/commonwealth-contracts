@@ -7,7 +7,7 @@ import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
 
-const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
+const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
   const deploymentConfig = getDeploymentConfig();
 
@@ -15,7 +15,7 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
   const nftName = "Alpha Fund 'Slice'";
   const nftSymbol = 'ALPHA';
   const fundName = 'Alpha Fund';
-  const cap = toUsdc('6000000');
+  const cap = toUsdc('1000000');
 
   if (!nftName || !nftSymbol || !fundName || !cap) {
     throw Error(' Please configure nfName, nftSymbol, fundName and cap in the Investment Fund deployment script.');
@@ -59,7 +59,7 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap },
     { name: 'maxPercentageWalletInvestmentLimit', value: 200 }, // 200 = 2%
-    { name: 'minimumInvestment', value: deploymentConfig.alphaFundMinimumInvestment } // 200 = 2%
+    { name: 'minimumInvestment', value: deploymentConfig.alphaFundMinimumInvestment }
   ];
 
   const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
@@ -70,8 +70,8 @@ const deployFirstFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
   }
 };
 
-export default deployFirstFund;
-deployFirstFund.tags = ['firstFund'];
+export default deployAlphaFund;
+deployAlphaFund.tags = ['alphaFund'];
 
 async function addToFundRegistry(fundRegistryAddress: string, investmentFundAddress: string) {
   console.log(`Registering InvestmentFund: ${investmentFundAddress} in InvestmentFundRegistry: ${fundRegistryAddress}`);

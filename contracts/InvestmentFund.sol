@@ -473,6 +473,15 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
+    function increaseCapTo(uint256 _cap) external onlyOwner {
+        if (_cap <= s_cap) revert InvestmentFund__InvalidInvestmentCap();
+        s_cap = _cap;
+        emit CapIncreased(_cap);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
     function getPayoutsCount() external view returns (uint256) {
         return s_payouts.length;
     }

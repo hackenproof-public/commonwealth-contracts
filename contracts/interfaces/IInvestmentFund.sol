@@ -163,6 +163,12 @@ interface IInvestmentFund {
     event UnlockerSet(address indexed unlocker);
 
     /**
+     * @notice Emitted when cap value is increased
+     * @param cap New cap value
+     */
+    event CapIncreased(uint256 indexed cap);
+
+    /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:
@@ -269,6 +275,12 @@ interface IInvestmentFund {
      * @param _unlocker Address of payout unlocker
      */
     function setUnlocker(address _unlocker) external;
+
+    /**
+     * Increase cap value
+     * @param _cap Cap value
+     */
+    function increaseCapTo(uint256 _cap) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
