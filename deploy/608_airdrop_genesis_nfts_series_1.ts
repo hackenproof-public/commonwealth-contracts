@@ -51,7 +51,6 @@ const airdropGenesisNftSeries1: DeployFunction = async (hre: HardhatRuntimeEnvir
   }
 
   const out = async () => {
-    const price = await wallet.getGasPrice();
     console.log('Minting Genesis NFT Series 1');
 
     for (let i = 0; i < genesisSeries1Data.length; i++) {

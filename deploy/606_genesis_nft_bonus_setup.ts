@@ -1,31 +1,62 @@
+import { NonceManager } from '@ethersproject/experimental';
+import parse from 'csv-parser';
+import fs from 'fs';
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { confirmYesOrNo } from '../scripts/utils';
-import { getZkSyncSingerWallet } from '../utils/zkSyncWallet';
+import { getEnvByNetwork } from '../scripts/utils';
+import { GenesisNFTVesting } from '../typechain-types';
+import { getContractAddress } from '../utils/addresses';
 
-//TODO take data from excel file
 const genesisNftBonusSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  console.log('Setup started');
+  const csvFilePath = __dirname + '/../data/stakingRewards.csv';
+  const delimiter = ',';
+  const vestingAddress = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTVesting');
+  const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
 
-  const genesisNftVestingAddress = '0x'; // needs to be redeployed
-  const bonusSetupArray: number[] = []; // [1,2,3,6,87] as hex values: [0x1,0x2,0x3,0x6,0x57]
+  const provider = new ethers.providers.JsonRpcProvider(rpc);
+  const wallet = new NonceManager(
+    new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', hre.network.name)!, provider)
+  );
 
-  if (!genesisNftVestingAddress) {
-    throw Error('Please configure genesisNftVestingAddress');
+  const bonusNftIds: number[] = [];
+
+  const genesisNftVesting = (await ethers.getContractAt(
+    'GenesisNFTVesting',
+    vestingAddress,
+    wallet
+  )) as GenesisNFTVesting;
+
+  const readStream = await fs
+    .createReadStream(csvFilePath)
+    .pipe(parse({ separator: delimiter }))
+    .on('data', (row) => {
+      const ids = row['BonusNFTs'] as string;
+
+      if (ids.length > 2) {
+        const values = ids
+          .slice(1, ids.length - 1)
+          .split(',')
+          .forEach((id) => {
+            bonusNftIds.push(parseInt(id));
+          });
+      }
+    });
+
+  for await (const chunk of readStream) {
   }
 
-  const wallet = getZkSyncSingerWallet();
+  const out = async () => {
+    console.log('Setting up Genesis NFT Bonus');
 
-  const vesting = await ethers.getContractAt('GenesisNFTVesting', genesisNftVestingAddress, wallet);
+    const tx = await genesisNftVesting.setupBonus(bonusNftIds, true);
+    await tx.wait();
 
-  console.log('loaded bonus setup array: ' + bonusSetupArray);
+    console.log('Bonus is set up', tx.hash);
+  };
 
-  if (await confirmYesOrNo('Do you want to deploy contract? [y/N] ')) {
-    console.log(`Setting bonuses... `);
-    const tx = await vesting.connect(wallet).setupBonus(bonusSetupArray);
-    await tx.wait(1);
-  }
+  await out();
+  console.log('Done');
 };
 
 export default genesisNftBonusSetup;
