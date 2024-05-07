@@ -5,7 +5,7 @@ import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getEnvByNetwork } from '../scripts/utils';
-import { GenNFTV3 } from '../typechain-types';
+import { GenNFTV2 } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
 
 type GenesisLegacyData = {
@@ -24,7 +24,7 @@ const burnLegacy: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     new ethers.Wallet(getEnvByNetwork('WALLET_PRIVATE_KEY', hre.network.name)!, provider)
   );
 
-  const genesisLegacy = (await ethers.getContractAt('GenNFTV3', genesisLegacyAddress, wallet)) as GenNFTV3;
+  const genesisLegacy = (await ethers.getContractAt('GenNFTV2', genesisLegacyAddress, wallet)) as GenNFTV2;
 
   const genesisLegacyData: GenesisLegacyData[] = [];
 
@@ -47,6 +47,11 @@ const burnLegacy: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   }
 
   const out = async () => {
+    console.log('Unpausing Genesis Legacy');
+    const tx = await genesisLegacy.unpause();
+    await tx.wait();
+    console.log('Genesis Legacy unpaused');
+
     console.log('Burning Genesis NFT Legacy');
 
     for (let i = 0; i < genesisLegacyData.length; i++) {

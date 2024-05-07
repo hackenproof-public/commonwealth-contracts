@@ -51,6 +51,11 @@ const burnGenesisNftSeries2: DeployFunction = async (hre: HardhatRuntimeEnvironm
   }
 
   const out = async () => {
+    console.log('Unpausing Genesis NFT Series 2');
+    const tx = await genesisNftSeries2.unpause();
+    await tx.wait();
+    console.log('Genesis NFT S2 unpaused');
+
     console.log('Burning Genesis NFT Series 2');
 
     for (let i = 0; i < genesisSeries2Data.length; i++) {
