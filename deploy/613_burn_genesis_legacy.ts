@@ -55,6 +55,11 @@ const burnLegacy: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     console.log('Burning Genesis NFT Legacy');
 
     for (let i = 0; i < genesisLegacyData.length; i++) {
+      const gas = await wallet.getGasPrice();
+      if (gas.gt(ethers.BigNumber.from(20000000000))) {
+        throw new Error('Gas price too high');
+      }
+
       const { account, amount } = genesisLegacyData[i];
       console.log('Burning for ', account, amount);
       await genesisLegacy.burn(account, 1, amount);

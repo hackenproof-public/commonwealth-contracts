@@ -61,6 +61,11 @@ const burnGenesisNftSeries1: DeployFunction = async (hre: HardhatRuntimeEnvironm
     for (let i = 0; i < genesisSeries1Data.length; i++) {
       const { account, ids } = genesisSeries1Data[i];
       for (let j = 0; j < ids.length; j++) {
+        const gas = await wallet.getGasPrice();
+        if (gas.gt(ethers.BigNumber.from(20000000000))) {
+          throw new Error('Gas price too high');
+        }
+
         console.log('Burning for ', account, ids[j]);
         await genesisNftSeries1.burn(ids[j]);
       }
