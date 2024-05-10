@@ -58,7 +58,7 @@ contract FreeFund is InvestmentFund {
      * @inheritdoc IInvestmentFund
      * @dev Invest function is not allowed in FreeFund
      */
-    function invest(uint240, string calldata) external override {
+    function invest(uint240) external override {
         revert FreeFund__InvestmentNotAllowed();
     }
 
@@ -66,12 +66,10 @@ contract FreeFund is InvestmentFund {
      * @dev Mints investment NFT and send it to the wallet
      * @param _amount Amount of tokens to be invested
      * @param _wallet Address of wallet to receive investment NFT
-     * @param _tokenUri URI of metadata for Investment NFT minted within investment
      */
     function airdropInvestmentNFT(
         uint240 _amount,
-        address _wallet,
-        string calldata _tokenUri
+        address _wallet
     ) external onlyOwner onlyAllowedStates {
         if (_amount <= s_minimumInvestment) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
@@ -88,6 +86,6 @@ contract FreeFund is InvestmentFund {
 
         emit InvestmentAirdroped(_wallet, _amount);
 
-        nft.mint(_wallet, _amount, _tokenUri);
+        nft.mint(_wallet, _amount);
     }
 }

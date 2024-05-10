@@ -97,7 +97,7 @@ describe('UniswapWlthPrice unit tests', () => {
     );
   });
 
-  it.only('Should return estimated WLTH price', async () => {
+  it('Should return estimated WLTH price', async () => {
     const { uniswapWlthPrice, uniswapPool } = await loadFixture(deployOracle);
     uniswapPool.observe.returns([1,2,3],[1,2,3]);
 

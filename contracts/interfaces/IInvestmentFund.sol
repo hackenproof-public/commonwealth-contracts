@@ -178,9 +178,8 @@ interface IInvestmentFund {
      * Emits a {Invested} event.
      *
      * @param _amount Amount of tokens to be invested
-     * @param _tokenUri URI of metadata for Investment NFT minted within investment
      */
-    function invest(uint240 _amount, string calldata _tokenUri) external;
+    function invest(uint240 _amount) external;
 
     /**
      * @notice Unlocks payouts to given index.

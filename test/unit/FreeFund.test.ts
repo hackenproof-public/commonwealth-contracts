@@ -31,7 +31,6 @@ describe('FreeFund', () => {
       user2
     ] = await ethers.getSigners();
 
-    const tokenUri = 'ipfs://token-uri';
     const basisPoint = 10000;
 
     const fundName = 'Test Fund';
@@ -106,7 +105,6 @@ describe('FreeFund', () => {
       cap,
       maxPercentageWalletInvestmentLimit,
       minimumInvestment,
-      tokenUri,
       user1,
       user2,
       basisPoint
@@ -755,9 +753,9 @@ describe('FreeFund', () => {
   describe('Invest', () => {
     describe('Reverts', () => {
       it('Should always revert', async () => {
-        const { user1, freeFund, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { user1, freeFund} = await loadFixture(deployInvestmentFund);
 
-        await expect(freeFund.connect(user1).invest(toUsdc('10000'), tokenUri)).to.be.revertedWithCustomError(
+        await expect(freeFund.connect(user1).invest(toUsdc('10000'))).to.be.revertedWithCustomError(
           freeFund,
           'FreeFund__InvestmentNotAllowed'
         );
@@ -768,20 +766,20 @@ describe('FreeFund', () => {
   describe('AirdropInvestmentNFT', () => {
     describe('Success', () => {
       it('Should airdrop an investment nft', async () => {
-        const { freeFund, investmentNft, owner, user1, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { freeFund, investmentNft, owner, user1} = await loadFixture(deployInvestmentFund);
         const amount = toUsdc('1000');
 
-        await expect(freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri))
+        await expect(freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address))
           .to.emit(freeFund, 'InvestmentAirdroped')
           .withArgs(user1.address, amount);
 
-        expect(investmentNft.mint).to.have.been.calledWith(user1.address, amount, tokenUri);
+        expect(investmentNft.mint).to.have.been.calledWith(user1.address, amount);
       });
 
       it('Should change the state to CapReached when total investment reaches the cap', async () => {
-        const { owner, freeFund, user1, investmentNft, cap, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund, user1, investmentNft, cap} = await loadFixture(deployInvestmentFund);
 
-        await expect(freeFund.connect(owner).airdropInvestmentNFT(cap, user1.address, tokenUri))
+        await expect(freeFund.connect(owner).airdropInvestmentNFT(cap, user1.address))
           .to.emit(freeFund, 'CapReached')
           .withArgs(cap)
           .to.emit(freeFund, 'InvestmentAirdroped')
@@ -792,35 +790,35 @@ describe('FreeFund', () => {
     });
     describe('Reverts', () => {
       it('Should revert when not called by owner', async () => {
-        const { user1, freeFund, tokenUri } = await loadFixture(deployInvestmentFund);
-        await expect(freeFund.connect(user1).airdropInvestmentNFT(1000, user1.address, tokenUri)).to.be.revertedWith(
+        const { user1, freeFund} = await loadFixture(deployInvestmentFund);
+        await expect(freeFund.connect(user1).airdropInvestmentNFT(1000, user1.address)).to.be.revertedWith(
           'Ownable: caller is not the owner'
         );
       });
 
       it("Should revert when not in 'FundsIn' state", async () => {
-        const { owner, freeFund, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund} = await loadFixture(deployInvestmentFund);
 
         await freeFund.connect(owner).stopCollectingFunds();
 
         await expect(
-          freeFund.connect(owner).airdropInvestmentNFT(1000, owner.address, tokenUri)
+          freeFund.connect(owner).airdropInvestmentNFT(1000, owner.address)
         ).to.be.revertedWithCustomError(freeFund, 'StateMachine__NotAllowedInCurrentState');
       });
 
       it('Should revert when exceed the cap', async () => {
-        const { owner, freeFund, tokenUri, cap } = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund, cap } = await loadFixture(deployInvestmentFund);
 
         await expect(
-          freeFund.connect(owner).airdropInvestmentNFT(cap.add(1), owner.address, tokenUri)
+          freeFund.connect(owner).airdropInvestmentNFT(cap.add(1), owner.address)
         ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__TotalInvestmentAboveCap');
       });
 
       it('Should revert when amount less then minimum investment', async () => {
-        const { owner, freeFund, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund} = await loadFixture(deployInvestmentFund);
 
         await expect(
-          freeFund.connect(owner).airdropInvestmentNFT(1, owner.address, tokenUri)
+          freeFund.connect(owner).airdropInvestmentNFT(1, owner.address)
         ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__InvestmentTooLow');
       });
     });
@@ -912,7 +910,7 @@ describe('FreeFund', () => {
       });
 
       it("Should revert when the fund not in 'FundsIn' state", async () => {
-        const { owner, freeFund, usdc, investmentNft, cap, project, user1, tokenUri } = await loadFixture(
+        const { owner, freeFund, usdc, investmentNft, cap, project, user1} = await loadFixture(
           deployInvestmentFund
         );
 
@@ -992,7 +990,7 @@ describe('FreeFund', () => {
   describe('DeployFundsToProject', () => {
     describe('Success', () => {
       it("Should deploy funds to the project's address", async () => {
-        const { owner, user1, freeFund, project, investmentNft, usdc, tokenUri, cap } = await loadFixture(
+        const { owner, user1, freeFund, project, investmentNft, usdc, cap } = await loadFixture(
           deployInvestmentFund
         );
         const amount = toUsdc('10000');
@@ -1048,7 +1046,6 @@ describe('FreeFund', () => {
           freeFund,
           usdc,
           user1,
-          tokenUri,
           investmentNft,
           cap,
           project,
@@ -1064,7 +1061,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
 
@@ -1073,7 +1070,6 @@ describe('FreeFund', () => {
           freeFund,
           usdc,
           user1,
-          tokenUri,
           investmentNft,
           cap,
           project,
@@ -1246,7 +1242,7 @@ describe('FreeFund', () => {
   describe('UnlockPayoutsTo', () => {
     describe('Success', () => {
       it('Should unlock all payouts to the given index', async () => {
-        const { owner, unlocker, freeFund, project, usdc, tokenUri, investmentNft, cap, user1 } = await loadFixture(
+        const { owner, unlocker, freeFund, project, usdc, investmentNft, cap, user1 } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1255,7 +1251,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(cap);
         await freeFund.connect(project.wallet).provideProfit(cap);
@@ -1300,7 +1296,7 @@ describe('FreeFund', () => {
       });
 
       it('Should revert when the given index is lest then the next available payout', async () => {
-        const { owner, unlocker, freeFund, project, usdc, tokenUri, investmentNft, cap, user1 } = await loadFixture(
+        const { owner, unlocker, freeFund, project, usdc, investmentNft, cap, user1 } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1309,7 +1305,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(cap);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
@@ -1321,7 +1317,7 @@ describe('FreeFund', () => {
       });
 
       it("Should revert when the given index is greater then the last payout's index", async () => {
-        const { owner, unlocker, freeFund, project, usdc, tokenUri, investmentNft, cap, user1 } = await loadFixture(
+        const { owner, unlocker, freeFund, project, usdc, investmentNft, cap, user1 } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1330,7 +1326,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
 
         await freeFund.connect(project.wallet).provideProfit(amount);
@@ -1382,7 +1378,7 @@ describe('FreeFund', () => {
       });
 
       it('Should return zero when no payout is unlocked', async () => {
-        const { freeFund, user1, investmentNft, owner, cap, project, tokenUri, usdc } = await loadFixture(
+        const { freeFund, user1, investmentNft, owner, cap, project, usdc } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1391,7 +1387,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(amount);
 
@@ -1399,7 +1395,7 @@ describe('FreeFund', () => {
       });
 
       it('Should return the available funds details without carry fee when no payout in profit', async () => {
-        const { freeFund, user1, investmentNft, owner, cap, project, tokenUri, usdc, unlocker } = await loadFixture(
+        const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1408,7 +1404,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(amount);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
@@ -1424,7 +1420,7 @@ describe('FreeFund', () => {
       });
 
       it('Should return the available funds details with carry fee when payout in profit', async () => {
-        const { freeFund, user1, investmentNft, owner, cap, project, tokenUri, usdc, unlocker } = await loadFixture(
+        const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1433,7 +1429,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
@@ -1455,7 +1451,7 @@ describe('FreeFund', () => {
       });
 
       it('Should return zero when the total investment is zero and a profit is provided', async () => {
-        const { freeFund, user1, investmentNft, owner, cap, project, tokenUri, usdc, unlocker } = await loadFixture(
+        const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1475,7 +1471,7 @@ describe('FreeFund', () => {
     });
 
     it('Should carry fee be zero when max discount', async () => {
-      const { freeFund, user1, investmentNft, owner, cap, project, tokenUri, usdc, unlocker, staking } =
+      const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker, staking } =
         await loadFixture(deployInvestmentFund);
 
       const amount = toUsdc('100000');
@@ -1483,7 +1479,7 @@ describe('FreeFund', () => {
       await freeFund.connect(owner).addProject(project.address);
       usdc.transferFrom.returns(true);
       usdc.transfer.returns(true);
-      await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+      await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
       investmentNft.getTotalInvestmentValue.returns(cap);
       await freeFund.connect(owner).deployFunds();
       await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
@@ -1509,7 +1505,7 @@ describe('FreeFund', () => {
   describe('Withdraw', () => {
     describe('Success', () => {
       it('Should withdraw profits without carry fee distribution', async () => {
-        const { owner, freeFund, investmentNft, usdc, tokenUri, cap, project, user1, unlocker } = await loadFixture(
+        const { owner, freeFund, investmentNft, usdc, cap, project, user1, unlocker } = await loadFixture(
           deployInvestmentFund
         );
 
@@ -1518,7 +1514,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).addProject(project.address);
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(cap);
@@ -1543,7 +1539,6 @@ describe('FreeFund', () => {
           freeFund,
           investmentNft,
           usdc,
-          tokenUri,
           cap,
           project,
           user1,
@@ -1561,7 +1556,7 @@ describe('FreeFund', () => {
         usdc.transferFrom.returns(true);
         usdc.transfer.returns(true);
 
-        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address, tokenUri);
+        await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
         await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
@@ -1604,7 +1599,7 @@ describe('FreeFund', () => {
       });
 
       it('Should revert when nothing to withdraw', async () => {
-        const { owner, freeFund, user1, investmentNft, cap, usdc, tokenUri } = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund, user1, investmentNft, cap, usdc} = await loadFixture(deployInvestmentFund);
         await freeFund.connect(owner).stopCollectingFunds();
         await freeFund.connect(owner).deployFunds();
 

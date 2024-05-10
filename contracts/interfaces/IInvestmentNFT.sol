@@ -5,12 +5,14 @@ import {IERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/
 
 interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     /**
-     * @notice Emitted when token URI is changed
-     * @param caller Address which changed token URI
-     * @param tokenId ID of token for which URI was changed
-     * @param uri New token URI
+     * @notice Metadata structure for NFT
      */
-    event TokenURIChanged(address indexed caller, uint256 indexed tokenId, string uri);
+    struct Metadata {
+        string name;
+        string description;
+        string image;
+        string externalUrl;
+    }
 
     /**
      * @notice Emitted when new minter account is added to contract
@@ -34,12 +36,50 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     event TokenSplitted(address indexed caller, uint256 indexed tokenId);
 
     /**
+     * @notice Emitted when metadata for NFT is changed
+     * @param name Metadata name
+     * @param description Metadata description
+     * @param image Metadata image
+     * @param externalUrl Metadata external URL
+     */
+    event MetadataChanged(string indexed name, string indexed description, string indexed image, string externalUrl);
+
+    /**
+     * @notice Emitted when metadata name for NFT is changed
+     * @param name Metadata name
+     */
+    event MetadataNameChanged(string indexed name);
+
+    /**
+     * @notice Emitted when metadata description for NFT is changed
+     * @param description Metadata description
+     */
+    event MetadataDescriptionChanged(string indexed description);
+
+    /**
+     * @notice Emitted when metadata image for NFT is changed
+     * @param image Metadata image
+     */
+    event MetadataImageChanged(string indexed image);
+
+    /**
+     * @notice Emitted when metadata external URL for NFT is changed
+     * @param externalUrl Metadata external URL
+     */
+    event MetadataExternalUrlChanged(string indexed externalUrl);
+
+    /**
+     * @notice Emitted when minimum value for NFT is changed
+     * @param value New minimum value
+     */
+    event MinimumValueChanged(uint256 indexed value);
+
+    /**
      * @notice Mints NFT with specified investment value and metadata URI
      * @param to Token recipient
      * @param value Investment value assigned to token
-     * @param tokenUri URI of token metadata
      */
-    function mint(address to, uint256 value, string calldata tokenUri) external;
+    function mint(address to, uint256 value) external;
 
     /**
      * @notice Splits one NFT into multiple unique tokens
@@ -48,7 +88,43 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @param values List of new tokens values
      * @param values List of new tokens metadata URIs
      */
-    function split(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) external;
+    function split(uint256 tokenId, uint256[] calldata values) external;
+
+    /**
+     * @notice Set new metadata name
+     * @param _name New metadata name
+     */
+    function setMetadataName(string memory _name) external;
+
+    /**
+     * @notice Set new metadata description
+     * @param _description New metadata description
+     */
+    function setMetadataDescription(string memory _description) external;
+
+    /**
+     * @notice Set new metadata image
+     * @param _image New metadata image
+     */
+    function setMetadataImage(string memory _image) external;
+
+    /**
+     * @notice Set new metadata external URL
+     * @param _extenralUrl New metadata external URL
+     */
+    function setMetadataExternalUrl(string memory _extenralUrl) external;
+
+    /**
+     * @notice Set all metadata at once
+     * @param _metadata Metadata structure
+     */
+    function setAllMetadata(Metadata memory _metadata) external;
+
+    /**
+     * @notice Set minimum value for NFT
+     * @param _minimumValue New minimum value
+     */
+    function setMinimumValue(uint256 _minimumValue) external;
 
     /**
      * @notice Returns summarized investment value from tokens holded by `account`
@@ -70,6 +146,13 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @return Total investment value
      */
     function getTotalInvestmentValue() external view returns (uint256);
+
+    /**
+     * @notice Returns percentage of the token as string
+     * @param tokenId Id of the token
+     * @return Total String percentage
+     */
+    function getSharePercentage(uint256 tokenId) external view returns (string memory);
 
     /**
      * @notice Returns summarized investment value for all tokens within fund in specified block number

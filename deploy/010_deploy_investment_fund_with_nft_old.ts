@@ -35,46 +35,46 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
 
   ];
 
-  const nft = await deploy(hre, 'InvestmentNFT', nftParameters, true, false);
+  const nft = await deploy(hre, 'InvestmentNFTOld', nftParameters, true, false);
 
   if (!nft) {
     throw Error('InvestmentNFT deployment failed');
   }
 
-  const fundParameters = [
-    { name: 'owner', value: deploymentConfig.ownerAccount },
-    { name: 'unlocker', value: deploymentConfig.unlocker },
-    { name: 'name', value: fundName },
-    { name: 'currency', value: usdc },
-    { name: 'investmentNft', value: nft.address },
-    { name: 'stakingWlth', value: ethers.constants.AddressZero },
-    {
-      name: 'feeDistributionAddresses_',
-      value: {
-        treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
-        lpPool: deploymentConfig.lpPoolAddress,
-        burn: deploymentConfig.burnAddress,
-        communityFund: deploymentConfig.communityFundWallet,
-        genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
-      }
-    },
-    { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
-    { name: 'cap', value: cap },
-    { name: 'maxPercentageWalletInvestmentLimit', value: 200 },
-    { name: 'minimumInvestment', value: deploymentConfig.defaultMinimumInvestment }
-  ];
+  // const fundParameters = [
+  //   { name: 'owner', value: deploymentConfig.ownerAccount },
+  //   { name: 'unlocker', value: deploymentConfig.unlocker },
+  //   { name: 'name', value: fundName },
+  //   { name: 'currency', value: usdc },
+  //   { name: 'investmentNft', value: nft.address },
+  //   { name: 'stakingWlth', value: ethers.constants.AddressZero },
+  //   {
+  //     name: 'feeDistributionAddresses_',
+  //     value: {
+  //       treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
+  //       lpPool: deploymentConfig.lpPoolAddress,
+  //       burn: deploymentConfig.burnAddress,
+  //       communityFund: deploymentConfig.communityFundWallet,
+  //       genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
+  //     }
+  //   },
+  //   { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
+  //   { name: 'cap', value: cap },
+  //   { name: 'maxPercentageWalletInvestmentLimit', value: 200 },
+  //   { name: 'minimumInvestment', value: deploymentConfig.defaultMinimumInvestment }
+  // ];
 
-  const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
+  // const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
 
-  if (investmentFund) {
-    await registerMinter(nft.address, investmentFund.address);
-    await addToFundRegistry(fundRegistry, investmentFund.address);
-    // await registerFundIntoStaking(stakingWlth, investmentFund.address);
-  }
+  // if (investmentFund) {
+  //   await registerMinter(nft.address, investmentFund.address);
+  //   await addToFundRegistry(fundRegistry, investmentFund.address);
+  //   // await registerFundIntoStaking(stakingWlth, investmentFund.address);
+  // }
 };
 
 export default deployInvestmentFund;
-deployInvestmentFund.tags = ['investmentFund'];
+deployInvestmentFund.tags = ['investmentFundOld'];
 
 async function addToFundRegistry(fundRegistryAddress: string, investmentFundAddress: string) {
   console.log(`Registering InvestmentFund: ${investmentFundAddress} in InvestmentFundRegistry: ${fundRegistryAddress}`);

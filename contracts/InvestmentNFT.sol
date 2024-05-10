@@ -11,15 +11,16 @@ import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/util
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 error InvestmentNft__AlreadyMinter();
 error InvestmentNft__NotMinter();
 error InvestmentNft__InvalidTokenValue();
 error InvestmentNft__NotTokenOwner();
 error InvestmentNft__SplitLimitExceeded();
-error InvestmentNft__TokenUrisAndValuesLengthsMismatch();
 error InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
 error InvestmentNft__InvestmentTooLow();
+error InvestmentNft__TokenNotExists(uint256 tokenId);
 
 /**
  * @title Investment NFT contract
@@ -37,6 +38,8 @@ contract InvestmentNFT is
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     uint256 private constant SPLIT_LIMIT = 10;
+    uint256 private constant DECIMALS = 1000000;
+    uint256 private constant INTEGERS = 10000;
 
     /**
      * @notice Minimum investment value
@@ -55,6 +58,8 @@ contract InvestmentNFT is
     mapping(address => CheckpointsUpgradeable.History) private _accountValueHistory;
     CheckpointsUpgradeable.History private _totalValueHistory;
 
+    Metadata public metadata;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -67,6 +72,8 @@ contract InvestmentNFT is
      * @param owner Contract owner
      * @param royaltyAccount Address where to send royalty
      * @param royaltyValue Royalty value in basis points
+     * @param _minimumValue Minimum investment value
+     * @param _metadata Metadata structure
      */
     function initialize(
         string memory name,
@@ -74,7 +81,8 @@ contract InvestmentNFT is
         address owner,
         address royaltyAccount,
         uint96 royaltyValue,
-        uint256 _minimumValue
+        uint256 _minimumValue,
+        Metadata memory _metadata
     ) public initializer {
         __Context_init();
         __ERC165_init();
@@ -87,16 +95,12 @@ contract InvestmentNFT is
 
         _minters[owner] = true;
         minimumValue = _minimumValue;
-    }
-
-    /**
-     * @notice Sets NFT metadata URI
-     * @param tokenId Token ID
-     * @param tokenUri New metadata URI
-     */
-    function setTokenUri(uint256 tokenId, string memory tokenUri) external onlyOwner {
-        _setTokenURI(tokenId, tokenUri);
-        emit TokenURIChanged(_msgSender(), tokenId, tokenUri);
+        metadata = Metadata({
+            name: _metadata.name,
+            description: _metadata.description,
+            image: _metadata.image,
+            externalUrl: _metadata.externalUrl
+        });
     }
 
     /**
@@ -132,30 +136,81 @@ contract InvestmentNFT is
     /**
      * @inheritdoc IInvestmentNFT
      */
-    function mint(address to, uint256 value, string calldata tokenUri) external whenNotPaused {
+    function mint(address to, uint256 value) external whenNotPaused {
         if (!_minters[_msgSender()]) revert InvestmentNft__NotMinter();
         if (value < minimumValue) revert InvestmentNft__InvestmentTooLow();
-        _mintWithURI(to, value, tokenUri);
+        _mintWithURI(to, value);
     }
 
     /**
      * @inheritdoc IInvestmentNFT
      */
-    function split(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) external whenNotPaused {
-        _validateSplit(tokenId, values, tokenUris);
+    function split(uint256 tokenId, uint256[] calldata values) external whenNotPaused {
+        _validateSplit(tokenId, values);
 
         _burn(tokenId);
         _resetTokenRoyalty(tokenId);
 
         address owner = _msgSender();
         for (uint256 i; i < values.length; ) {
-            _mintWithURI(owner, values[i], tokenUris[i]);
+            _mintWithURI(owner, values[i]);
             unchecked {
                 i++;
             }
         }
 
         emit TokenSplitted(_msgSender(), tokenId);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setMetadataName(string memory _name) external override onlyOwner {
+        metadata.name = _name;
+
+        emit MetadataNameChanged(_name);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setMetadataDescription(string memory _description) external override onlyOwner {
+        metadata.description = _description;
+
+        emit MetadataDescriptionChanged(_description);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setMetadataImage(string memory _image) external override onlyOwner {
+        metadata.image = _image;
+
+        emit MetadataImageChanged(_image);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setMetadataExternalUrl(string memory _extenralUrl) external override onlyOwner {
+        metadata.externalUrl = _extenralUrl;
+
+        emit MetadataExternalUrlChanged(_extenralUrl);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setMinimumValue(uint256 _minimumValue) external override onlyOwner {
+        minimumValue = _minimumValue;
+
+        emit MinimumValueChanged(_minimumValue);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */ function setAllMetadata(Metadata memory _metadata) external override onlyOwner {
+        metadata.name = _metadata.name;
+        metadata.description = _metadata.description;
+        metadata.image = _metadata.image;
+        metadata.externalUrl = _metadata.externalUrl;
+
+        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl);
     }
 
     /**
@@ -213,7 +268,66 @@ contract InvestmentNFT is
     function tokenURI(
         uint256 tokenId
     ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
-        return super.tokenURI(tokenId);
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        metadata.name,
+                        '",',
+                        '"description": "',
+                        metadata.description,
+                        '",',
+                        '"image": "',
+                        metadata.image,
+                        '",',
+                        '"external_url": "',
+                        metadata.externalUrl,
+                        '",',
+                        '"attributes": [{"trait_type":"value","value":"',
+                        getSharePercentage(tokenId),
+                        '"}]',
+                        "}"
+                    )
+                )
+            )
+        );
+
+        // Create token URI
+        return string(abi.encodePacked("data:application/json;base64,", json));
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function getSharePercentage(uint256 _tokenId) public view override returns (string memory) {
+        if (!_exists(_tokenId)) revert InvestmentNft__TokenNotExists(_tokenId);
+
+        uint256 nominator = tokenValue[_tokenId];
+        uint256 denominator = getTotalInvestmentValue();
+
+        // Calculate percentage
+        uint256 percentage = (nominator * DECIMALS) / denominator; // Multiply by 1000000 to get six decimals
+
+        // Convert percentage to string
+        string memory percentageString = toString(percentage / INTEGERS); // Divide by 10000 to get back to four decimals
+
+        // Get the digits after the decimal point
+        uint256 digits = percentage % INTEGERS;
+
+        // Pad with zeros if necessary
+        string memory decimalDigits = digits < 10
+            ? string(abi.encodePacked("000", toString(digits)))
+            : (
+                digits < 100 ? string(abi.encodePacked("00", toString(digits))) : digits < 1000
+                    ? string(abi.encodePacked("0", toString(digits)))
+                    : toString(digits)
+            );
+
+        // Append the decimal point and four digits after it
+        percentageString = string(abi.encodePacked(percentageString, ".", decimalDigits, "%"));
+
+        return percentageString;
     }
 
     /**
@@ -234,7 +348,7 @@ contract InvestmentNFT is
             super.supportsInterface(interfaceId);
     }
 
-    function _mintWithURI(address to, uint256 value, string calldata tokenUri) private {
+    function _mintWithURI(address to, uint256 value) private {
         if (value <= 0) revert InvestmentNft__InvalidTokenValue();
 
         uint256 tokenId = _tokenIdCounter.current();
@@ -242,7 +356,6 @@ contract InvestmentNFT is
 
         tokenValue[tokenId] = value;
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenUri);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
@@ -251,10 +364,9 @@ contract InvestmentNFT is
         _resetTokenRoyalty(tokenId);
     }
 
-    function _validateSplit(uint256 tokenId, uint256[] calldata values, string[] calldata tokenUris) private view {
+    function _validateSplit(uint256 tokenId, uint256[] calldata values) private view {
         if (_msgSender() != ownerOf(tokenId)) revert InvestmentNft__NotTokenOwner();
         if (values.length > SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
-        if (values.length != tokenUris.length) revert InvestmentNft__TokenUrisAndValuesLengthsMismatch();
         uint256 valuesSum = 0;
         uint256 minimumNftValue = minimumValue;
         for (uint256 i; i < values.length; ) {
@@ -325,5 +437,25 @@ contract InvestmentNFT is
         }
     }
 
-    uint256[44] private __gap;
+    // Function to convert uint to string
+    function toString(uint256 value) private pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    uint256[40] private __gap;
 }

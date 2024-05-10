@@ -174,8 +174,7 @@ contract InvestmentFund is
      * @param _managementFee Management fee value
      * @param _cap Cap value
      * @param _maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
-     *
-     *
+     * @param _minimumInvestment Minimum investment value
      */
     function initialize(
         address _owner,
@@ -234,10 +233,7 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function invest(
-        uint240 _amount,
-        string calldata _tokenUri
-    ) external virtual override onlyAllowedStates nonReentrant {
+    function invest(uint240 _amount) external virtual onlyAllowedStates nonReentrant {
         if (_amount < s_minimumInvestment) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
 
@@ -255,7 +251,7 @@ contract InvestmentFund is
             emit CapReached(actualCap);
         }
 
-        _invest(_msgSender(), _amount, _tokenUri);
+        _invest(_msgSender(), _amount);
     }
 
     /**
@@ -477,6 +473,10 @@ contract InvestmentFund is
         if (_cap <= s_cap) revert InvestmentFund__InvalidInvestmentCap();
         s_cap = _cap;
         emit CapIncreased(_cap);
+    }
+
+    function allowFunctionsInStates() external onlyOwner {
+        allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
     }
 
     /**
@@ -737,12 +737,12 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
     }
 
-    function _invest(address _investor, uint256 _amount, string calldata _tokenUri) private {
+    function _invest(address _investor, uint256 _amount) private {
         uint256 fee = (uint256(_amount) * s_managementFee) / BASIS_POINT_DIVISOR;
 
         _transferFrom(s_currency, _investor, s_treasuryWallet, fee);
         _transferFrom(s_currency, _investor, address(this), _amount - fee);
-        s_investmentNft.mint(_investor, _amount, _tokenUri);
+        s_investmentNft.mint(_investor, _amount);
 
         emit Invested(_investor, s_currency, _amount, fee);
     }
