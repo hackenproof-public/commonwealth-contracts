@@ -131,12 +131,12 @@ contract StakingGenesisNFTVesting is IStakingGenesisNFTVesting, IWithdrawal, Own
     function setRewards(Rewards[] calldata _rewards) external override onlyOwner {
         uint256 rewards = s_totalRewards;
         for (uint256 i; i < _rewards.length; ) {
-            s_series1Rewards[_rewards[i].account] = _rewards[i].series1Rewards;
-            s_series2Rewards[_rewards[i].account] = _rewards[i].series2Rewards;
-
             rewards += _rewards[i].series1Rewards + _rewards[i].series2Rewards;
 
             if (rewards > i_allocation) revert StakingGenesisNFTVesting__RewardsTooHigh(i_allocation, rewards);
+
+            s_series1Rewards[_rewards[i].account] = _rewards[i].series1Rewards;
+            s_series2Rewards[_rewards[i].account] = _rewards[i].series2Rewards;
 
             unchecked {
                 i++;

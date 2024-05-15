@@ -27,7 +27,7 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
 
   const tx = await usdc.approve(investmentFundAddress, amount.mul(investmentAmount));
   await tx.wait();
-  await usdc.mint(await wallet.getAddress(),amount.mul(investmentAmount) )
+  await usdc.mint(await wallet.getAddress(), amount.mul(investmentAmount));
 
   for (let i = 0; i < investmentAmount; i++) {
     console.log(i);

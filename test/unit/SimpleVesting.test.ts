@@ -433,26 +433,6 @@ describe('Simple vesting unit tests', () => {
 
         expect(await simpleVesting.connect(owner).vestedAmount()).to.equal(allocation);
       });
-
-      it('Should return actual cadence', async () => {
-        const { simpleVesting, owner, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
-
-        await time.increaseTo(vestingStartTimestamp + cadence * 3);
-
-        expect(await simpleVesting.connect(owner).actualCadence()).to.equal(3);
-      });
-
-      it('Should return false if not benecifiary', async () => {
-        const { simpleVesting, owner } = await loadFixture(deploySimpleVesting);
-
-        expect(await simpleVesting.connect(owner).accessCheck()).to.equal(false);
-      });
-
-      it('Should true if benecifiary', async () => {
-        const { simpleVesting, beneficiary } = await loadFixture(deploySimpleVesting);
-
-        expect(await simpleVesting.connect(beneficiary).accessCheck()).to.equal(true);
-      });
     });
 
     describe('Leftovers withdraw', () => {
@@ -493,9 +473,20 @@ describe('Simple vesting unit tests', () => {
           );
         });
 
-        it('Should revert when locked', async () => {
-          const { simpleVesting, owner } = await loadFixture(deploySimpleVesting);
+        it('Should revert when vesting not started', async () => {
+          const { simpleVesting, owner, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
 
+          await time.increaseTo(vestingStartTimestamp - 1);
+          await expect(simpleVesting.connect(owner).withdrawLeftovers(owner.address)).to.be.revertedWithCustomError(
+            simpleVesting,
+            'SimpleVesting__LeftoversWithdrawalLocked'
+          );
+        });
+
+        it('Should revert when locked', async () => {
+          const { simpleVesting, owner, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
+
+          await time.increaseTo(vestingStartTimestamp);
           await expect(simpleVesting.connect(owner).withdrawLeftovers(owner.address)).to.be.revertedWithCustomError(
             simpleVesting,
             'SimpleVesting__LeftoversWithdrawalLocked'
@@ -514,7 +505,7 @@ describe('Simple vesting unit tests', () => {
 
           await expect(simpleVesting.connect(owner).withdrawLeftovers(owner.address)).to.be.revertedWithCustomError(
             simpleVesting,
-            'SimpleVesting__LeftoversWithdrawalLocked'
+            'SimpleVesting__VestingNotStarted'
           );
         });
       });

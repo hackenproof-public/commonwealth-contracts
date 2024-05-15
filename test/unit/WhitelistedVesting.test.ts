@@ -488,18 +488,18 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('0'),
         toWlth('0'),
         toWlth('1000'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0')
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000'),
+        toWlth('1000')
       ];
 
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
@@ -650,8 +650,8 @@ describe('Whitelisted vesting unit tests', () => {
       expect(
         await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution)
       )
-        .to.emit(whitelistedVesting, 'WhitelistedAddressesAmountChanged')
-        .withArgs(addressesAmount, addressesAmount.add(1));
+        .to.emit(whitelistedVesting, 'WhitelistedWalletSetup')
+        .withArgs(beneficiary1.address, allocation, distribution);
     });
   });
 
@@ -753,7 +753,7 @@ describe('Whitelisted vesting unit tests', () => {
           .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution)
       );
 
-      await time.increaseTo(vestingStartTimestamp + cadence * 6);
+      await time.increaseTo(vestingStartTimestamp + cadence * 7);
 
       await expect(
         whitelistedVesting.connect(beneficiary1).release(toWlth('6960000'), beneficiary1.address)
@@ -1207,25 +1207,84 @@ describe('Whitelisted vesting unit tests', () => {
 
       const addressesAmount = await whitelistedVesting.connect(owner).whitelistedAddressesAmount();
       expect(await whitelistedVesting.connect(owner).deactivateAddress(beneficiary1.address))
-        .to.emit(whitelistedVesting, 'WhitelistedAddressesAmountChanged')
-        .withArgs(addressesAmount, addressesAmount.add(1));
+        .to.emit(whitelistedVesting, 'AddressDeactivated')
+        .withArgs(beneficiary1.address, addressesAmount, addressesAmount.add(1));
     });
 
     it('Should remove single address from the whitelist during vesting', async () => {
-      const { whitelistedVesting, owner, beneficiary1, allocation, tokenReleaseDistribution, vestingStartTimestamp } =
-        await loadFixture(deploySimpleVesting);
+      const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+      const walletAllocation = toWlth('2200');
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('1000'),
+        toWlth('1100'),
+        toWlth('1200'),
+        toWlth('1300'),
+        toWlth('1400'),
+        toWlth('1500'),
+        toWlth('1600'),
+        toWlth('1700'),
+        toWlth('1800'),
+        toWlth('1900'),
+        toWlth('2000'),
+        toWlth('2100'),
+        toWlth('2200')
+      ];
 
       await whitelistedVesting
         .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+        .whitelistedWalletSetup(beneficiary1.address, walletAllocation, walletDistribution);
 
-      await time.increaseTo(vestingStartTimestamp + cadence * 8);
+      await time.setNextBlockTimestamp(vestingStartTimestamp + cadence * 8);
 
       const addressesAmount = await whitelistedVesting.connect(owner).whitelistedAddressesAmount();
       expect(await whitelistedVesting.connect(owner).deactivateAddress(beneficiary1.address))
         .to.emit(whitelistedVesting, 'WhitelistedAddressesAmountChanged')
         .withArgs(addressesAmount, addressesAmount.add(1));
+
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 8)
+      ).to.equals(toWlth('1100')); // cannot revoke already given allocation
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 9)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 11)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 12)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 13)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 10)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 14)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 15)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 16)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 17)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 18)
+      ).to.equals(toWlth('1100'));
+      expect(
+        await whitelistedVesting.connect(beneficiary1).walletAllocationForCadence(beneficiary1.address, 19)
+      ).to.equals(toWlth('1100'));
     });
 
     it('Should remove single address from the whitelist before vesting starts', async () => {
@@ -1283,6 +1342,52 @@ describe('Whitelisted vesting unit tests', () => {
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__PastCadenceModificationNotAllowed');
+    });
+
+    it('Should revert if try to set too large allocation for one of cadences', async () => {
+      const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp, allocation } = await loadFixture(
+        deploySimpleVesting
+      );
+
+      const newAmount = toWlth('99');
+      const walletAllocation = toWlth('100');
+      const cadenceNumber = 18; // cadence before last one
+      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting
+        .connect(owner)
+        .whitelistedWalletSetup(beneficiary1.address, walletAllocation, distribution);
+
+      await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber); // moving to start of cadence 18
+
+      await expect(
+        whitelistedVesting
+          .connect(owner)
+          .setWalletAllocationForCadence(beneficiary1.address, cadenceNumber + 1, allocation.add(1))
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__TotalAllocationPerCadenceMismatch');
     });
 
     it('Should revert if try to set wallet allocation for a wallet which already claimed with penalty', async () => {
@@ -1363,7 +1468,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadenceWalletAllocation');
     });
 
     it('Should revert if cadence between fist and last and amount lower then previous', async () => {
@@ -1400,7 +1505,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadenceWalletAllocation');
     });
 
     it('Should revert if cadence between fist and last and amount higher then next', async () => {
@@ -1437,7 +1542,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadenceWalletAllocation');
     });
 
     it('Should revert if first cadence amount lower then next', async () => {
@@ -1525,7 +1630,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadanceWalletAllocation');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidSingleCadenceWalletAllocation');
     });
 
     it('Should revert if try to set wallet allocation for past cadence', async () => {
@@ -1565,7 +1670,46 @@ describe('Whitelisted vesting unit tests', () => {
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__TotalAllocationPerCadenceMismatch');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__PastCadenceModificationNotAllowed');
+    });
+
+    it('Should revert if try to set the same allocation for specific cadence', async () => {
+      const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
+
+      const allocation = toWlth('100');
+      const cadenceNumber = 7; // end of cadence 6 means start of cadence 7
+      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
+
+      await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber);
+
+      await expect(
+        whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, allocation)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__SameWalletAllocationForCadenceProvided');
     });
 
     it('Should revert if set wallet allocation for cadence not called by owner', async () => {
@@ -1615,6 +1759,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       const newAmount = toWlth('50');
       const allocation = toWlth('100');
+      const oldAmount = toWlth('100');
       const cadenceNumber = 7; // end of cadence 6 means start of cadence 7
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
@@ -1643,7 +1788,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
 
-      await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber);
+      await time.increaseTo(vestingStartTimestamp + cadence * (cadenceNumber - 1));
 
       expect(
         await whitelistedVesting
@@ -1651,7 +1796,7 @@ describe('Whitelisted vesting unit tests', () => {
           .setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
       )
         .to.emit(whitelistedVesting, 'CadenceAllocationForWalletChanged')
-        .withArgs(beneficiary1.address, cadenceNumber, newAmount);
+        .withArgs(beneficiary1.address, cadenceNumber, oldAmount, newAmount);
     });
 
     it('Should increase wallet allocation for specific cadence', async () => {
@@ -1695,50 +1840,6 @@ describe('Whitelisted vesting unit tests', () => {
         .to.emit(whitelistedVesting, 'CadenceAllocationForWalletChanged')
         .withArgs(beneficiary1.address, cadenceNumber, newAmount);
     });
-
-    it('Should decrease wallet allocation for specific cadence', async () => {
-      const { whitelistedVesting, owner, beneficiary1, vestingStartTimestamp } = await loadFixture(deploySimpleVesting);
-
-      const newAmount = toWlth('99');
-      const allocation = toWlth('100');
-      const cadenceNumber = 7; // end of cadence 6 means start of cadence 7
-      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
-
-      const distribution = [
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('0'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100'),
-        toWlth('100')
-      ];
-
-      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, allocation, distribution);
-
-      await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber);
-
-      expect(
-        await whitelistedVesting
-          .connect(owner)
-          .setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
-      )
-        .to.emit(whitelistedVesting, 'CadenceAllocationForWalletChanged')
-        .withArgs(beneficiary1.address, cadenceNumber, newAmount);
-    });
   });
 
   describe('Contract related getters', () => {
@@ -1746,6 +1847,17 @@ describe('Whitelisted vesting unit tests', () => {
       const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
 
       expect(await whitelistedVesting.connect(owner).released()).to.equal(0);
+    });
+    it('Should return zero vested WLTH amount before vesting start timestamp', async () => {
+      const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } = await loadFixture(
+        deploySimpleVesting
+      );
+      await whitelistedVesting
+        .connect(owner)
+        .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution);
+      time.increaseTo(vestingStartTimestamp - 1);
+
+      expect(await whitelistedVesting.connect(owner).vestedAmount()).to.equal(0);
     });
 
     tokenReleaseDistribution.forEach((value, index) => {
@@ -1975,7 +2087,7 @@ describe('Whitelisted vesting unit tests', () => {
       );
 
       await expect(
-        whitelistedVesting.connect(beneficiary1).calculatePenalty(toWlth('1'), beneficiary1.address)
+        whitelistedVesting.connect(beneficiary1).penalty(toWlth('1'), beneficiary1.address)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__GamificationNotEnabled');
     });
 
@@ -2014,7 +2126,7 @@ describe('Whitelisted vesting unit tests', () => {
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
       await expect(
-        whitelistedVesting.connect(beneficiary1).calculatePenalty(toWlth('1'), beneficiary1.address)
+        whitelistedVesting.connect(beneficiary1).penalty(toWlth('1'), beneficiary1.address)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__VestingNotStarted');
     });
 
@@ -2039,9 +2151,9 @@ describe('Whitelisted vesting unit tests', () => {
           .whitelistedWalletSetup(beneficiary1.address, allocation, tokenReleaseDistribution)
       );
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
-      expect(
-        await whitelistedVesting.connect(beneficiary1).calculatePenalty(toWlth('10000000'), beneficiary1.address)
-      ).to.equal(toWlth('1536000'));
+      expect(await whitelistedVesting.connect(beneficiary1).penalty(toWlth('10000000'), beneficiary1.address)).to.equal(
+        toWlth('1536000')
+      );
 
       /*
         Penalty calculations for this case:
@@ -2181,6 +2293,185 @@ describe('Whitelisted vesting unit tests', () => {
           .to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__NoSurplus')
           .withArgs(allocation, 0, allocation);
       });
+    });
+  });
+  describe('Allocation groups setup check', () => {
+    it('Should proper marketing setup group', async () => {
+      const {
+        whitelistedVesting,
+        vestingStartTimestamp,
+        beneficiary1,
+        beneficiary2,
+        wlth,
+        owner,
+        communityFund,
+        leftoversUnlockDelay,
+        deployer
+      } = await loadFixture(deploySimpleVesting);
+      wlth.transfer.returns(true);
+      wlth.balanceOf.returns(allocation);
+
+      const vestingParameters = {
+        gamification: true,
+        allocation: 92500000,
+        duration: ONE_MONTH * 30,
+        cadence: ONE_MONTH
+      };
+
+      const tokenReleaseDistribution = [
+        // 1 month cliff, 30% unlock, 5 month cliff, 24 month linear vest
+        toWlth('0'), //vesting start timestamp
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence1
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence2
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence3
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence4
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence5
+        toWlth(((vestingParameters.allocation * 3) / 10).toString()), //end of cadence6
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 1) / 240).toString()), //end of cadence7
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 2) / 240).toString()), //end of cadence8
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 3) / 240).toString()), //end of cadence9
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 4) / 240).toString()), //end of cadence10
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 5) / 240).toString()), //end of cadence11
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 6) / 240).toString()), //end of cadence12
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 7) / 240).toString()), //end of cadence13
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 8) / 240).toString()), //end of cadence14
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 9) / 240).toString()), //end of cadence15
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 10) / 240).toString()), //end of cadence16
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 11) / 240).toString()), //end of cadence17
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 12) / 240).toString()), //end of cadence18
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 13) / 240).toString()), //end of cadence19
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 14) / 240).toString()), //end of cadence20
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 15) / 240).toString()), //end of cadence21
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 16) / 240).toString()), //end of cadence22
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 17) / 240).toString()), //end of cadence23
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 18) / 240).toString()), //end of cadence24
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 19) / 240).toString()), //end of cadence25
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 20) / 240).toString()), //end of cadence26
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 21) / 240).toString()), //end of cadence27
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 22) / 240).toString()), //end of cadence28
+        toWlth(((vestingParameters.allocation * 3) / 10 + (vestingParameters.allocation * 7 * 23) / 240).toString()), //end of cadence29
+        toWlth(vestingParameters.allocation.toString()) //end of cadence30
+      ];
+
+      const wallet1Allocation = 1000000;
+      const wallet1Distribution = [
+        toWlth('0'), //vesting start timestamp
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence1
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence2
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence3
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence4
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence5
+        toWlth(((wallet1Allocation * 3) / 10).toString()), //end of cadence6
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 1) / 240).toString()), //end of cadence7
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 2) / 240).toString()), //end of cadence8
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 3) / 240).toString()), //end of cadence9
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 4) / 240).toString()), //end of cadence10
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 5) / 240).toString()), //end of cadence11
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 6) / 240).toString()), //end of cadence12
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 7) / 240).toString()), //end of cadence13
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 8) / 240).toString()), //end of cadence14
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 9) / 240).toString()), //end of cadence15
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 10) / 240).toString()), //end of cadence16
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 11) / 240).toString()), //end of cadence17
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 12) / 240).toString()), //end of cadence18
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 13) / 240).toString()), //end of cadence19
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 14) / 240).toString()), //end of cadence20
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 15) / 240).toString()), //end of cadence21
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 16) / 240).toString()), //end of cadence22
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 17) / 240).toString()), //end of cadence23
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 18) / 240).toString()), //end of cadence24
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 19) / 240).toString()), //end of cadence25
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 20) / 240).toString()), //end of cadence26
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 21) / 240).toString()), //end of cadence27
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 22) / 240).toString()), //end of cadence28
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 23) / 240).toString()), //end of cadence29
+        toWlth(wallet1Allocation.toString()) //end of cadence30
+      ];
+
+      const wallet2Allocation = 2500000;
+      const wallet2Distribution = [
+        toWlth('0'), //vesting start timestamp
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence1
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence2
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence3
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence4
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence5
+        toWlth(((wallet2Allocation * 3) / 10).toString()), //end of cadence6
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 1) / 240).toString()), //end of cadence7
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 2) / 240).toString()), //end of cadence8
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 3) / 240).toString()), //end of cadence9
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 4) / 240).toString()), //end of cadence10
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 5) / 240).toString()), //end of cadence11
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 6) / 240).toString()), //end of cadence12
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 7) / 240).toString()), //end of cadence13
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 8) / 240).toString()), //end of cadence14
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 9) / 240).toString()), //end of cadence15
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 10) / 240).toString()), //end of cadence16
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 11) / 240).toString()), //end of cadence17
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 12) / 240).toString()), //end of cadence18
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 13) / 240).toString()), //end of cadence19
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 14) / 240).toString()), //end of cadence20
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 15) / 240).toString()), //end of cadence21
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 16) / 240).toString()), //end of cadence22
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 17) / 240).toString()), //end of cadence23
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 18) / 240).toString()), //end of cadence24
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 19) / 240).toString()), //end of cadence25
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 20) / 240).toString()), //end of cadence26
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 21) / 240).toString()), //end of cadence27
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 22) / 240).toString()), //end of cadence28
+        toWlth(((wallet2Allocation * 3) / 10 + (wallet2Allocation * 7 * 23) / 240).toString()), //end of cadence29
+        toWlth(wallet2Allocation.toString()) //end of cadence30
+      ];
+
+      const marketingVesting = await deploy(
+        'WhitelistedVesting',
+        [
+          vestingParameters.gamification,
+          owner.address,
+          wlth.address,
+          communityFund.address,
+          toWlth(vestingParameters.allocation.toString()),
+          vestingParameters.duration,
+          vestingParameters.cadence,
+          leftoversUnlockDelay,
+          vestingStartTimestamp,
+          tokenReleaseDistribution
+        ],
+        deployer
+      );
+
+      await marketingVesting
+        .connect(owner)
+        .whitelistedWalletSetup(beneficiary1.address, toWlth(wallet1Allocation.toString()), wallet1Distribution);
+
+      await marketingVesting
+        .connect(owner)
+        .whitelistedWalletSetup(beneficiary2.address, toWlth(wallet2Allocation.toString()), wallet2Distribution);
+
+      await time.increaseTo(vestingStartTimestamp + cadence);
+      await marketingVesting
+        .connect(beneficiary1)
+        .release(toWlth(((wallet1Allocation * 3) / 10).toString()), beneficiary1.address);
+      expect(await marketingVesting.connect(beneficiary1).released()).to.equal(
+        toWlth(((wallet1Allocation * 3) / 10).toString())
+      );
+
+      await time.increaseTo(vestingStartTimestamp + cadence * 7);
+      await marketingVesting
+        .connect(beneficiary1)
+        .release(
+          toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 1) / 240).toString()).sub(
+            toWlth(((wallet1Allocation * 3) / 10).toString())
+          ),
+          beneficiary1.address
+        );
+      expect(await marketingVesting.connect(beneficiary1).released()).to.equal(
+        toWlth(((wallet1Allocation * 3) / 10 + (wallet1Allocation * 7 * 1) / 240).toString())
+      );
+
+      // await time.increaseTo(vestingStartTimestamp + cadence * 8);
+      // await marketingVesting.connect(beneficiary1).release(toWlth((wallet1Allocation*3/10+wallet1Allocation*7*2/240).toString()), beneficiary1.address);
+      // expect(await marketingVesting.connect(beneficiary1).released()).to.equal(toWlth((wallet1Allocation*3/10+wallet1Allocation*7*2/240).toString()));
     });
   });
 });

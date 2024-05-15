@@ -69,6 +69,12 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
      */
     uint256 private s_released;
 
+    modifier vestingStarted() {
+        if (block.timestamp < s_vestingStartTimestamp || s_vestingStartTimestamp == 0)
+            revert SimpleVesting__VestingNotStarted();
+        _;
+    }
+
     /**
      * @notice Contract constructor.
      * @param _owner Contract owner
@@ -109,10 +115,9 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     /**
      * @inheritdoc ISimpleVesting
      */
-    function release(uint256 _amount, address _beneficiary) external virtual {
-        if (!accessCheck()) revert SimpleVesting__UnauthorizedAccess();
-        if (block.timestamp < s_vestingStartTimestamp) revert SimpleVesting__VestingNotStarted();
-        if (_amount > releaseableAmount()) revert SimpleVesting__NotEnoughTokensVested();
+    function release(uint256 _amount, address _beneficiary) external virtual vestingStarted {
+        if (!_accessCheck()) revert SimpleVesting__UnauthorizedAccess();
+        if (_amount > _releaseableAmount()) revert SimpleVesting__NotEnoughTokensVested();
         if (IERC20(i_wlth).balanceOf(address(this)) < _amount) revert SimpleVesting__NotEnoughTokensOnContract();
 
         s_released += _amount;
@@ -137,11 +142,9 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     /**
      * @inheritdoc IWithdrawal
      */
-    function withdrawLeftovers(address _wallet) external override onlyOwner {
-        if (
-            s_vestingStartTimestamp == 0 ||
-            s_vestingStartTimestamp + i_duration + i_leftoversUnlockDelay > block.timestamp
-        ) revert SimpleVesting__LeftoversWithdrawalLocked();
+    function withdrawLeftovers(address _wallet) external override onlyOwner vestingStarted {
+        if (block.timestamp < s_vestingStartTimestamp + i_duration + i_leftoversUnlockDelay)
+            revert SimpleVesting__LeftoversWithdrawalLocked();
 
         emit LeftoversWithdrawn(_wallet, IERC20(i_wlth).balanceOf(address(this)));
 
@@ -185,37 +188,17 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
     }
 
     /**
-     * @notice Returns tokens vested up to the actual timestamp in seconds
+     * @inheritdoc ISimpleVesting
      */
-    function vestedAmount() public view virtual returns (uint256) {
-        if (block.timestamp < s_vestingStartTimestamp) {
-            return 0;
-        } else if (block.timestamp >= s_vestingStartTimestamp + i_duration) {
-            return i_allocation;
-        } else {
-            return (actualCadence() * i_allocation * i_cadence) / i_duration;
-        }
+    function vestedAmount() external view override returns (uint256) {
+        return _vestedAmount();
     }
 
     /**
-     * @notice Returns releaseable amount of vesting token. Defined by children vesting contracts
+     * @inheritdoc ISimpleVesting
      */
-    function releaseableAmount() public view returns (uint256) {
-        return vestedAmount() - s_released;
-    }
-
-    /**
-     * @notice Defines which address or addresses can release vested tokens
-     */
-    function accessCheck() public view returns (bool) {
-        return _msgSender() == s_beneficiary;
-    }
-
-    /**
-     * @notice calculates actual cadence
-     */
-    function actualCadence() public view returns (uint256) {
-        return (block.timestamp - s_vestingStartTimestamp) / i_cadence;
+    function releaseableAmount() external view returns (uint256) {
+        return _releaseableAmount();
     }
 
     /**
@@ -265,5 +248,27 @@ contract SimpleVesting is ReentrancyGuard, Ownable, ISimpleVesting, IWithdrawal 
      */
     function released() external view override returns (uint256) {
         return s_released;
+    }
+
+    function _vestedAmount() private view returns (uint256) {
+        if (block.timestamp < s_vestingStartTimestamp) {
+            return 0;
+        } else if (block.timestamp >= s_vestingStartTimestamp + i_duration) {
+            return i_allocation;
+        } else {
+            return (_actualCadence() * i_allocation * i_cadence) / i_duration;
+        }
+    }
+
+    function _releaseableAmount() private view returns (uint256) {
+        return _vestedAmount() - s_released;
+    }
+
+    function _accessCheck() private view returns (bool) {
+        return _msgSender() == s_beneficiary;
+    }
+
+    function _actualCadence() private view returns (uint256) {
+        return (block.timestamp - s_vestingStartTimestamp) / i_cadence;
     }
 }

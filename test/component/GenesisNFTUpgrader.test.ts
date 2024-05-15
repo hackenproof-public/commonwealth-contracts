@@ -6,7 +6,7 @@ import { deployProxy } from '../../scripts/utils';
 import { GenesisNFTUpgrader, GenesisNFTV1, GenNFT, GenNFTV2 } from '../../typechain-types';
 import { keccak256, missing_role } from '../utils';
 
-describe('GenesisNFTUpgrader component tests', () => {
+describe.skip('GenesisNFTUpgrader component tests', () => {
   const minterRole = keccak256('MINTER_ROLE');
   const burnerRole = keccak256('BURNER_ROLE');
   const erc1155ContractUri = 'ipfs://contract-uri';

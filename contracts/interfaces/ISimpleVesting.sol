@@ -81,4 +81,14 @@ interface ISimpleVesting {
      * @notice Address which can release vested tokens
      */
     function beneficiary() external view returns (address);
+
+    /**
+     * @notice Returns tokens vested up to the actual timestamp in seconds
+     */
+    function vestedAmount() external view returns (uint256);
+
+    /**
+     * @notice Returns releaseable amount of vesting token. Defined by children vesting contracts
+     */
+    function releaseableAmount() external view returns (uint256);
 }

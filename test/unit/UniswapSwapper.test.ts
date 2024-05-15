@@ -79,18 +79,18 @@ describe('Uniswap swapper unit tests', () => {
     const { uniswapSwapper, swapRouter, owner } = await loadFixture(deploySwapper);
     const [newSwapRouter] = await ethers.getSigners();
 
-    await expect(
-      uniswapSwapper.connect(owner).setIV3SwapRouterAddress(newSwapRouter.address)).to.emit(uniswapSwapper, 'SwapRouterSet').withArgs(swapRouter.address,newSwapRouter.address);
+    await expect(uniswapSwapper.connect(owner).setIV3SwapRouterAddress(newSwapRouter.address))
+      .to.emit(uniswapSwapper, 'SwapRouterSet')
+      .withArgs(swapRouter.address, newSwapRouter.address);
   });
 
   it('Should revert set new SwapRouter02 address if not owner', async () => {
     const { uniswapSwapper, deployer } = await loadFixture(deploySwapper);
     const [newSwapRouter] = await ethers.getSigners();
 
-   await expect( 
-      uniswapSwapper.connect(deployer).setIV3SwapRouterAddress(newSwapRouter.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      );
+    await expect(uniswapSwapper.connect(deployer).setIV3SwapRouterAddress(newSwapRouter.address)).to.be.revertedWith(
+      'Ownable: caller is not the owner'
+    );
   });
 
   it('Should revert set new SwapRouter02 if address is zero', async () => {
@@ -98,6 +98,7 @@ describe('Uniswap swapper unit tests', () => {
     const [newSwapRouter] = await ethers.getSigners();
 
     await expect(
-      uniswapSwapper.connect(owner).setIV3SwapRouterAddress(constants.AddressZero)).to.be.revertedWithCustomError(uniswapSwapper, 'UniswapSwapper__IV3SwapRouterZeroAddress');
+      uniswapSwapper.connect(owner).setIV3SwapRouterAddress(constants.AddressZero)
+    ).to.be.revertedWithCustomError(uniswapSwapper, 'UniswapSwapper__IV3SwapRouterZeroAddress');
   });
 });

@@ -2,12 +2,6 @@
 pragma solidity ^0.8.18;
 
 interface IWhitelistedVesting {
-    struct WhitelistedWallet {
-        uint256 released; // amount of WLTH already released by given wallet
-        uint256 allocation; // total WLTH amount allocated to given wallet
-        //bool isActive; // indicates if user will receive its token allocation for future cadences
-    }
-
     /**
      * @notice Emitted when token released from vesting contract
      * @param beneficiary Wallet that released tokens
@@ -24,15 +18,41 @@ interface IWhitelistedVesting {
     event WhitelistedAddressesAmountChanged(uint256 indexed oldAmount, uint256 indexed newAmount);
 
     /**
+     * @notice Emitted when new whitelisted wallet was set
+     * @param whitelistedAddress whitelisted wallet's address
+     * @param allocation total WLTH allocation for whitelisted wallet
+     * @param distribution WLTH distribution table for given wallet
+     */
+    event WhitelistedWalletSetup(
+        address indexed whitelistedAddress,
+        uint256 indexed allocation,
+        uint256[] indexed distribution
+    );
+
+    /**
+     * @notice Emitted when whitelisted wallet was removed from whitelist
+     * @param wallet deactivated wallet's address
+     * @param newAddressesAmount total whitelisted wallets amount after deactivation
+     * @param oldAddressesAmount total whitelisted wallets amount before deactivation
+     */
+    event AddressDeactivated(
+        address indexed wallet,
+        uint256 indexed newAddressesAmount,
+        uint256 indexed oldAddressesAmount
+    );
+
+    /**
      * @notice Emitted when owner sets vesting start timestamp
      * @param wallet wallet for which allocation was changed
      * @param cadence cadence from which allocation was changed
-     * @param actualAmount allocation after change
+     * @param newAmount allocation before change
+     * @param newAmount allocation after change
      */
     event CadenceAllocationForWalletChanged(
         address indexed wallet,
         uint256 indexed cadence,
-        uint256 indexed actualAmount
+        uint256 oldAmount,
+        uint256 indexed newAmount
     );
 
     /**
@@ -149,4 +169,39 @@ interface IWhitelistedVesting {
      * @notice Returns if gamification is enabled for given contract
      */
     function gamification() external view returns (bool);
+
+    /**
+     * @notice Defines amount of vested tokens for given whitelisted wallet
+     */
+    function vestedAmountPerWallet(address _wallet) external view returns (uint256);
+
+    /**
+     * @notice Defines how many tokens can be released by given address
+     */
+    function releaseableAmountPerWallet(address _wallet) external view returns (uint256);
+
+    /**
+     * @notice Defines how many tokens was allocated to given address for given cadence
+     */
+    function walletAllocationForCadence(address _wallet, uint256 _cadenceNumber) external view returns (uint256);
+
+    /**
+     * @notice Returns how many tokens can be released from vesting contract
+     */
+    function releaseableAmount() external view returns (uint256);
+
+    /**
+     * @notice Defines how many tokens can be released from vesting contract for given cadence
+     */
+    function vestedAmountToCadence(uint256 _cadence) external view returns (uint256);
+
+    /**
+     * @notice Returns tokens vested by contract up to the actual timestamp in seconds
+     */
+    function vestedAmount() external view returns (uint256);
+
+    /**
+     * @notice Returns actual amount of passed cadences
+     */
+    function actualCadence() external view returns (uint256);
 }

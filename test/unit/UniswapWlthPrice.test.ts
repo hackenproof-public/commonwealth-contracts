@@ -1,10 +1,10 @@
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { UniswapWlthPrice } from '../../typechain-types';
-import { FakeContract, smock } from '@defi-wonderland/smock';
 
 describe('UniswapWlthPrice unit tests', () => {
   const observationTime = 60; //1 minute, ~~
@@ -64,15 +64,8 @@ describe('UniswapWlthPrice unit tests', () => {
     const [deployer, owner, wlth, usdc, pool] = await ethers.getSigners();
 
     await expect(
-      deployProxy(
-        'UniswapWlthPrice',
-        [owner.address, wlth.address, usdc.address, pool.address, 0],
-        deployer
-      )
-    ).to.be.revertedWithCustomError(
-      uniswapWlthPrice,
-      'UniswapWlthPrice__ObservationTimeZero'
-    );
+      deployProxy('UniswapWlthPrice', [owner.address, wlth.address, usdc.address, pool.address, 0], deployer)
+    ).to.be.revertedWithCustomError(uniswapWlthPrice, 'UniswapWlthPrice__ObservationTimeZero');
   });
 
   it('Should revert deploying if observation time is zero', async () => {
@@ -80,11 +73,7 @@ describe('UniswapWlthPrice unit tests', () => {
     const [deployer, owner, wlth, usdc] = await ethers.getSigners();
 
     await expect(
-      deployProxy(
-        'UniswapWlthPrice',
-        [owner.address, wlth.address, usdc.address, constants.AddressZero, 0],
-        deployer
-      )
+      deployProxy('UniswapWlthPrice', [owner.address, wlth.address, usdc.address, constants.AddressZero, 0], deployer)
     ).to.be.revertedWithCustomError(uniswapWlthPrice, 'UniswapWlthPrice__PoolZeroAddress');
   });
 
@@ -99,7 +88,7 @@ describe('UniswapWlthPrice unit tests', () => {
 
   it('Should return estimated WLTH price', async () => {
     const { uniswapWlthPrice, uniswapPool } = await loadFixture(deployOracle);
-    uniswapPool.observe.returns([1,2,3],[1,2,3]);
+    uniswapPool.observe.returns([1, 2, 3], [1, 2, 3]);
 
     await expect(uniswapWlthPrice.estimateAmountOut(1000));
   });
@@ -125,8 +114,9 @@ describe('UniswapWlthPrice unit tests', () => {
   it('Should set observation time and emit event', async () => {
     const { uniswapWlthPrice, observationTime, owner } = await loadFixture(deployOracle);
     const newObservationTime = 120;
-    expect(await uniswapWlthPrice.connect(owner).setObservationTime(newObservationTime)).to.emit(uniswapWlthPrice, 'ObservationTimeSet')
-    .withArgs(observationTime, newObservationTime);
+    expect(await uniswapWlthPrice.connect(owner).setObservationTime(newObservationTime))
+      .to.emit(uniswapWlthPrice, 'ObservationTimeSet')
+      .withArgs(observationTime, newObservationTime);
   });
 
   it('Should revert if observation time is zero', async () => {

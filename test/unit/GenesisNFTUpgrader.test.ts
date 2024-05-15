@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFTUpgrader, GenesisNFT, GenNFTV2 } from '../../typechain-types';
+import { GenesisNFTUpgrader, GenNFTV2 } from '../../typechain-types';
 
 describe.skip('GenesisNFTUpgrader unit tests', () => {
   let deployer: SignerWithAddress;

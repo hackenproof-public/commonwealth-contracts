@@ -21,12 +21,12 @@ const airdropFreeFundNfts: DeployFunction = async (hre: HardhatRuntimeEnvironmen
   // TOKEN URIS FOR DIFFERENT TIERS
   // const tokenUri = 'ipfs://QmPYRnKnwT989AWUC2EWGNYbLxvwYvp6sghmAqUcMJy52N';       // TIER1
   // const tokenUri = 'ipfs://QmYfwXRC3BEPz2dHcFLK1MKrF9SwcnH9A5TrkJoyMp3eQQ';       // TIER2
-  const tokenUri = 'ipfs://QmNoQCWdHtxWtG8cqHA13kRGA7FEeS8QKcdSGmEokW4fsk';       // TIER3
+  const tokenUri = 'ipfs://QmNoQCWdHtxWtG8cqHA13kRGA7FEeS8QKcdSGmEokW4fsk'; // TIER3
 
   // AMOUNTS FOR DIFFERENT TIERS
   // const amount = toUsdc('10000');    // TIER1
   // const amount = toUsdc('5000');     // TIER2
-  const amount = toUsdc('1000');     // TIER3
+  const amount = toUsdc('1000'); // TIER3
 
   if (!investmentNFTAddress || !tokenUri || !amount) {
     throw Error('Please configure investmentNFTAddress and amount in the airdrop script.');
@@ -68,7 +68,9 @@ const airdropFreeFundNfts: DeployFunction = async (hre: HardhatRuntimeEnvironmen
         const tx = await nft.mint(addresses[i], amount, tokenUri, { gasLimit: requiredGas.mul(2) });
         await tx.wait();
 
-        console.log(`NFT minted for user: ${addresses[i]} with amount: ${amount} and tokenUri: ${tokenUri} and tx hash: ${tx.hash}`);
+        console.log(
+          `NFT minted for user: ${addresses[i]} with amount: ${amount} and tokenUri: ${tokenUri} and tx hash: ${tx.hash}`
+        );
       } catch (error) {
         console.log('Something went wrong', error);
         process.exit(1);

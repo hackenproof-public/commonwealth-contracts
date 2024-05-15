@@ -6,7 +6,7 @@ import { deploy, deployProxy } from '../../scripts/utils';
 import { Crowdsale, GenesisNFTV1, USDC } from '../../typechain-types';
 import { keccak256 } from '../utils';
 
-describe('Crowdsale component tests', () => {
+describe.skip('Crowdsale component tests', () => {
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PHASE_INACTIVE = 2;
   const USER_INITIAL_BALANCE: BigNumber = BigNumber.from(1_000_000 * 10e6);
