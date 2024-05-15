@@ -1737,4 +1737,80 @@ describe('Genesis NFT Vesting unit tests', function () {
       });
     });
   });
+
+  describe('Check if token was gamified', () => {
+    describe('Success', () => {
+      it("Should return true if given series1 token was gamified", async () => {
+        const {
+          genesisNFTVesting,
+          user1,
+          user1Series1Tokens,
+          vestingStartTimestamp,
+          duration
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration/2);
+
+        const amountToRelease = parseEther('44000');
+
+        await genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], amountToRelease, user1.address, true);
+
+        expect(await genesisNFTVesting.connect(user1).wasGamified(true, user1Series1Tokens[0])).to.equals(true);
+      });
+
+      it("Should return true if given series2 token was gamified", async () => {
+        const {
+          genesisNFTVesting,
+          user1,
+          user1Series2Tokens,
+          vestingStartTimestamp,
+          duration
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration/2);
+
+        const amountToRelease = parseEther('44000');
+
+        await genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], amountToRelease, user1.address, true);
+
+        expect(await genesisNFTVesting.connect(user1).wasGamified(false, user1Series2Tokens[0])).to.equals(true);
+      });
+
+      it("Should return false if given series1 token was not gamified", async () => {
+        const {
+          genesisNFTVesting,
+          user1,
+          user1Series1Tokens,
+          vestingStartTimestamp,
+          duration
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration/2);
+
+        const amountToRelease = parseEther('1000');
+
+        await genesisNFTVesting.connect(user1).releasePerNFT(true, user1Series1Tokens[0], amountToRelease, user1.address, false);
+
+        expect(await genesisNFTVesting.connect(user1).wasGamified(true, user1Series1Tokens[0])).to.equals(false);
+      });
+
+      it("Should return false if given series2 token was not gamified", async () => {
+        const {
+          genesisNFTVesting,
+          user1,
+          user1Series2Tokens,
+          vestingStartTimestamp,
+          duration
+        } = await loadFixture(deployGenesisNFTVesting);
+
+        await time.increaseTo(vestingStartTimestamp + duration/2);
+
+        const amountToRelease = parseEther('1000');
+
+        await genesisNFTVesting.connect(user1).releasePerNFT(false, user1Series2Tokens[0], amountToRelease, user1.address, false);
+
+        expect(await genesisNFTVesting.connect(user1).wasGamified(true, user1Series2Tokens[0])).to.equals(false);
+      });
+    });
+  });
 });

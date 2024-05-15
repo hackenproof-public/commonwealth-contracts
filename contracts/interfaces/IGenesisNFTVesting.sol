@@ -220,4 +220,12 @@ interface IGenesisNFTVesting {
      * @return True if the NFT is marked as lost, false otherwise.
      */
     function lostToken(bool _series1, uint256 _tokenId) external view returns (bool);
+
+    /**
+     * @notice Checks whether a specific NFT was gamified.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     * @return True if the NFT was gamified, false otherwise.
+     */
+    function wasGamified(bool _series1, uint256 _tokenId) external view returns (bool);
 }

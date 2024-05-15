@@ -534,6 +534,13 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
         return s_bonusValue[_tokenId] ? BONUS : 0;
     }
 
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function wasGamified(bool _series1, uint256 _tokenId) external view override returns (bool) {
+        return s_claimedWithPenalty[_series1 ? 1 : 2][_tokenId];
+    }
+
     function releaseAllForSeries(uint256[] calldata _ids, address _beneficiary, bool _series1, bool _gamified) private {
         for (uint i; i < _ids.length; ) {
             releasePerNFT(
