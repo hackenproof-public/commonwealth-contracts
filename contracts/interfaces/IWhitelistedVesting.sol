@@ -64,12 +64,10 @@ interface IWhitelistedVesting {
     /**
      * @notice Wallet setup along with respective checks
      * @param _whitelistedAddress address of wallet to be whitelisted
-     * @param _allocation total WLTH allocation for given wallet
      * @param _distribution Array of WLTH amounts which represents allocation per cadence, where array index reflects cadence number
      */
     function whitelistedWalletSetup(
         address _whitelistedAddress,
-        uint256 _allocation,
         uint256[] memory _distribution
     ) external;
 
@@ -204,4 +202,9 @@ interface IWhitelistedVesting {
      * @notice Returns actual amount of passed cadences
      */
     function actualCadence() external view returns (uint256);
+
+    /**
+     * @notice Returns amount of WLTH already released by given wallet
+     */
+    function releasedAmountPerWallet(address _wallet) external view returns (uint256);
 }

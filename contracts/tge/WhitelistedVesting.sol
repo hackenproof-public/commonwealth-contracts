@@ -19,7 +19,6 @@ error WhitelistedVesting__NotEnoughTokensVested(uint256 requested, uint256 curre
 error WhitelistedVesting__NotEnoughTokensOnContract();
 error WhitelistedVesting__InvalidDistributionArrayLength();
 error WhitelistedVesting__TotalAllocationPerCadenceMismatch();
-error WhitelistedVesting__TotalAllocationPerWalletMismatch();
 error WhitelistedVesting__TotalAllocationMismatch();
 error WhitelistedVesting__NotEnoughTokensAllocated();
 error WhitelistedVesting__GamificationNotEnabled();
@@ -234,16 +233,14 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      */
     function whitelistedWalletSetup(
         address _whitelistedAddress,
-        uint256 _allocation,
         uint256[] calldata _distribution
     ) external override onlyOwner {
         if (s_claimedWithPenalty[_whitelistedAddress]) {
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }
         if (_distribution.length != i_cadenceAmount + 1) revert WhitelistedVesting__InvalidDistributionArrayLength();
-        if (_allocation > i_allocation - s_totalWalletsAllocation) revert WhitelistedVesting__TotalAllocationMismatch();
-        if (_allocation != _distribution[_distribution.length - 1])
-            revert WhitelistedVesting__TotalAllocationPerWalletMismatch();
+        uint256 walletAllocation = _distribution[_distribution.length -1];
+        if (walletAllocation > i_allocation - s_totalWalletsAllocation) revert WhitelistedVesting__TotalAllocationMismatch();
 
         for (uint i; i < _distribution.length; ) {
             if (s_cadenceAllocation[i] + _distribution[i] > s_tokenReleaseDistribution[i])
@@ -262,7 +259,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         }
 
         s_whitelistedAddressesAmount++;
-        s_totalWalletsAllocation += _allocation;
+        s_totalWalletsAllocation += walletAllocation;
 
         for (uint i; i < _distribution.length; ) {
             s_distribution[_whitelistedAddress][i] = _distribution[i];
@@ -272,7 +269,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
             }
         }
 
-        emit WhitelistedWalletSetup(_whitelistedAddress, _allocation, _distribution);
+        emit WhitelistedWalletSetup(_whitelistedAddress, walletAllocation, _distribution);
     }
 
     /**
@@ -492,6 +489,13 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      */
     function actualCadence() external view override returns (uint256) {
         return _actualCadence();
+    }
+
+    /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function releasedAmountPerWallet(address _wallet) external view override returns (uint256) {
+        return s_whitelistedWalletReleased[_wallet];
     }
 
     function _calculatePenalty(
