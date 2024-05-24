@@ -5,7 +5,7 @@ export const DEFAULT_TRANSACTION_FEE = 100;
 
 // Events
 export const EVENT_TOPIC_NFT_MINTED = utils.id('Transfer(address,address,uint256)');
-export const EVENT_TOPIC_TOKENS_STAKED = utils.id('TokensStaked(address,address,uint256,uint256)');
+export const EVENT_TOPIC_TOKENS_STAKED = utils.id('TokensStaked(address,address,uint256,uint256,uint256)');
 
 // Roles
 export const DEFAULT_ADMIN_ROLE = constants.HashZero;

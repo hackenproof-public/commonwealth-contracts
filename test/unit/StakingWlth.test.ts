@@ -6,7 +6,7 @@ import { BigNumber, constants } from 'ethers';
 import { formatBytes32String } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapWlthPrice, Wlth } from '../../typechain-types';
+import { InvestmentFund, InvestmentNFT, StakingWlth, UniswapWlthPriceOracle, Wlth } from '../../typechain-types';
 import { DEFAULT_TRANSACTION_FEE } from '../constants';
 import { FundState } from '../types';
 import { getStakeIdFromTx, toUsdc, toWlth } from '../utils';
@@ -28,7 +28,7 @@ describe('Staking WLTH unit tests', () => {
 
   let staking: StakingWlth;
   let wlth: FakeContract<Wlth>;
-  let oracle: FakeContract<UniswapWlthPrice>;
+  let oracle: FakeContract<UniswapWlthPriceOracle>;
   let fund: FakeContract<InvestmentFund>;
   let nft: FakeContract<InvestmentNFT>;
   let deployer: SignerWithAddress;
@@ -39,7 +39,7 @@ describe('Staking WLTH unit tests', () => {
     const [deployer, owner, user] = await ethers.getSigners();
 
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-    const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+    const oracle: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
     const staking: StakingWlth = await deployProxy(
       'StakingWlth',
       [
@@ -99,12 +99,30 @@ describe('Staking WLTH unit tests', () => {
       expect(await staking.owner()).to.equal(owner.address);
     });
 
+    it('Should revert when already initialized', async () => {
+      const { staking, owner, wlth, usdc, oracle } = await loadFixture(deployStaking);
+
+      await expect(
+        staking.initialize(
+          owner.address,
+          wlth.address,
+          usdc,
+          oracle.address,
+          defaultFee,
+          defaultCommunityFund,
+          maxDiscount,
+          [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
+          [5000, 3750, 3125, 2500]
+        )
+      ).to.be.revertedWith('Initializable: contract is already initialized');
+    });
+
     it('Should revert deploying if owner is zero address', async () => {
       const { staking, owner } = await loadFixture(deployStaking);
       const [deployer] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const oracle: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -128,7 +146,7 @@ describe('Staking WLTH unit tests', () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
-      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const oracle: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -152,7 +170,7 @@ describe('Staking WLTH unit tests', () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, wlth] = await ethers.getSigners();
 
-      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const quoter: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -172,36 +190,12 @@ describe('Staking WLTH unit tests', () => {
       ).to.be.revertedWithCustomError(staking, 'StakingWlth__UsdcTokenZeroAddress');
     });
 
-    it('Should revert deploying if dex quoter is zero address', async () => {
-      const { staking } = await loadFixture(deployStaking);
-      const [deployer, owner, wlth] = await ethers.getSigners();
-
-      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
-      await expect(
-        deployProxy(
-          'StakingWlth',
-          [
-            owner.address,
-            wlth.address,
-            usdc,
-            constants.AddressZero,
-            defaultFee,
-            defaultCommunityFund,
-            maxDiscount,
-            [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
-            [5000, 3750, 3125, 2500]
-          ],
-          deployer
-        )
-      ).to.be.revertedWithCustomError(staking, 'StakingWlth__UniswapWlthPriceZeroAddress');
-    });
-
     it('Should revert deploying if community fund is zero address', async () => {
       const { staking } = await loadFixture(deployStaking);
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const oracle: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -226,7 +220,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const oracle: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const oracle: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -251,7 +245,7 @@ describe('Staking WLTH unit tests', () => {
       const [deployer, owner, communityFund] = await ethers.getSigners();
 
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const quoter: FakeContract<UniswapWlthPrice> = await smock.fake('UniswapWlthPrice');
+      const quoter: FakeContract<UniswapWlthPriceOracle> = await smock.fake('UniswapWlthPriceOracle');
       await expect(
         deployProxy(
           'StakingWlth',
@@ -285,6 +279,17 @@ describe('Staking WLTH unit tests', () => {
 
       await expect(staking.connect(user).registerFund(fund.address)).to.be.reverted;
     });
+
+    it('Should revert registering fund if already registered', async () => {
+      const { staking, fund, owner } = await setup();
+
+      await staking.connect(owner).registerFund(fund.address);
+
+      await expect(staking.connect(owner).registerFund(fund.address)).to.be.revertedWithCustomError(
+        staking,
+        'StakingWlth__InvestmentFundAlreadyRegistered'
+      );
+    });
   });
 
   describe('#unregisterFund()', () => {
@@ -302,6 +307,15 @@ describe('Staking WLTH unit tests', () => {
 
       await staking.connect(owner).registerFund(fund.address);
       await expect(staking.connect(user).unregisterFund(fund.address)).to.be.reverted;
+    });
+
+    it("Should revert ungregistering fund if fund isn't registered", async () => {
+      const { staking, fund, owner } = await setup();
+
+      await expect(staking.connect(owner).unregisterFund(fund.address)).to.be.revertedWithCustomError(
+        staking,
+        'StakingWlth__InvestmentFundNotRegistered'
+      );
     });
   });
 
@@ -329,7 +343,7 @@ describe('Staking WLTH unit tests', () => {
 
       await expect(staking.connect(user).stake(fund.address, stake.amount, stake.period))
         .to.emit(staking, 'TokensStaked')
-        .withArgs(user.address, fund.address, 0, stake.amount);
+        .withArgs(user.address, fund.address, 0, stake.amount, stake.amount.mul(1).div(100));
     });
 
     it('Should create staking position', async () => {
@@ -468,7 +482,7 @@ describe('Staking WLTH unit tests', () => {
     it('Should emit event on unstake', async () => {
       await expect(staking.connect(user).unstake(fund.address, stake1.amount))
         .to.emit(staking, 'TokensUnstaked')
-        .withArgs(user.address, fund.address, stake1.amount);
+        .withArgs(user.address, fund.address, stake1.amount, stake1.amount.mul(99).div(100).mul(1).div(100), 0);
     });
 
     it('Should keep position if all tokens unstaked', async () => {
@@ -1745,6 +1759,34 @@ describe('Staking WLTH unit tests', () => {
       await expect(
         staking.getRequiredStakeForMaxDiscount(user.address, fund.address, ONE_YEAR)
       ).to.be.revertedWithCustomError(staking, 'StakingWlth__InvestmentFundNotRegistered');
+    });
+  });
+
+  describe('#setUniswapWlthPriceOracle()', () => {
+    it('Should set new Uniswap WLTH price oracle if called by owner', async () => {
+      const { staking, owner, oracle } = await setup();
+
+      const newOracleAddress = ethers.Wallet.createRandom().address;
+
+      await expect(staking.connect(owner).setUniswapWlthPriceOracle(newOracleAddress))
+        .to.emit(staking, 'UniswapWlthPriceOracleSet')
+        .withArgs(oracle.address, newOracleAddress);
+    });
+
+    it('Should revert when new address is zero address', async () => {
+      const { staking, owner } = await setup();
+
+      await expect(
+        staking.connect(owner).setUniswapWlthPriceOracle(ethers.constants.AddressZero)
+      ).to.be.revertedWithCustomError(staking, 'StakingWlth__UniswapWlthPriceOracleZeroAddress');
+    });
+
+    it('Should revert when called not by the owner', async () => {
+      const { staking, user } = await setup();
+
+      await expect(
+        staking.connect(user).setUniswapWlthPriceOracle(ethers.Wallet.createRandom().address)
+      ).to.be.revertedWith('Ownable: caller is not the owner');
     });
   });
 });

@@ -1,3 +1,4 @@
+import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
@@ -16,7 +17,7 @@ const deployStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'token', value: wlth },
     { name: 'usdc', value: usdc },
-    { name: 'uniswapWlthPrice', value: wlthPriceOracle },
+    { name: 'uniswapWlthPrice', value: ethers.constants.AddressZero },
     { name: 'fee', value: deploymentCofing.stakingTransactionFee },
     { name: 'communityFund', value: deploymentCofing.communityFundWallet },
     { name: 'maxDiscount', value: deploymentCofing.maxDiscount },

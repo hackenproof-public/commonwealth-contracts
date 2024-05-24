@@ -7,8 +7,8 @@ const deployUniswapWlthSwapper: DeployFunction = async (hre: HardhatRuntimeEnvir
   const deploymentConfig = getDeploymentConfig();
 
   const parameters = [
-    { name: '_owner', value: deploymentConfig.ownerAccount },
-    { name: '_swapRouter', value: deploymentConfig.uniswapSwapRouterV3Address } // SwapRouter02
+    { name: 'owner', value: deploymentConfig.ownerAccount },
+    { name: 'swapRouter', value: deploymentConfig.uniswapSwapRouterV3Address } // SwapRouter02
   ];
 
   await deploy(hre, 'UniswapSwapper', parameters, true, false);

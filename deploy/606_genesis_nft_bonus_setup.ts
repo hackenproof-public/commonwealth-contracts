@@ -9,7 +9,7 @@ import { GenesisNFTVesting } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
 
 const genesisNftBonusSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  const csvFilePath = __dirname + '/../data/stakingRewards.csv';
+  const csvFilePath = __dirname + '/../data/bonus.csv';
   const delimiter = ',';
   const vestingAddress = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTVesting');
   const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
@@ -27,7 +27,7 @@ const genesisNftBonusSetup: DeployFunction = async (hre: HardhatRuntimeEnvironme
     wallet
   )) as GenesisNFTVesting;
 
-  const readStream = await fs
+  const readStream = fs
     .createReadStream(csvFilePath)
     .pipe(parse({ separator: delimiter }))
     .on('data', (row) => {

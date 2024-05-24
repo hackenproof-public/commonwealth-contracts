@@ -7,9 +7,27 @@ pragma solidity ^0.8.18;
  */
 interface IGenesisNFTVesting {
     /**
+     *
+     * @notice Struct to store the details of a token related to vesting
+     */
+    struct TokenDetails {
+        bool series1;
+        uint256 tokenId;
+        uint256 vested;
+        uint256 unvested;
+        uint256 released;
+        uint256 claimed;
+        uint256 releasable;
+        uint256 penalty;
+        uint256 bonus;
+        bool lost;
+        bool gamified;
+    }
+
+    /**
      * @notice Event emitted when rewards are released.
      */
-    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId);
+    event Released(address indexed beneficiary, uint256 indexed amount, uint256 indexed tokenId, uint256 penalty);
 
     /**
      * @notice Event emitted when a vesting start timestamp was set after (not during) deployment.
@@ -148,13 +166,13 @@ interface IGenesisNFTVesting {
      * @notice Returns the address of the contract managing Series 1 Genesis NFTs.
      * @return The address of the Series 1 Genesis NFT contract.
      */
-    function genesisNftSeries1Mirror() external view returns (address);
+    function genesisNftSeries1() external view returns (address);
 
     /**
      * @notice Returns the address of the contract managing Series 2 Genesis NFTs.
      * @return The address of the Series 2 Genesis NFT contract.
      */
-    function genesisNftSeries2Mirror() external view returns (address);
+    function genesisNftSeries2() external view returns (address);
 
     /**
      * @notice Returns the address of the WLTH token contract.
@@ -228,4 +246,32 @@ interface IGenesisNFTVesting {
      * @return True if the NFT was gamified, false otherwise.
      */
     function wasGamified(bool _series1, uint256 _tokenId) external view returns (bool);
+
+    /**
+     * @notice Returns the penalty amount for a specific NFT.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     * @return The penalty amount for the NFT.
+     */
+    function penaltyAmount(bool _series1, uint256 _tokenId) external view returns (uint256);
+
+    /**
+     * @notice Returns the details of a specific NFT.
+     * @param _series1 Boolean indicating whether the NFT is of Series 1 or not.
+     * @param _tokenId The token ID of the NFT.
+     * @return The details of the NFT.
+     */
+    function getTokenDetails(bool _series1, uint256 _tokenId) external view returns (TokenDetails memory);
+
+
+    /**
+     * @notice Returns the details of multiple NFTs.
+     * @param _series1 Boolean indicating whether the NFTs are of Series 1 or not.
+     * @param _tokenIds The token IDs of the NFTs.
+     * @return The details of the NFTs.
+     */
+    function getTokensDetails(
+        bool _series1,
+        uint256[] calldata _tokenIds
+    ) external view returns (TokenDetails[] memory);
 }

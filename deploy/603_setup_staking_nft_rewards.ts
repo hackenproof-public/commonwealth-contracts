@@ -1,6 +1,5 @@
 import { NonceManager } from '@ethersproject/experimental';
 import parse from 'csv-parser';
-import { parseEther } from 'ethers/lib/utils';
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
@@ -8,6 +7,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getEnvByNetwork } from '../scripts/utils';
 import { StakingGenesisNFTVesting } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
+import { parseEther } from 'ethers/lib/utils';
 
 type Reward = {
   account: string;
@@ -38,8 +38,8 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     .pipe(parse({ separator: delimiter }))
     .on('data', (row) => {
       const address = row['Address'];
-      const series1Rewards = row['Series1Rewards'];
-      const series2Rewards = row['Series2Rewards'];
+      const series1Rewards = row['Series1 Rewards'];
+      const series2Rewards = row['Series2 Rewards'];
 
       if (series1Rewards > 0 || series2Rewards > 0) {
         rewards.push({
@@ -49,7 +49,7 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         });
       }
     });
-
+   
   for await (const chunk of readStream) {
   }
   const out = async () => {

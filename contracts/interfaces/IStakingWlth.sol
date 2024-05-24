@@ -25,16 +25,31 @@ interface IStakingWlth {
      * @param fund Address of investment fund that staking concerns
      * @param stakeId ID of stake
      * @param amount Amount of staked WLTH
+     * @param fee Fee paid for staking
      */
-    event TokensStaked(address indexed caller, address indexed fund, uint256 indexed stakeId, uint256 amount);
+    event TokensStaked(
+        address indexed caller,
+        address indexed fund,
+        uint256 indexed stakeId,
+        uint256 amount,
+        uint256 fee
+    );
 
     /**
      * @notice Emitted when WLTH tokens are staked
      * @param caller Address of unstaking account
      * @param fund Address of investment fund that unstaking concerns
      * @param amount Amount of unstaked WLTH
+     * @param fee Fee paid for unstaking
+     * @param penalty Penalty paid for early unstaking
      */
-    event TokensUnstaked(address indexed caller, address indexed fund, uint256 amount);
+    event TokensUnstaked(
+        address indexed caller,
+        address indexed fund,
+        uint256 indexed amount,
+        uint256 fee,
+        uint256 penalty
+    );
 
     /**
      * @notice Emitted when fund is registered in staking contract
@@ -51,6 +66,13 @@ interface IStakingWlth {
     event FundUnregistered(address indexed caller, address indexed fund);
 
     /**
+     * @notice Emitted when Uniswap WLTH price oracle is set
+     * @param oldOracle Address of old Uniswap WLTH price oracle
+     * @param newOracle Address of new Uniswap WLTH price oracle
+     */
+    event UniswapWlthPriceOracleSet(address indexed oldOracle, address indexed newOracle);
+
+    /**
      * @notice Submits token for staking. Requires transfer approval for all the tokens
      * @param fund Address of investment fund
      * @param amount Amount of WLTH to stake
@@ -64,6 +86,12 @@ interface IStakingWlth {
      * @param amount Amount of tokens to unstake
      */
     function unstake(address fund, uint256 amount) external;
+
+    /**
+     * @notice Set Uniswap WLTH price oracle
+     * @param _uniswapWlthPriceOracle Address of Uniswap WLTH price oracle
+     */
+    function setUniswapWlthPriceOracle(address _uniswapWlthPriceOracle) external;
 
     /**
      * @notice simulates unstake

@@ -20,7 +20,7 @@ import {BASIS_POINT_DIVISOR, EXTRA_EIGHTEEN_ZEROS} from "./libraries/Constants.s
 
 error StakingWlth__TokenZeroAddress();
 error StakingWlth__UsdcTokenZeroAddress();
-error StakingWlth__UniswapWlthPriceZeroAddress();
+error StakingWlth__UniswapWlthPriceOracleZeroAddress();
 error StakingWlth__CommunityFundZeroAddress();
 error StakingWlth__DurationsCoeffecientsLenghtsMismatch();
 error StakingWlth__DurationCoeffecientsSetError();
@@ -89,7 +89,6 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     ) public initializer {
         if (token_ == address(0)) revert StakingWlth__TokenZeroAddress();
         if (usdc_ == address(0)) revert StakingWlth__UsdcTokenZeroAddress();
-        if (uniswapWlthPrice_ == address(0)) revert StakingWlth__UniswapWlthPriceZeroAddress();
         if (communityFund_ == address(0)) revert StakingWlth__CommunityFundZeroAddress();
         if (durations.length != coefficients.length) revert StakingWlth__DurationsCoeffecientsLenghtsMismatch();
 
@@ -145,7 +144,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         }
         IERC20Upgradeable(token).safeTransferFrom(_msgSender(), address(this), amount);
 
-        emit TokensStaked(_msgSender(), fund, stakeId, amount + fee);
+        emit TokensStaked(_msgSender(), fund, stakeId, amount + fee, fee);
         //slither-disable-end reentrancy-no-eth
     }
 
@@ -185,7 +184,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             IERC20Upgradeable(token).safeTransfer(communityFund, fee);
         }
 
-        emit TokensUnstaked(_msgSender(), fund, amount);
+        emit TokensUnstaked(_msgSender(), fund, amount, fee, penalty);
 
         IERC20Upgradeable(token).safeTransfer(_msgSender(), (amount * 99) / 100 - fee - (penalty * 99) / 100);
     }
@@ -294,6 +293,16 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         registeredFunds.remove(fund);
 
         emit FundUnregistered(_msgSender(), fund);
+    }
+
+    /**
+     * @inheritdoc IStakingWlth
+     */
+    function setUniswapWlthPriceOracle(address _uniswapWlthPriceOracle) external onlyOwner {
+        if (_uniswapWlthPriceOracle == address(0)) revert StakingWlth__UniswapWlthPriceOracleZeroAddress();
+
+        emit UniswapWlthPriceOracleSet(address(uniswapWlthPrice), _uniswapWlthPriceOracle);
+        uniswapWlthPrice = IUniswapWlthPrice(_uniswapWlthPriceOracle);
     }
 
     /**

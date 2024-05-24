@@ -239,8 +239,9 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }
         if (_distribution.length != i_cadenceAmount + 1) revert WhitelistedVesting__InvalidDistributionArrayLength();
-        uint256 walletAllocation = _distribution[_distribution.length -1];
-        if (walletAllocation > i_allocation - s_totalWalletsAllocation) revert WhitelistedVesting__TotalAllocationMismatch();
+        uint256 walletAllocation = _distribution[_distribution.length - 1];
+        if (walletAllocation > i_allocation - s_totalWalletsAllocation)
+            revert WhitelistedVesting__TotalAllocationMismatch();
 
         for (uint i; i < _distribution.length; ) {
             if (s_cadenceAllocation[i] + _distribution[i] > s_tokenReleaseDistribution[i])
@@ -334,6 +335,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
 
         IERC20(i_wlth).safeTransfer(_wallet, surplus);
     }
+
 
     /**
      * @inheritdoc IWhitelistedVesting
@@ -561,8 +563,8 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         IERC20(i_wlth).safeTransfer(_beneficiary, toRelease - penaltyAmount);
 
         if (penaltyAmount > 0) {
-            IWlth(i_wlth).burn((penaltyAmount * 99 * 99) / BASIS_POINT_DIVISOR);
-            IERC20(i_wlth).safeTransfer(i_communityFund, (penaltyAmount * 99) / BASIS_POINT_DIVISOR);
+            IWlth(i_wlth).burn((penaltyAmount * 99) / 100);
+            IERC20(i_wlth).safeTransfer(i_communityFund, penaltyAmount / 100);
         }
     }
 }

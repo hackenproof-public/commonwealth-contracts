@@ -131,6 +131,11 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     mapping(uint256 => mapping(uint256 => bool)) private s_claimedWithPenalty;
 
     /**
+     * @notice Mapping to track the penalty amount for each token ID.
+     */
+    mapping(uint256 => mapping(uint256 => uint256)) private s_penaltyAmount;
+
+    /**
      * @notice Mapping to track the status of lost tokens.
      */
     mapping(uint256 => mapping(uint256 => bool)) private s_lostTokens;
@@ -147,8 +152,8 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @notice Constructor for GenesisNFTVesting contract.
      * @param _owner The address of the contract owner.
-     * @param _genesisNftSeries1 The address of the Genesis NFT Mirror contract for Series 1.
-     * @param _genesisNftSeries2 The address of the Genesis NFT Mirror contract for Series 2.
+     * @param _genesisNftSeries1 The address of the Genesis NFT Series 1.
+     * @param _genesisNftSeries2 The address of the Genesis NFT Series 2.
      * @param _wlth The address of the WLTH token contract.
      * @param _duration The duration of the vesting period.
      * @param _cadence The cadence of vesting (time interval between releases).
@@ -311,49 +316,14 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function unvestedAmountPerNFT(bool _series1, uint256 _tokenId) external view override returns (uint256) {
-        if (_series1) {
-            if (!i_genesisNftSeries1.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(1, _tokenId);
-            return
-                s_claimedWithPenalty[1][_tokenId]
-                    ? 0
-                    : (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - vestedAmountPerNFT(_series1, _tokenId);
-        } else {
-            if (!i_genesisNftSeries2.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(2, _tokenId);
-            return s_claimedWithPenalty[2][_tokenId] ? 0 : SERIES_2_MAX_REWARD - vestedAmountPerNFT(_series1, _tokenId);
-        }
-    }
-
-    /**
-     * @inheritdoc IGenesisNFTVesting
-     */
-    function releasableAmount(
-        uint256[] calldata _series1TokenIds,
-        uint256[] calldata _series2TokenIds,
-        address _beneficiary,
-        bool _gamified
-    ) external view override returns (uint256) {
-        if (!accessCheck(_beneficiary)) revert GenesisNFTVesting__NoNFTs(_beneficiary);
-
-        uint256 amount;
-
-        amount += releasableAmountForSeries(_series1TokenIds, _beneficiary, true, _gamified);
-        amount += releasableAmountForSeries(_series2TokenIds, _beneficiary, false, _gamified);
-
-        return amount;
-    }
-
-    /**
-     * @inheritdoc IGenesisNFTVesting
-     */
-    function genesisNftSeries1Mirror() external view override returns (address) {
+    function genesisNftSeries1() external view override returns (address) {
         return address(i_genesisNftSeries1);
     }
 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function genesisNftSeries2Mirror() external view override returns (address) {
+    function genesisNftSeries2() external view override returns (address) {
         return address(i_genesisNftSeries2);
     }
 
@@ -400,20 +370,6 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     }
 
     /**
-     * @inheritdoc IGenesisNFTVesting
-     */
-    function amountClaimedBySeries1TokenId(uint256 tokenId) external view override returns (uint256) {
-        return s_amountClaimedBySeries1TokenId[tokenId];
-    }
-
-    /**
-     * @inheritdoc IGenesisNFTVesting
-     */
-    function amountClaimedBySeries2TokenId(uint256 tokenId) external view override returns (uint256) {
-        return s_amountClaimedBySeries2TokenId[tokenId];
-    }
-
-    /**
      * @inheritdoc IWithdrawal
      */
     function leftoversUnlockDelay() external view override returns (uint256) {
@@ -423,8 +379,40 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function lostToken(bool _series1, uint256 _tokenId) public view override returns (bool) {
-        return s_lostTokens[_series1 ? 1 : 2][_tokenId];
+    function getTokensDetails(
+        bool _series1,
+        uint256[] calldata _tokenIds
+    ) external view override returns (TokenDetails[] memory details) {
+        details = new TokenDetails[](_tokenIds.length);
+
+        for (uint i = 0; i < _tokenIds.length; i++) {
+            details[i] = getTokenDetails(_series1, _tokenIds[i]);
+        }
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function getTokenDetails(bool _series1, uint256 _tokenId) public view override returns (TokenDetails memory) {
+        uint256 allReleased = _series1
+            ? s_amountClaimedBySeries1TokenId[_tokenId]
+            : s_amountClaimedBySeries2TokenId[_tokenId];
+        uint256 penalty = penaltyAmount(_series1, _tokenId);
+
+        return
+            TokenDetails({
+                series1: _series1,
+                tokenId: _tokenId,
+                vested: vestedAmountPerNFT(_series1, _tokenId),
+                unvested: unvestedAmountPerNFT(_series1, _tokenId),
+                released: allReleased,
+                claimed: allReleased - penalty,
+                releasable: releasableAmountPerNFT(_series1, _tokenId, penalty > 0),
+                penalty: penalty,
+                bonus: bonusValue(_tokenId),
+                lost: lostToken(_series1, _tokenId),
+                gamified: wasGamified(_series1, _tokenId)
+            });
     }
 
     /**
@@ -449,11 +437,16 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
             revert GenesisNFTVesting__NotOwnerOfGenesisNFT(_series1 ? 1 : 2, _tokenId, _beneficiary);
         }
 
-        if (!_gamified && releasableAmountPerNFT(_series1, _tokenId, _gamified) < _amount)
-            revert GenesisNFTVesting__NotEnoughTokensVested();
+        uint256 releasable = releasableAmountPerNFT(_series1, _tokenId, _gamified);
+
+        if (_gamified) {
+            _amount = releasable;
+        }
+
+        if (!_gamified && releasable < _amount) revert GenesisNFTVesting__NotEnoughTokensVested();
         if (i_wlth.balanceOf(address(this)) < _amount) revert GenesisNFTVesting__InsufficientWlthBalance();
 
-        uint256 penaltyAmount = !_gamified ? 0 : calculatePenalty(_series1, _amount, _tokenId);
+        uint256 penalty = !_gamified ? 0 : calculatePenalty(_series1, _amount, _tokenId);
 
         s_released += _amount;
 
@@ -467,14 +460,78 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
             s_claimedWithPenalty[_series1 ? 1 : 2][_tokenId] = true;
         }
 
-        emit Released(_beneficiary, _amount, _tokenId);
+        emit Released(_beneficiary, _amount, _tokenId, penalty);
 
-        if (penaltyAmount > 0) {
-            IWlth(address(i_wlth)).burn((penaltyAmount * 99 * 99) / 10000);
-            i_wlth.safeTransfer(i_communityFund, (penaltyAmount * 99) / 10000);
+        if (penalty > 0) {
+            s_penaltyAmount[_series1 ? 1 : 2][_tokenId] = penalty;
+            IWlth(address(i_wlth)).burn((penalty * 99) / 100);
+            i_wlth.safeTransfer(i_communityFund, (penalty) / 100);
         }
 
-        i_wlth.safeTransfer(_beneficiary, _amount - penaltyAmount);
+        i_wlth.safeTransfer(_beneficiary, _amount - penalty);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function unvestedAmountPerNFT(bool _series1, uint256 _tokenId) public view override returns (uint256) {
+        if (_series1) {
+            if (!i_genesisNftSeries1.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(1, _tokenId);
+            return
+                s_claimedWithPenalty[1][_tokenId]
+                    ? 0
+                    : (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - vestedAmountPerNFT(_series1, _tokenId);
+        } else {
+            if (!i_genesisNftSeries2.exists(_tokenId)) revert GenesisNFTVesting__NFTNotExisted(2, _tokenId);
+            return s_claimedWithPenalty[2][_tokenId] ? 0 : SERIES_2_MAX_REWARD - vestedAmountPerNFT(_series1, _tokenId);
+        }
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function releasableAmount(
+        uint256[] calldata _series1TokenIds,
+        uint256[] calldata _series2TokenIds,
+        address _beneficiary,
+        bool _gamified
+    ) public view override returns (uint256) {
+        if (!accessCheck(_beneficiary)) revert GenesisNFTVesting__NoNFTs(_beneficiary);
+
+        uint256 amount;
+
+        amount += releasableAmountForSeries(_series1TokenIds, _beneficiary, true, _gamified);
+        amount += releasableAmountForSeries(_series2TokenIds, _beneficiary, false, _gamified);
+
+        return amount;
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function amountClaimedBySeries1TokenId(uint256 tokenId) public view override returns (uint256) {
+        return s_amountClaimedBySeries1TokenId[tokenId];
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function amountClaimedBySeries2TokenId(uint256 tokenId) public view override returns (uint256) {
+        return s_amountClaimedBySeries2TokenId[tokenId];
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function penaltyAmount(bool _series1, uint256 _tokenId) public view override returns (uint256) {
+        return s_penaltyAmount[_series1 ? 1 : 2][_tokenId];
+    }
+
+    /**
+     * @inheritdoc IGenesisNFTVesting
+     */
+    function lostToken(bool _series1, uint256 _tokenId) public view override returns (bool) {
+        return s_lostTokens[_series1 ? 1 : 2][_tokenId];
     }
 
     /**
@@ -487,23 +544,27 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     ) public view override returns (uint256) {
         if (_series1) {
             uint256 claimed = s_amountClaimedBySeries1TokenId[_tokenId];
-            return
-                _gamified
-                    ? (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed
-                    : Math.min(
-                        (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed,
-                        (((actualCadence() * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence)) / i_duration) -
-                            claimed
-                    );
+            if (s_claimedWithPenalty[1][_tokenId]) return 0;
+            else
+                return
+                    _gamified
+                        ? (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed
+                        : Math.min(
+                            (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) - claimed,
+                            (((actualCadence() * (SERIES_1_MAX_REWARD + bonusValue(_tokenId)) * i_cadence)) /
+                                i_duration) - claimed
+                        );
         } else {
             uint256 claimed = s_amountClaimedBySeries2TokenId[_tokenId];
-            return
-                _gamified
-                    ? SERIES_2_MAX_REWARD - claimed
-                    : Math.min(
-                        SERIES_2_MAX_REWARD - claimed,
-                        (((actualCadence() * SERIES_2_MAX_REWARD * i_cadence)) / i_duration) - claimed
-                    );
+            if (s_claimedWithPenalty[2][_tokenId]) return 0;
+            else
+                return
+                    _gamified
+                        ? SERIES_2_MAX_REWARD - claimed
+                        : Math.min(
+                            SERIES_2_MAX_REWARD - claimed,
+                            (((actualCadence() * SERIES_2_MAX_REWARD * i_cadence)) / i_duration) - claimed
+                        );
         }
     }
 
@@ -537,7 +598,7 @@ contract GenesisNFTVesting is IGenesisNFTVesting, IWithdrawal, ReentrancyGuard, 
     /**
      * @inheritdoc IGenesisNFTVesting
      */
-    function wasGamified(bool _series1, uint256 _tokenId) external view override returns (bool) {
+    function wasGamified(bool _series1, uint256 _tokenId) public view override returns (bool) {
         return s_claimedWithPenalty[_series1 ? 1 : 2][_tokenId];
     }
 
