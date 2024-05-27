@@ -27,7 +27,7 @@ const registerStaking: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
 
   const pricelesFund = (await ethers.getContractAt('InvestmentFund', pricelessFundAddress, wallet)) as InvestmentFund;
   const alphaFund = (await ethers.getContractAt('InvestmentFund', alphaFundAddress, wallet)) as InvestmentFund;
-  const staking = (await ethers.getContractAt('StakingGenesisNFTVesting', stakingWlthAddress, wallet)) as StakingWlth;
+  const staking = (await ethers.getContractAt('StakingWlth', stakingWlthAddress, wallet)) as StakingWlth;
 
   console.log('Setting up staking');
 

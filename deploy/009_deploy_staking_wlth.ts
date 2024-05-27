@@ -11,13 +11,13 @@ const deployStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment)
 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
   const usdc = await getContractAddress(network.config.chainId!, 'USDC');
-  const wlthPriceOracle = await getContractAddress(network.config.chainId!, 'UniswapWlthPrice');
+  const wlthPriceOracle = await getContractAddress(network.config.chainId!, 'UniswapWlthPriceOracle');
 
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'token', value: wlth },
     { name: 'usdc', value: usdc },
-    { name: 'uniswapWlthPrice', value: ethers.constants.AddressZero },
+    { name: 'uniswapWlthPrice', value: wlthPriceOracle },
     { name: 'fee', value: deploymentCofing.stakingTransactionFee },
     { name: 'communityFund', value: deploymentCofing.communityFundWallet },
     { name: 'maxDiscount', value: deploymentCofing.maxDiscount },

@@ -33,6 +33,14 @@ describe('UniswapWlthPriceOracle unit tests', () => {
     ).not.to.be.reverted;
   });
 
+  it("Should revert when reinitializing the contract's proxy", async () => {
+    const { UniswapWlthPriceOracle, owner } = await loadFixture(deployOracle);
+
+    await expect(
+      UniswapWlthPriceOracle.initialize(owner.address, owner.address, owner.address, owner.address, 0)
+    ).to.be.revertedWith('Initializable: contract is already initialized');
+  });
+
   it('Should revert deploying if WLTH token is zero address', async () => {
     const { UniswapWlthPriceOracle } = await loadFixture(deployOracle);
     const [deployer, owner, usdc, pool] = await ethers.getSigners();
@@ -66,15 +74,6 @@ describe('UniswapWlthPriceOracle unit tests', () => {
     await expect(
       deployProxy('UniswapWlthPriceOracle', [owner.address, wlth.address, usdc.address, pool.address, 0], deployer)
     ).to.be.revertedWithCustomError(UniswapWlthPriceOracle, 'UniswapWlthPriceOracle__ObservationTimeZero');
-  });
-
-  it('Should revert deploying if observation time is zero', async () => {
-    const { UniswapWlthPriceOracle } = await loadFixture(deployOracle);
-    const [deployer, owner, wlth, usdc] = await ethers.getSigners();
-
-    await expect(
-      deployProxy('UniswapWlthPriceOracle', [owner.address, wlth.address, usdc.address, constants.AddressZero, 0], deployer)
-    ).to.be.revertedWithCustomError(UniswapWlthPriceOracle, 'UniswapWlthPriceOracle__PoolZeroAddress');
   });
 
   it('Should revert given zero amount', async () => {
@@ -122,16 +121,41 @@ describe('UniswapWlthPriceOracle unit tests', () => {
   it('Should revert if observation time is zero', async () => {
     const { UniswapWlthPriceOracle, owner } = await loadFixture(deployOracle);
     const newObservationTime = 0;
-    await expect(UniswapWlthPriceOracle.connect(owner).setObservationTime(newObservationTime)).to.be.revertedWithCustomError(
-      UniswapWlthPriceOracle,
-      'UniswapWlthPriceOracle__ObservationTimeZero'
-    );
+    await expect(
+      UniswapWlthPriceOracle.connect(owner).setObservationTime(newObservationTime)
+    ).to.be.revertedWithCustomError(UniswapWlthPriceOracle, 'UniswapWlthPriceOracle__ObservationTimeZero');
   });
 
   it('Should revert if not called by owner', async () => {
     const { UniswapWlthPriceOracle, deployer } = await loadFixture(deployOracle);
     const newObservationTime = 10;
     await expect(UniswapWlthPriceOracle.connect(deployer).setObservationTime(newObservationTime)).to.be.revertedWith(
+      'Ownable: caller is not the owner'
+    );
+  });
+
+  it('Should set the pool address and emit event', async () => {
+    const { UniswapWlthPriceOracle, owner } = await loadFixture(deployOracle);
+    const newPoolAddress = ethers.Wallet.createRandom();
+
+    expect(await UniswapWlthPriceOracle.connect(owner).setPoolAddress(newPoolAddress.address))
+      .to.emit(UniswapWlthPriceOracle, 'PoolAddressSet')
+      .withArgs(constants.AddressZero, newPoolAddress.address);
+  });
+
+  it('Should revert if pool address is zero', async () => {
+    const { UniswapWlthPriceOracle, owner } = await loadFixture(deployOracle);
+
+    await expect(
+      UniswapWlthPriceOracle.connect(owner).setPoolAddress(constants.AddressZero)
+    ).to.be.revertedWithCustomError(UniswapWlthPriceOracle, 'UniswapWlthPriceOracle__PoolZeroAddress');
+  });
+
+  it('Should revert if set pool not called by owner', async () => {
+    const { UniswapWlthPriceOracle, deployer } = await loadFixture(deployOracle);
+    const newPoolAddress = ethers.Wallet.createRandom();
+
+    await expect(UniswapWlthPriceOracle.connect(deployer).setPoolAddress(newPoolAddress.address)).to.be.revertedWith(
       'Ownable: caller is not the owner'
     );
   });

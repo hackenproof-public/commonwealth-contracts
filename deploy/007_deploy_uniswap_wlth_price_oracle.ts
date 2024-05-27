@@ -3,6 +3,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getContractAddress } from '../utils/addresses';
 import { getDeploymentConfig } from '../utils/config';
 import { deploy } from '../utils/deployment';
+import { ethers } from 'hardhat';
 
 const deployUniswapWlthPriceOracle: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const { network } = hre;
@@ -15,7 +16,7 @@ const deployUniswapWlthPriceOracle: DeployFunction = async (hre: HardhatRuntimeE
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'wlth', value: wlth },
     { name: 'usdc', value: usdc },
-    { name: 'pool', value: deploymentConfig.uniswapWlthUsdcPoolAddress },
+    { name: 'pool', value: ethers.constants.AddressZero },
     { name: 'observationTime', value: deploymentConfig.poolObservationTime }
   ];
 

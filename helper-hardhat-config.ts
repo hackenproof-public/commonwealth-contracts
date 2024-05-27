@@ -289,8 +289,8 @@ const baseSepoliaConfig: networkConfigItem = {
   stakingNFTRewardPerios: 86400,
   investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   investmentFundManagementFee: 1000,
-  nftVestingCadence: ONE_DAY / 96,
-  nftVestingDuration: ONE_DAY * 7,
+  nftVestingCadence: 2592000, //TODO
+  nftVestingDuration: 62208000, //TODO,
   stakingRewardsDistributionStartTimestamp: 1716978113,
   stakingRewardsLeftoversUnlockDelay: 604800,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
@@ -298,9 +298,9 @@ const baseSepoliaConfig: networkConfigItem = {
   burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
   stakingRewardsAllocation: parseEther('19989036'),
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftVestingAllocation: parseEther('24000000'),
+  genesisNftVestingAllocation: parseEther('113075416'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1716466666,
+  genesisNftVestingStartTimestamp: 0,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
   alphaFundMinimumInvestment: toUsdc('20')
@@ -333,10 +333,10 @@ const baseConfig: networkConfigItem = {
   stakingNFTRewardPerios: 0, // Not used
   investmentFundTreasuryWallet: '0x990eCdf73704f9114Ee28710D171132b5Cfdc6f0', // RevenueWallet
   investmentFundManagementFee: 1000,
-  nftVestingCadence: 2592000, //TODO
-  nftVestingDuration: 63072000, //TODO,
-  stakingRewardsDistributionStartTimestamp: 0, //TODO
-  stakingRewardsLeftoversUnlockDelay: 31536000, //TODO
+  nftVestingCadence: 2592000,
+  nftVestingDuration: 62208000,
+  stakingRewardsDistributionStartTimestamp: 0,
+  stakingRewardsLeftoversUnlockDelay: 31536000,
   genesisNftRevenueAddress: '0x990eCdf73704f9114Ee28710D171132b5Cfdc6f0',
   lpPoolAddress: '0x9028D3620936a47D153768FfeCB490aF620C2d77',
   burnAddress: '0xa35EAc64300d551F9872A155c1F6ca48451473af', //BurnWallet
@@ -344,7 +344,7 @@ const baseConfig: networkConfigItem = {
   unlocker: '0xbe7A65e6B0A252C71a666CaC8cA2e3c2D741F4aF',
   genesisNftVestingAllocation: parseEther('113075416'),
   genesisNftVestingLeftoversUnlockDelay: 31536000,
-  genesisNftVestingStartTimestamp: 0, //TODO,
+  genesisNftVestingStartTimestamp: 0,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
   alphaFundMinimumInvestment: toUsdc('20')

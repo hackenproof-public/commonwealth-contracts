@@ -23,13 +23,21 @@ const deployFreeFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
   const usdc = await getContractAddress(network.config.chainId!, 'USDC');
   const fundRegistry = await getContractAddress(network.config.chainId!, 'InvestmentFundRegistry');
 
+  const metadata: any = {
+    name: "Priceless Fund 'Slice'",
+    description: 'Priceless Fund NFT',
+    image: 'https://gateway.pinata.cloud/ipfs/QmQp6Wk8v6X5Z5Q9ZPjV1Q9u1y1dQ7vF5d5w3YgU7oq4Zp',
+    externalUrl: 'https://priceless.fund'
+  };
+
   const nftParameters = [
     { name: 'name', value: nftName },
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
     { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
-    { name: 'minimumValue', value: deploymentConfig.pricelessFundMinimumInvestment }
+    { name: 'minimumValue', value: deploymentConfig.pricelessFundMinimumInvestment },
+    { name: 'metadata', value: metadata }
   ];
 
   const nft = await deploy(hre, 'InvestmentNFT', nftParameters, true, false);

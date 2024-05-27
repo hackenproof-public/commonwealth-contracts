@@ -56,7 +56,6 @@ contract UniswapWlthPriceOracle is IUniswapWlthPrice, OwnablePausable {
     ) public initializer {
         if (_wlth == address(0)) revert UniswapWlthPriceOracle__WlthZeroAddress();
         if (_usdc == address(0)) revert UniswapWlthPriceOracle__UsdcZeroAddress();
-        if (_pool == address(0)) revert UniswapWlthPriceOracle__PoolZeroAddress();
         if (_observationTime == 0) revert UniswapWlthPriceOracle__ObservationTimeZero();
 
         s_wlth = _wlth;
@@ -71,7 +70,7 @@ contract UniswapWlthPriceOracle is IUniswapWlthPrice, OwnablePausable {
     /**
      * @inheritdoc IUniswapWlthPrice
      */
-    function setObservationTime(uint32 _newObservationTime) external onlyOwner {
+    function setObservationTime(uint32 _newObservationTime) external override onlyOwner {
         if (_newObservationTime == 0) revert UniswapWlthPriceOracle__ObservationTimeZero();
         uint32 oldObservationTime = s_observationTime;
         s_observationTime = _newObservationTime;
@@ -81,7 +80,17 @@ contract UniswapWlthPriceOracle is IUniswapWlthPrice, OwnablePausable {
     /**
      * @inheritdoc IUniswapWlthPrice
      */
-    function estimateAmountOut(uint128 _amountIn) external view returns (uint256) {
+    function setPoolAddress(address _newPool) external override onlyOwner {
+        if (_newPool == address(0)) revert UniswapWlthPriceOracle__PoolZeroAddress();
+        address oldPool = s_pool;
+        s_pool = _newPool;
+        emit PoolAddressSet(oldPool, _newPool);
+    }
+
+    /**
+     * @inheritdoc IUniswapWlthPrice
+     */
+    function estimateAmountOut(uint128 _amountIn) external view override returns (uint256) {
         if (_amountIn == 0) revert UniswapWlthPriceOracle__ZeroAmount();
         (int24 tick, ) = OracleLibrary.consult(s_pool, s_observationTime);
 
@@ -91,21 +100,21 @@ contract UniswapWlthPriceOracle is IUniswapWlthPrice, OwnablePausable {
     /**
      * @inheritdoc IUniswapWlthPrice
      */
-    function getWlthTokenAddress() external view returns (address) {
+    function getWlthTokenAddress() external view override returns (address) {
         return s_wlth;
     }
 
     /**
      * @inheritdoc IUniswapWlthPrice
      */
-    function getUsdcTokenAddress() external view returns (address) {
+    function getUsdcTokenAddress() external view override returns (address) {
         return s_usdc;
     }
 
     /**
      * @inheritdoc IUniswapWlthPrice
      */
-    function getPoolAddress() external view returns (address) {
+    function getPoolAddress() external view override returns (address) {
         return s_pool;
     }
 

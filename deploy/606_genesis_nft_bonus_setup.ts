@@ -48,7 +48,7 @@ const genesisNftBonusSetup: DeployFunction = async (hre: HardhatRuntimeEnvironme
 
   const out = async () => {
     console.log('Setting up Genesis NFT Bonus');
-
+    console.log('Total number of tokens with bonus: ', bonusNftIds.length);
     const tx = await genesisNftVesting.setupBonus(bonusNftIds, true);
     await tx.wait();
 
