@@ -583,8 +583,8 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         IERC20(s_wlth).safeTransfer(_beneficiary, toRelease - penaltyAmount);
 
         if (penaltyAmount > 0) {
-            IWlth(i_wlth).burn((penaltyAmount * 99) / 100);
-            IERC20(i_wlth).safeTransfer(i_communityFund, penaltyAmount / 100);
+            IWlth(s_wlth).burn((penaltyAmount * 99) / 100);
+            IERC20(s_wlth).safeTransfer(s_communityFund, penaltyAmount / 100);
         }
     }
 
