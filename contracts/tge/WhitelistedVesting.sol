@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWlth} from "../interfaces/IWlth.sol";
 import {IWhitelistedVesting} from "../interfaces/IWhitelistedVesting.sol";
 import {IWithdrawal} from "../interfaces/IWithdrawal.sol";
 import {MAX_GAMIFICATION_PENALTY, BASIS_POINT_DIVISOR} from "../libraries/Constants.sol";
+import {OwnablePausable} from "../OwnablePausable.sol";
+import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 error WhitelistedVesting__VestingNotStarted();
 error WhitelistedVesting__OwnerZeroAddress();
@@ -35,48 +36,48 @@ error WhitelistedVesting__SameWalletAllocationForCadenceProvided();
  * @title WhitelistedVesting
  * @notice Contract for vesting WLTH tokens
  */
-contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IWithdrawal {
+contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhitelistedVesting, IWithdrawal {
     using SafeERC20 for IERC20;
 
     /**
      * @notice Indicates if gamification (penalty) feature is active
      */
-    bool private immutable i_gamification;
+    bool private s_gamification;
 
     /**
      * @notice WLTH contract token address
      */
-    address private immutable i_wlth;
+    address private s_wlth;
 
     /**
      * @notice Community Fund address
      */
-    address private immutable i_communityFund;
+    address private s_communityFund;
 
     /**
      * @notice Cadences amount
      */
-    uint256 private immutable i_cadenceAmount;
+    uint256 private s_cadenceAmount;
 
     /**
      * @notice Delay when leftover tokens can be withdrawn after the vesting is ended.
      */
-    uint256 private immutable i_leftoversUnlockDelay;
+    uint256 private s_leftoversUnlockDelay;
 
     /**
      * @notice Total token allocation during vesting schedule
      */
-    uint256 private immutable i_allocation;
+    uint256 private s_allocation;
 
     /**
      * @notice Total vesting duration in seconds
      */
-    uint256 private immutable i_duration;
+    uint256 private s_duration;
 
     /**
      * @notice Time after which the new tokens are released
      */
-    uint256 private immutable i_cadence;
+    uint256 private s_cadence;
 
     /**
      * @notice Vesting start block's timestamp
@@ -127,7 +128,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @notice controls if function is enabled only in case of gamified vesting
      */
     modifier gamified() {
-        if (!i_gamification) revert WhitelistedVesting__GamificationNotEnabled();
+        if (!s_gamification) revert WhitelistedVesting__GamificationNotEnabled();
         _;
     }
 
@@ -140,8 +141,13 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
-     * @notice Contract constructor.
+     * @notice Initializes the contract
      * @param _gamification Indicates if gamification (penalty) feature is active
      * @param _owner Contract owner
      * @param _wlth WLTH contract token address
@@ -153,7 +159,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @param _vestingStartTimestamp Vesting start block's timestamp
      * @param _tokenReleaseDistribution Array of token release distribution
      */
-    constructor(
+    function initialize(
         bool _gamification,
         address _owner,
         address _wlth,
@@ -164,7 +170,14 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         uint256 _leftoversUnlockDelay,
         uint256 _vestingStartTimestamp,
         uint256[] memory _tokenReleaseDistribution
-    ) {
+    ) 
+    public virtual initializer {
+        __Context_init();
+        {
+            __OwnablePausable_init(_owner);
+        }
+        __ReentrancyGuard_init();
+
         if (_owner == address(0)) revert WhitelistedVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert WhitelistedVesting__WlthZeroAddress();
         if (_communityFund == address(0)) revert WhitelistedVesting__CommunityFundZeroAddress();
@@ -176,14 +189,14 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         if (_tokenReleaseDistribution[_tokenReleaseDistribution.length - 1] != _allocation)
             revert WhitelistedVesting__InvalidDistributionArrayAllocation();
 
-        i_wlth = _wlth;
-        i_allocation = _allocation;
-        i_duration = _duration;
-        i_cadence = _cadence;
-        i_gamification = _gamification;
-        i_communityFund = _communityFund;
-        i_leftoversUnlockDelay = _leftoversUnlockDelay;
-        i_cadenceAmount = _duration / _cadence;
+        s_wlth = _wlth;
+        s_allocation = _allocation;
+        s_duration = _duration;
+        s_cadence = _cadence;
+        s_gamification = _gamification;
+        s_communityFund = _communityFund;
+        s_leftoversUnlockDelay = _leftoversUnlockDelay;
+        s_cadenceAmount = _duration / _cadence;
         s_vestingStartTimestamp = _vestingStartTimestamp;
         s_tokenReleaseDistribution = _tokenReleaseDistribution;
         _transferOwnership(_owner);
@@ -212,8 +225,9 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }
         uint256 cadenceNumber = _actualCadence();
-        s_totalWalletsAllocation -= (s_distribution[_wallet][i_cadenceAmount] - s_distribution[_wallet][cadenceNumber]);
-        for (uint i = cadenceNumber + 1; i <= i_cadenceAmount; ) {
+        uint256 cadencesAmount = s_cadenceAmount;
+        s_totalWalletsAllocation -= (s_distribution[_wallet][cadencesAmount] - s_distribution[_wallet][cadenceNumber]);
+        for (uint i = cadenceNumber + 1; i <= cadencesAmount; ) {
             s_cadenceAllocation[i] = s_cadenceAllocation[i] - s_distribution[_wallet][i];
             s_distribution[_wallet][i] = cadenceNumber == 0 ? 0 : s_distribution[_wallet][i - 1];
             unchecked {
@@ -238,9 +252,11 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         if (s_claimedWithPenalty[_whitelistedAddress]) {
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }
-        if (_distribution.length != i_cadenceAmount + 1) revert WhitelistedVesting__InvalidDistributionArrayLength();
+        
+        if (_distribution.length != s_cadenceAmount + 1) revert WhitelistedVesting__InvalidDistributionArrayLength();
         uint256 walletAllocation = _distribution[_distribution.length - 1];
-        if (walletAllocation > i_allocation - s_totalWalletsAllocation)
+        uint256 totalWalletsAllocation = s_totalWalletsAllocation;
+        if (walletAllocation > s_allocation - totalWalletsAllocation)
             revert WhitelistedVesting__TotalAllocationMismatch();
 
         for (uint i; i < _distribution.length; ) {
@@ -260,7 +276,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         }
 
         s_whitelistedAddressesAmount++;
-        s_totalWalletsAllocation += walletAllocation;
+        s_totalWalletsAllocation = totalWalletsAllocation + walletAllocation;
 
         for (uint i; i < _distribution.length; ) {
             s_distribution[_whitelistedAddress][i] = _distribution[i];
@@ -288,13 +304,14 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         if (block.timestamp >= s_vestingStartTimestamp && _actualCadence() >= _cadenceNumber)
             revert WhitelistedVesting__PastCadenceModificationNotAllowed();
         uint256 givenCadenceAllocation = s_cadenceAllocation[_cadenceNumber];
+        uint256 cadenceAmount = s_cadenceAmount;
         if (givenCadenceAllocation - walletAllocationBeforeChange + _amount >= _vestedAmountToCadence(_cadenceNumber))
             revert WhitelistedVesting__TotalAllocationPerCadenceMismatch();
         if (
             (_cadenceNumber == 0 && _amount > s_distribution[_wallet][1]) ||
-            (_cadenceNumber == i_cadenceAmount && _amount < s_distribution[_wallet][_cadenceNumber - 1]) ||
+            (_cadenceNumber == cadenceAmount && _amount < s_distribution[_wallet][_cadenceNumber - 1]) ||
             (_cadenceNumber > 0 &&
-                _cadenceNumber < i_cadenceAmount &&
+                _cadenceNumber < cadenceAmount &&
                 (_amount < s_distribution[_wallet][_cadenceNumber - 1] ||
                     _amount > s_distribution[_wallet][_cadenceNumber + 1]))
         ) {
@@ -311,29 +328,30 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWithdrawal
      */
     function withdrawLeftovers(address _wallet) external override onlyOwner {
-        if (s_vestingStartTimestamp + i_duration + i_leftoversUnlockDelay > block.timestamp)
+        if (s_vestingStartTimestamp + s_duration + s_leftoversUnlockDelay > block.timestamp)
             revert WhitelistedVesting__LeftoversWithdrawalLocked();
 
-        emit LeftoversWithdrawn(_wallet, IERC20(i_wlth).balanceOf(address(this)));
+        emit LeftoversWithdrawn(_wallet, IERC20(s_wlth).balanceOf(address(this)));
 
-        IERC20(i_wlth).safeTransfer(_wallet, IERC20(i_wlth).balanceOf(address(this)));
+        IERC20(s_wlth).safeTransfer(_wallet, IERC20(s_wlth).balanceOf(address(this)));
     }
 
     /**
      * @inheritdoc IWithdrawal
      */
     function withdrawSurplus(address _wallet) external override onlyOwner {
-        uint256 balance = IERC20(i_wlth).balanceOf(address(this));
+        uint256 balance = IERC20(s_wlth).balanceOf(address(this));
         uint256 alreadyReleased = s_released;
+        uint256 contractAllocation = s_allocation;
 
-        if (balance + alreadyReleased <= i_allocation)
-            revert WhitelistedVesting__NoSurplus(balance, alreadyReleased, i_allocation);
+        if (balance + alreadyReleased <= contractAllocation)
+            revert WhitelistedVesting__NoSurplus(balance, alreadyReleased, contractAllocation);
 
-        uint256 surplus = balance + alreadyReleased - i_allocation;
+        uint256 surplus = balance + alreadyReleased - contractAllocation;
 
         emit SurplusWithdrawn(_wallet, surplus);
 
-        IERC20(i_wlth).safeTransfer(_wallet, surplus);
+        IERC20(s_wlth).safeTransfer(_wallet, surplus);
     }
 
 
@@ -353,7 +371,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWithdrawal
      */
     function leftoversUnlockDelay() external view override returns (uint256) {
-        return i_leftoversUnlockDelay;
+        return s_leftoversUnlockDelay;
     }
 
     /**
@@ -378,21 +396,21 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWhitelistedVesting
      */
     function wlth() external view override returns (address) {
-        return i_wlth;
+        return s_wlth;
     }
 
     /**
      * @inheritdoc IWhitelistedVesting
      */
     function duration() external view override returns (uint256) {
-        return i_duration;
+        return s_duration;
     }
 
     /**
      * @inheritdoc IWhitelistedVesting
      */
     function cadence() external view override returns (uint256) {
-        return i_cadence;
+        return s_cadence;
     }
 
     /**
@@ -406,7 +424,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWhitelistedVesting
      */
     function allocation() external view override returns (uint256) {
-        return i_allocation;
+        return s_allocation;
     }
 
     /**
@@ -427,7 +445,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWhitelistedVesting
      */
     function communityFund() external view override returns (address) {
-        return i_communityFund;
+        return s_communityFund;
     }
 
     /**
@@ -441,7 +459,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
      * @inheritdoc IWhitelistedVesting
      */
     function gamification() external view override returns (bool) {
-        return i_gamification;
+        return s_gamification;
     }
 
     /**
@@ -506,11 +524,12 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
     ) private view gamified afterVestingStart returns (uint256) {
         uint256 vested = _vestedAmountPerWallet(_beneficiary);
         uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
+        uint256 cadencesAmount = s_cadenceAmount;
 
         if (slashingPool == 0) return 0;
         return
-            (slashingPool * MAX_GAMIFICATION_PENALTY * (i_cadenceAmount - _actualCadence())) /
-            i_cadenceAmount /
+            (slashingPool * MAX_GAMIFICATION_PENALTY * (cadencesAmount - _actualCadence())) /
+            cadencesAmount /
             BASIS_POINT_DIVISOR;
     }
 
@@ -520,7 +539,7 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
         } else {
             return
                 s_claimedWithPenalty[_wallet]
-                    ? s_distribution[_wallet][i_cadenceAmount]
+                    ? s_distribution[_wallet][s_cadenceAmount]
                     : s_distribution[_wallet][_actualCadence()];
         }
     }
@@ -534,8 +553,8 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
     function _actualCadence() private view returns (uint256) {
         uint256 cadenceNumber = block.timestamp < s_vestingStartTimestamp
             ? 0
-            : (block.timestamp - s_vestingStartTimestamp) / i_cadence;
-        return cadenceNumber < i_cadenceAmount ? cadenceNumber : i_cadenceAmount;
+            : (block.timestamp - s_vestingStartTimestamp) / s_cadence;
+        return cadenceNumber < s_cadenceAmount ? cadenceNumber : s_cadenceAmount;
     }
 
     function _vestedAmountToCadence(uint256 _cadence) private view returns (uint256) {
@@ -543,8 +562,9 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
     }
 
     function _release(uint256 _amount, address _beneficiary, bool _penalty) private {
-        uint256 availableTokensAmount = s_distribution[_beneficiary][i_cadenceAmount] -
-            s_whitelistedWalletReleased[_beneficiary];
+        uint256 alreadyReleased = s_whitelistedWalletReleased[_beneficiary];
+        uint256 availableTokensAmount = s_distribution[_beneficiary][s_cadenceAmount] -
+            alreadyReleased;
         uint256 toRelease;
         if (!_penalty) {
             uint256 currentReleaseableAmount = _releaseableAmountPerWallet(_beneficiary);
@@ -552,19 +572,21 @@ contract WhitelistedVesting is ReentrancyGuard, Ownable, IWhitelistedVesting, IW
                 revert WhitelistedVesting__NotEnoughTokensVested(_amount, currentReleaseableAmount);
             toRelease = _amount;
         } else toRelease = availableTokensAmount;
-        if (IERC20(i_wlth).balanceOf(address(this)) < (_penalty ? availableTokensAmount : _amount))
+        if (IERC20(s_wlth).balanceOf(address(this)) < (_penalty ? availableTokensAmount : _amount))
             revert WhitelistedVesting__NotEnoughTokensOnContract();
 
         s_released += toRelease;
-        s_whitelistedWalletReleased[_beneficiary] += toRelease;
+        s_whitelistedWalletReleased[_beneficiary] = alreadyReleased + toRelease;
 
         uint256 penaltyAmount = _penalty ? _calculatePenalty(toRelease, _beneficiary) : 0;
         emit Released(_beneficiary, toRelease, penaltyAmount);
-        IERC20(i_wlth).safeTransfer(_beneficiary, toRelease - penaltyAmount);
+        IERC20(s_wlth).safeTransfer(_beneficiary, toRelease - penaltyAmount);
 
         if (penaltyAmount > 0) {
             IWlth(i_wlth).burn((penaltyAmount * 99) / 100);
             IERC20(i_wlth).safeTransfer(i_communityFund, penaltyAmount / 100);
         }
     }
+
+    uint256[48] private __gap;
 }

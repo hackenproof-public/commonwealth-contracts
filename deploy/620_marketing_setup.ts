@@ -50,7 +50,7 @@ const marketingSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
     { name: '_tokenReleaseDistribution', value: tokenDistribution(vestingParameters.allocation) }
   ];
 
-  const vesting = await deploy(hre, 'WhitelistedVesting', parameters);
+  const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true, false);
   vestingAddress = vesting?.address!;
 
   const csvFilePath = __dirname + '/../data/Marketing.csv';

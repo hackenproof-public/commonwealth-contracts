@@ -66,10 +66,7 @@ interface IWhitelistedVesting {
      * @param _whitelistedAddress address of wallet to be whitelisted
      * @param _distribution Array of WLTH amounts which represents allocation per cadence, where array index reflects cadence number
      */
-    function whitelistedWalletSetup(
-        address _whitelistedAddress,
-        uint256[] memory _distribution
-    ) external;
+    function whitelistedWalletSetup(address _whitelistedAddress, uint256[] memory _distribution) external;
 
     /**
      * @notice Allows Owner to remove address from whitelist

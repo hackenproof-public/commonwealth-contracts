@@ -3,11 +3,11 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { constants } from 'ethers';
 import { ethers } from 'hardhat';
-import { deploy } from '../../scripts/utils';
+import { deployProxy } from '../../scripts/utils';
 import { WhitelistedVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
-describe('Whitelisted vesting unit tests', () => {
+describe.only('Whitelisted vesting unit tests', () => {
   const TWELVE_BILIONS = '12000000';
   const SECONDS_IN_YEAR = 31536000;
   const ONE_YEAR = SECONDS_IN_YEAR;
@@ -49,7 +49,7 @@ describe('Whitelisted vesting unit tests', () => {
 
     const [deployer, beneficiary1, beneficiary2, owner, communityFund] = await ethers.getSigners();
     const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-    const whitelistedVesting: WhitelistedVesting = await deploy(
+    const whitelistedVesting: WhitelistedVesting = await deployProxy(
       'WhitelistedVesting',
       [
         gamification,
@@ -102,7 +102,7 @@ describe('Whitelisted vesting unit tests', () => {
       } = await loadFixture(deploySimpleVesting);
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -118,7 +118,7 @@ describe('Whitelisted vesting unit tests', () => {
           ],
           deployer
         )
-      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__OwnerZeroAddress');
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'OwnablePausable__OwnerAccountZeroAddress');
     });
 
     it('Should revert deployment if wlth is zero address', async () => {
@@ -138,7 +138,7 @@ describe('Whitelisted vesting unit tests', () => {
       } = await loadFixture(deploySimpleVesting);
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -174,7 +174,7 @@ describe('Whitelisted vesting unit tests', () => {
       } = await loadFixture(deploySimpleVesting);
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -210,7 +210,7 @@ describe('Whitelisted vesting unit tests', () => {
       } = await loadFixture(deploySimpleVesting);
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -267,7 +267,7 @@ describe('Whitelisted vesting unit tests', () => {
       ];
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -326,7 +326,7 @@ describe('Whitelisted vesting unit tests', () => {
       ];
 
       await expect(
-        deploy(
+        deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -504,14 +504,10 @@ describe('Whitelisted vesting unit tests', () => {
 
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, distributionBeneficiary1);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distributionBeneficiary1);
 
       await expect(
-        whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, distributionBeneficiary2)
+        whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distributionBeneficiary2)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__TotalAllocationMismatch');
     });
 
@@ -613,9 +609,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
-      expect(
-        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution)
-      )
+      expect(await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution))
         .to.emit(whitelistedVesting, 'WhitelistedWalletSetup')
         .withArgs(beneficiary1.address, allocation, distribution);
     });
@@ -648,7 +642,7 @@ describe('Whitelisted vesting unit tests', () => {
         beneficiary1
       } = await loadFixture(deploySimpleVesting);
 
-      const whitelistedVesting = await deploy(
+      const whitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           gamification,
@@ -688,9 +682,7 @@ describe('Whitelisted vesting unit tests', () => {
       await time.increaseTo(vestingStartTimestamp);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await expect(
@@ -714,9 +706,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.transfer.returns(true);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
@@ -740,9 +730,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
@@ -767,27 +755,30 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
       await whitelistedVesting.connect(beneficiary1).release(toWlth('100000'), beneficiary1.address);
       expect(wlth.transfer.atCall(0)).to.have.been.calledWith(beneficiary1.address, toWlth('100000'));
       expect(await whitelistedVesting.connect(beneficiary1).released()).to.equal(toWlth('100000'));
-      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(toWlth('100000'));
+      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(
+        toWlth('100000')
+      );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 8);
       await whitelistedVesting.connect(beneficiary1).release(toWlth('300000'), beneficiary1.address);
       expect(await whitelistedVesting.connect(beneficiary1).released()).to.equal(toWlth('400000'));
-      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(toWlth('400000'));
-
+      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(
+        toWlth('400000')
+      );
 
       await time.increaseTo(vestingStartTimestamp + duration);
       await whitelistedVesting.connect(beneficiary1).release(toWlth('1700000'), beneficiary1.address);
       expect(await whitelistedVesting.connect(beneficiary1).released()).to.equal(toWlth('2100000'));
-      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(toWlth('2100000'));
+      expect(await whitelistedVesting.connect(beneficiary1).releasedAmountPerWallet(beneficiary1.address)).to.equal(
+        toWlth('2100000')
+      );
     });
   });
 
@@ -799,7 +790,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       const [deployer, beneficiary1, beneficiary2, owner, communityFund] = await ethers.getSigners();
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const whitelistedVesting: WhitelistedVesting = await deploy(
+      const whitelistedVesting: WhitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           false,
@@ -849,9 +840,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.transfer.returns(true);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 6);
@@ -875,9 +864,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + cadence * 6);
@@ -927,9 +914,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
       expect(await whitelistedVesting.connect(beneficiary1).penalty(walletAllocation, beneficiary1.address)).to.equal(
@@ -959,9 +944,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.transfer.returns(true);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + duration);
@@ -999,7 +982,7 @@ describe('Whitelisted vesting unit tests', () => {
 
       const [deployer, beneficiary1, beneficiary2, owner, communityFund] = await ethers.getSigners();
       const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const whitelistedVesting: WhitelistedVesting = await deploy(
+      const whitelistedVesting: WhitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           false,
@@ -1048,9 +1031,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
 
       await time.increaseTo(vestingStartTimestamp + 1);
@@ -1116,17 +1097,13 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('200')
       ];
 
-      expect(
-        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution)
-      );
+      expect(await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution));
 
       await time.increaseTo(vestingStartTimestamp + 1);
       await whitelistedVesting.connect(beneficiary1).releaseWithPenalty(allocation, beneficiary1.address);
 
       await expect(
-        whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, secondDistribution)
+        whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, secondDistribution)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__WalletClaimedWithPenalty');
     });
 
@@ -1171,9 +1148,7 @@ describe('Whitelisted vesting unit tests', () => {
         await loadFixture(deploySimpleVesting);
       await time.increaseTo(vestingStartTimestamp - 10 * ONE_SECOND);
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
 
       const addressesAmount = await whitelistedVesting.connect(owner).whitelistedAddressesAmount();
       expect(await whitelistedVesting.connect(owner).deactivateAddress(beneficiary1.address))
@@ -1208,9 +1183,7 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('2200')
       ];
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
 
       await time.setNextBlockTimestamp(vestingStartTimestamp + cadence * 8);
 
@@ -1262,9 +1235,7 @@ describe('Whitelisted vesting unit tests', () => {
         await loadFixture(deploySimpleVesting);
       await time.increaseTo(vestingStartTimestamp - 3 * ONE_SECOND);
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
 
       await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
@@ -1347,9 +1318,7 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('100')
       ];
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, distribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution);
 
       await time.increaseTo(vestingStartTimestamp + cadence * cadenceNumber); // moving to start of cadence 18
 
@@ -1550,7 +1519,7 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('69600000')
       ];
 
-      const whitelistedVesting: WhitelistedVesting = await deploy(
+      const whitelistedVesting: WhitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           gamification,
@@ -1594,9 +1563,7 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth('100')
       ];
 
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, distribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution);
 
       await expect(
         whitelistedVesting.connect(owner).setWalletAllocationForCadence(beneficiary1.address, cadenceNumber, newAmount)
@@ -1822,9 +1789,7 @@ describe('Whitelisted vesting unit tests', () => {
       const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } = await loadFixture(
         deploySimpleVesting
       );
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
       time.increaseTo(vestingStartTimestamp - 1);
 
       expect(await whitelistedVesting.connect(owner).vestedAmount()).to.equal(0);
@@ -1869,9 +1834,7 @@ describe('Whitelisted vesting unit tests', () => {
       it('Should return proper releasable WLTH amount by contract at the beginning of cadence ' + index, async () => {
         const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
           await loadFixture(deploySimpleVesting);
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
         time.increaseTo(vestingStartTimestamp + cadence * index);
 
         expect(await whitelistedVesting.connect(owner).releaseableAmount()).to.equal(value);
@@ -1882,9 +1845,7 @@ describe('Whitelisted vesting unit tests', () => {
       it('Should return proper cadence number [' + value + '] for respective block timestamp', async () => {
         const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } =
           await loadFixture(deploySimpleVesting);
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
         time.increaseTo(vestingStartTimestamp + cadence * index);
 
         expect(await whitelistedVesting.connect(owner).actualCadence()).to.equal(index);
@@ -1993,9 +1954,7 @@ describe('Whitelisted vesting unit tests', () => {
       const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp } = await loadFixture(
         deploySimpleVesting
       );
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
       time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
       expect(await whitelistedVesting.connect(owner).vestedAmountPerWallet(beneficiary1.address)).to.equal(0);
@@ -2005,9 +1964,7 @@ describe('Whitelisted vesting unit tests', () => {
       const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp } = await loadFixture(
         deploySimpleVesting
       );
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
       time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
       expect(await whitelistedVesting.connect(owner).vestedAmountPerWallet(beneficiary1.address)).to.equal(0);
@@ -2017,9 +1974,7 @@ describe('Whitelisted vesting unit tests', () => {
       const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp } = await loadFixture(
         deploySimpleVesting
       );
-      await whitelistedVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution);
       time.increaseTo(vestingStartTimestamp - ONE_SECOND);
 
       expect(await whitelistedVesting.connect(owner).vestedAmountPerWallet(beneficiary1.address)).to.equal(0);
@@ -2039,7 +1994,7 @@ describe('Whitelisted vesting unit tests', () => {
         beneficiary1
       } = await loadFixture(deploySimpleVesting);
 
-      const whitelistedVesting = await deploy(
+      const whitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           false,
@@ -2076,7 +2031,7 @@ describe('Whitelisted vesting unit tests', () => {
         beneficiary1
       } = await loadFixture(deploySimpleVesting);
 
-      const whitelistedVesting = await deploy(
+      const whitelistedVesting = await deployProxy(
         'WhitelistedVesting',
         [
           gamification,
@@ -2116,9 +2071,7 @@ describe('Whitelisted vesting unit tests', () => {
       wlth.balanceOf.returns(allocation);
 
       expect(
-        await whitelistedVesting
-          .connect(owner)
-          .whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
+        await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
       expect(await whitelistedVesting.connect(beneficiary1).penalty(toWlth('10000000'), beneficiary1.address)).to.equal(
@@ -2204,7 +2157,7 @@ describe('Whitelisted vesting unit tests', () => {
           deployer
         } = await loadFixture(deploySimpleVesting);
 
-        const whitelistedVesting = await deploy(
+        const whitelistedVesting = await deployProxy(
           'WhitelistedVesting',
           [
             gamification,
@@ -2393,7 +2346,7 @@ describe('Whitelisted vesting unit tests', () => {
         toWlth(wallet2Allocation.toString()) //end of cadence30
       ];
 
-      const marketingVesting = await deploy(
+      const marketingVesting = await deployProxy(
         'WhitelistedVesting',
         [
           vestingParameters.gamification,
@@ -2410,13 +2363,9 @@ describe('Whitelisted vesting unit tests', () => {
         deployer
       );
 
-      await marketingVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary1.address, wallet1Distribution);
+      await marketingVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, wallet1Distribution);
 
-      await marketingVesting
-        .connect(owner)
-        .whitelistedWalletSetup(beneficiary2.address, wallet2Distribution);
+      await marketingVesting.connect(owner).whitelistedWalletSetup(beneficiary2.address, wallet2Distribution);
 
       await time.increaseTo(vestingStartTimestamp + cadence);
       await marketingVesting

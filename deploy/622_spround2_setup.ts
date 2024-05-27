@@ -50,7 +50,7 @@ const strategicPartnersRound2Setup: DeployFunction = async (hre: HardhatRuntimeE
     { name: '_tokenReleaseDistribution', value: tokenDistribution(vestingParameters.allocation) }
   ];
 
-  const vesting = await deploy(hre, 'WhitelistedVesting', parameters, false);
+  const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true, false);
   vestingAddress = vesting?.address!;
 
   const csvFilePath = __dirname + '/../data/SPRound1.csv';
