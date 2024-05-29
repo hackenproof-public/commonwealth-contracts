@@ -30,11 +30,11 @@ const advisorsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
 
   const vestingParameters = {
-    gamification: true,
-    allocation: 5000000,
+    gamification: false,
+    allocation: 50325000,
     duration: ONE_MONTH * 27,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0
   };
 
   const parameters = [
@@ -53,7 +53,7 @@ const advisorsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
   const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true, false);
   vestingAddress = vesting?.address!;
 
-  const csvFilePath = __dirname + '/../data/SPRound1.csv';
+  const csvFilePath = __dirname + '/../data/Advisors.csv';
   const delimiter = ',';
   const walletsAlllocationData: WalletsAlllocationData[] = [];
 
@@ -82,6 +82,13 @@ const advisorsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
     }
   };
 
+  // const out = async () => {
+  //   //for (let i = 0; i < walletsAlllocationData.length; i++) {
+  //    // const { wallet, allocation } = walletsAlllocationData[i];
+  //     await whitelistedWalletSetup('0xC3E633D490E58E632cF5780F7Cf02fB6148e6460', '0xb6A46ef97A2082E002087Cb1282c94C12b9B3D93', 25000, ownerWallet);
+  //   //}
+  // };
+
   await out();
   console.log('Done');
 };
@@ -104,18 +111,32 @@ async function whitelistedWalletSetup(
 
   await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
-  console.log(`Successfully setted up wallet ${walletAddress}`);
+  // const tab = [];
+  // for (let i = 0; i<33; i++) {
+  //   tab.push(await vestingContract
+  //   .connect(ownerWallet)
+  //   .totalWalletAllocationInCadence(i));
+  // }
+
+  // const contractTab = tokenDistribution(50325000);
+
+  // for (let i = 0; i<tab.length ; i++) {
+  //   console.log(contractTab[i].sub(tab[i]).toString());
+  // }
+
+  console.log(`Successfully setted up wallet ${walletAddress}`); // failuer: 0xb6A46ef97A2082E002087Cb1282c94C12b9B3D93
+  // console.log("wallet allocation: "+tokenDistribution(25000))
 }
 
 function tokenDistribution(allocation: number) {
   // 3 month cliff, 24 month linear vest
   return [
-    0, //vesting start timestamp
-    0, //end of cadence1
-    0, //end of cadence2
-    0, //end of cadence3
+    toWlth('0'), //vesting start timestamp
+    toWlth('0'), //end of cadence1
+    toWlth('0'), //end of cadence2
+    toWlth('0'), //end of cadence3
     toWlth(((allocation * 1) / 24).toString()), //end of cadence4
     toWlth(((allocation * 2) / 24).toString()), //end of cadence5
     toWlth(((allocation * 3) / 24).toString()), //end of cadence6
@@ -142,3 +163,6 @@ function tokenDistribution(allocation: number) {
     toWlth(allocation.toString()) //end of cadence27
   ]; // Advisors token allocation distribution
 }
+
+// last wallet: 0xb6A46ef97A2082E002087Cb1282c94C12b9B3D93
+// [0,0,0,0,1041666666666663000000,2083333333333278000000,3125000000000000000000,4166666666666532000000,5208333333333468000000,6250000000000000000000,7291666666666952000000,8333333333333334000000,9375000000000000000000,10416666666666656000000,11458333333333334000000,12500000000000000000000,13541666666666036000000,14583333333333334000000,15625000000000000000000,16666666666666630000000,17708333333333332000000,18750000000000000000000,19791666666666630000000,20833333333333370000000,21875000000000000000000,22916666666666668000000,23958333333330970000000,25000000000000000000000]

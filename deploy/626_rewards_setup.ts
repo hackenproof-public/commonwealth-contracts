@@ -24,11 +24,11 @@ const rewardsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
 
   const vestingParameters = {
     gamification: false,
-    beneficiary: deploymentConfig.communityFundWallet,
+    beneficiary: '0xe3715B2a3bB826cd9EC5429eE85B651f95879D34',
     allocation: 50000000,
-    duration: ONE_MONTH * 34,
+    duration: ONE_MONTH * 12,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0
   };
 
   const parameters = [
@@ -44,7 +44,7 @@ const rewardsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     { name: '_tokenReleaseDistribution', value: tokenDistribution(vestingParameters.allocation) }
   ];
 
-  const vesting = await deploy(hre, 'WhitelistedVesting', parameters, false);
+  const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true);
   vestingAddress = vesting?.address!;
 
   await whitelistedWalletSetup(
@@ -74,7 +74,7 @@ async function whitelistedWalletSetup(
 
   await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   console.log(`Successfully setted up wallet ${walletAddress}`);
 }

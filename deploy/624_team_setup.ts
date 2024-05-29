@@ -30,11 +30,11 @@ const teamSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
 
   const vestingParameters = {
-    gamification: true,
-    allocation: 14000000,
+    gamification: false,
+    allocation: 140000000,
     duration: ONE_MONTH * 33,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0
   };
 
   const parameters = [
@@ -53,7 +53,7 @@ const teamSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
   const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true, false);
   vestingAddress = vesting?.address!;
 
-  const csvFilePath = __dirname + '/../data/SPRound1.csv';
+  const csvFilePath = __dirname + '/../data/Team.csv';
   const delimiter = ',';
   const walletsAlllocationData: WalletsAlllocationData[] = [];
 
@@ -104,7 +104,7 @@ async function whitelistedWalletSetup(
 
   await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   console.log(`Successfully setted up wallet ${walletAddress}`);
 }
@@ -112,15 +112,15 @@ async function whitelistedWalletSetup(
 function tokenDistribution(allocation: number) {
   // 9 month cliff, 10% unlock, 24 month linear vest
   return [
-    0, //vesting start timestamp
-    0, //end of cadence1
-    0, //end of cadence2
-    0, //end of cadence3
-    0, //end of cadence4
-    0, //end of cadence5
-    0, //end of cadence6
-    0, //end of cadence7
-    0, //end of cadence8
+    toWlth('0'), //vesting start timestamp
+    toWlth('0'), //end of cadence1
+    toWlth('0'), //end of cadence2
+    toWlth('0'), //end of cadence3
+    toWlth('0'), //end of cadence4
+    toWlth('0'), //end of cadence5
+    toWlth('0'), //end of cadence6
+    toWlth('0'), //end of cadence7
+    toWlth('0'), //end of cadence8
     toWlth((allocation / 10).toString()), //end of cadence9
     toWlth((allocation / 10 + (allocation * 9 * 1) / 240).toString()), //end of cadence10
     toWlth((allocation / 10 + (allocation * 9 * 2) / 240).toString()), //end of cadence11

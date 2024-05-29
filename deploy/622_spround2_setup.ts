@@ -31,10 +31,10 @@ const strategicPartnersRound2Setup: DeployFunction = async (hre: HardhatRuntimeE
 
   const vestingParameters = {
     gamification: true,
-    allocation: 10400000,
+    allocation: 16047492,
     duration: ONE_MONTH * 18,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0
   };
 
   const parameters = [
@@ -53,7 +53,7 @@ const strategicPartnersRound2Setup: DeployFunction = async (hre: HardhatRuntimeE
   const vesting = await deploy(hre, 'WhitelistedVesting', parameters, true, false);
   vestingAddress = vesting?.address!;
 
-  const csvFilePath = __dirname + '/../data/SPRound1.csv';
+  const csvFilePath = __dirname + '/../data/SPRound2.csv';
   const delimiter = ',';
   const walletsAlllocationData: WalletsAlllocationData[] = [];
 
@@ -102,11 +102,15 @@ async function whitelistedWalletSetup(
     vestingAddress
   )) as WhitelistedVesting;
 
-  await vestingContract
+await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
+    
   console.log(`Successfully setted up wallet ${walletAddress}`);
+  // if(walletAddress == '0x0a664b77340e7F07dB49f9deA59E8d118fB114c2') {
+  //   console.log(`allocation table: ${tokenDistribution(allocation)}`)
+  // }
 }
 
 function tokenDistribution(allocation: number) {

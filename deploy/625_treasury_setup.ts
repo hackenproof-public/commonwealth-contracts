@@ -13,11 +13,11 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
 
   // 1 month cliff, 17 month linear vest
   const vestingParameters = {
-    beneficiary: deploymentConfig.communityFundWallet,
-    allocation: 150000000,
+    beneficiary: '0xdE70B8BC5215BdF03f839BB8cD0F639D4E3E2881',
+    allocation: 139973434,
     duration: ONE_MONTH * 17,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // 1 month cliff
+    vestingStartTimestamp: 0 //TODO to include 1 month cliff add ONE_MONTH
   };
 
   const parameters = [
@@ -28,7 +28,7 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
     { name: 'duration', value: vestingParameters.duration },
     { name: 'cadence', value: vestingParameters.cadence },
     { name: 'leftoversUnlockDelay', value: deploymentConfig.genesisNftVestingLeftoversUnlockDelay },
-    { name: 'vestingStartTimestamp', value: deploymentConfig.genesisNftVestingAllocation }
+    { name: 'vestingStartTimestamp', value: vestingParameters.vestingStartTimestamp }
   ];
 
   await deploy(hre, 'SimpleVesting', parameters);

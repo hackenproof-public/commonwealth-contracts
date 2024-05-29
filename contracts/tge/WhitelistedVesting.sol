@@ -441,6 +441,14 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         return s_whitelistedAddressesAmount;
     }
 
+    function totalWalletAllocation() external view returns (uint256) {
+        return s_totalWalletsAllocation;
+    }
+
+    function totalWalletAllocationInCadence(uint256 _cadence) external view returns (uint256) {
+        return s_cadenceAllocation[_cadence];
+    }
+
     /**
      * @inheritdoc IWhitelistedVesting
      */

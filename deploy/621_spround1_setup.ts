@@ -31,10 +31,10 @@ const strategicPartnersRound1Setup: DeployFunction = async (hre: HardhatRuntimeE
 
   const vestingParameters = {
     gamification: true,
-    allocation: 69600000,
+    allocation: 69600050,
     duration: ONE_MONTH * 18,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0 //Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
   };
 
   const parameters = [
@@ -104,7 +104,7 @@ async function whitelistedWalletSetup(
 
   await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   console.log(`Successfully setted up wallet ${walletAddress}`);
 }
@@ -133,3 +133,7 @@ function tokenDistribution(allocation: number) {
     toWlth(allocation.toString()) //end of cadence18
   ]; // Strategic Partners Round 1 token allocation distribution
 }
+
+// last wallet allocation table:
+// 0x0a664b77340e7F07dB49f9deA59E8d118fB114c2
+// [0,0,0,0,0,0,2199100000000000000000,3848425000000000000000,5497750000000000000000,7147075000000001000000,8796400000000000000000,10445725000000000000000,12095049999999890000000,13744375000000000000000,15393700000000000000000,17043024999999998000000,18692350000000000000000,20341675000000000000000,21991000000000000000000]

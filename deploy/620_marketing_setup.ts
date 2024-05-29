@@ -31,10 +31,10 @@ const marketingSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) =>
 
   const vestingParameters = {
     gamification: true,
-    allocation: 92500000,
+    allocation: 91378608,
     duration: ONE_MONTH * 30,
     cadence: ONE_MONTH,
-    vestingStartTimestamp: Math.floor(Date.now() / 1000) + ONE_MONTH // TODO
+    vestingStartTimestamp: 0
   };
 
   const parameters = [
@@ -104,7 +104,7 @@ async function whitelistedWalletSetup(
 
   await vestingContract
     .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, toWlth(allocation.toString()), await tokenDistribution(allocation));
+    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   console.log(`Successfully setted up wallet ${walletAddress}`);
 }
