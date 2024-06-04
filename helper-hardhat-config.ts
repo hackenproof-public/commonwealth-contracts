@@ -86,6 +86,9 @@ export interface networkConfigItem {
   defaultMinimumInvestment: BigNumber;
   pricelessFundMinimumInvestment: BigNumber;
   alphaFundMinimumInvestment: BigNumber;
+  bonusStakingStartTimestamp: number;
+  bonusStakingDuration: number;
+  bonusStakingTotalReward: BigNumber;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -139,127 +142,10 @@ const localConfig: networkConfigItem = {
   genesisNftVestingStartTimestamp: 1699971572,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('50')
-};
-
-const goerliConfig: networkConfigItem = {
-  genesisNftS1Name: 'Common Wealth Genesis NFT Series 1',
-  genesisNFTS1Symbol: 'CWOGS1',
-  genesisNftS2Name: 'Common Wealth Genesis NFT Series 2 ',
-  genesisNFTS2Symbol: 'CWOGS2',
-  genesisNftV1Series: 1,
-  genesisNftV2Series: 2,
-  ownerAccount: '0x', //TODO define the address
-  genesisNftRoyalty: 650,
-  genesisNftRoyaltyAccount: '', //TODO define the address
-  genesisNftV1TokenUri: 'ipfs://Qmc1EkoCMy3mzNqeLVddCwPw9CYmwfr2KQxkyWnDdVCRYk',
-  genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
-  wlthName: 'Common Wealth Token',
-  wlthSymbol: 'WLTH',
-  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapWlthUsdcPoolAddress: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
-  poolObservationTime: 1,
-  uniswapSwapRouterV3Address: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-  feeTier: '3000',
-  stakingTransactionFee: 200,
-  communityFundWallet: '0x',
-  maxDiscount: 4000,
-  periods: [ONE_WEEK, TWO_WEEKS, THREE_WEEKS, FOUR_WEEKS],
-  coefficients: [5000, 3750, 3125, 2500],
-  stakingNFTRewardPerios: 86400,
-  investmentFundTreasuryWallet: '0x', //TODO define the address
-  investmentFundManagementFee: 1000,
-  nftVestingDuration: 1,
-  nftVestingCadence: 1,
-  stakingRewardsDistributionStartTimestamp: 1699971572,
-  stakingRewardsLeftoversUnlockDelay: 0,
-  genesisNftRevenueAddress: '0x',
-  lpPoolAddress: '0x',
-  burnAddress: '0x',
-  stakingRewardsAllocation: parseEther('24000000'),
-  unlocker: '0x',
-  genesisNftVestingAllocation: parseEther('24000000'),
-  genesisNftVestingLeftoversUnlockDelay: 0,
-  genesisNftVestingStartTimestamp: 1700049600,
-  pricelessFundMinimumInvestment: toUsdc('50'),
-  defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('50')
-};
-
-const zkSyncTestnet: networkConfigItem = {
-  genesisNftS1Name: 'Common Wealth Genesis NFT Series 1',
-  genesisNFTS1Symbol: 'CWOGS1',
-  genesisNftS2Name: 'Common Wealth Genesis NFT Series 2 ',
-  genesisNFTS2Symbol: 'CWOGS2',
-  genesisNftV1Series: 1,
-  genesisNftV2Series: 2,
-  ownerAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftRoyalty: 650,
-  genesisNftRoyaltyAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
-  genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
-  wlthName: 'Common Wealth Token',
-  wlthSymbol: 'WLTH',
-  wlthWallet: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  uniswapWlthUsdcPoolAddress: '0xC1720f91aA11f4BCDBe9e657A4850a1ab1D7d818',
-  poolObservationTime: 1,
-  uniswapSwapRouterV3Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
-  feeTier: '3000',
-  stakingTransactionFee: 100,
-  communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
-  maxDiscount: 3000,
-  periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
-  coefficients: [5000, 3750, 3125, 2500],
-  stakingNFTRewardPerios: 86400,
-  investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
-  investmentFundManagementFee: 1000,
-  nftVestingCadence: FIFTY_DAYS / 100,
-  nftVestingDuration: FIFTY_DAYS,
-  stakingRewardsDistributionStartTimestamp: 1711324800,
-  stakingRewardsLeftoversUnlockDelay: 604800,
-  genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
-  lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
-  burnAddress: '0x01C16932E9bA3bBdE28FD3Bd007E6c9B9Bbe2b56',
-  stakingRewardsAllocation: parseEther('24000000'),
-  unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftVestingAllocation: parseEther('24000000'),
-  genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 1711411200,
-  pricelessFundMinimumInvestment: toUsdc('50'),
-  defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('50')
-};
-
-const zkTestnetDevConfig: networkConfigItem = {
-  ...zkSyncTestnet
-};
-
-const zkTestnetStageConfig: networkConfigItem = {
-  ...zkSyncTestnet,
-  uniswapWlthUsdcPoolAddress: '0x0a1c2C1794A32FfD51Fd3f983C936B695539c47C',
-  uniswapSwapRouterV3Address: '0x7f1c5573D44FA5F8B128a2f2a13A0dF29fcafd15',
-  communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
-  investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
-  genesisNftRevenueAddress: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
-  lpPoolAddress: '0x09ca397106b9519c8F98bE6d106813D82562b58e',
-  burnAddress: '0xd969736e88De00F2e8c964d23659674e2c58F6b4'
-};
-
-const sepoliaZkTestnetDevConfig: networkConfigItem = {
-  ...zkSyncTestnet,
-  uniswapWlthUsdcPoolAddress: '0x81AEc3591556319C6B0E002B7c5b5BFBE20d03Ee',
-  uniswapSwapRouterV3Address: '0xEE3bb9e0cFE017795d46a38fc46C8d41bCAD9149'
-};
-
-const sepoliaZkTestnetStageConfig: networkConfigItem = {
-  ...zkSyncTestnet,
-  uniswapWlthUsdcPoolAddress: '0x2437C6b81eeB54596Db072ec676a0a6acE4b535e',
-  uniswapSwapRouterV3Address: '0x2E8Cede0931667f313045d83626ef495A9671DB7',
-  communityFundWallet: '0xC5B32F534fa3586bC3e200d1bE104b92d0B38e3E',
-  investmentFundTreasuryWallet: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
-  genesisNftRevenueAddress: '0xD5Ae6D3Bc8e778aC4Da0e5219CB0341DfC69cfce',
-  lpPoolAddress: '0x09ca397106b9519c8F98bE6d106813D82562b58e',
-  burnAddress: '0xd969736e88De00F2e8c964d23659674e2c58F6b4'
+  alphaFundMinimumInvestment: toUsdc('50'),
+  bonusStakingStartTimestamp: 1699971572,
+  bonusStakingDuration: 86400,
+  bonusStakingTotalReward: parseEther('1000')
 };
 
 const baseSepoliaConfig: networkConfigItem = {
@@ -289,9 +175,9 @@ const baseSepoliaConfig: networkConfigItem = {
   stakingNFTRewardPerios: 86400,
   investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   investmentFundManagementFee: 1000,
-  nftVestingCadence: 2592000, //TODO
-  nftVestingDuration: 62208000, //TODO,
-  stakingRewardsDistributionStartTimestamp: 1716978113,
+  nftVestingCadence: 2592000,
+  nftVestingDuration: 62208000, 
+  stakingRewardsDistributionStartTimestamp: 1717070400,
   stakingRewardsLeftoversUnlockDelay: 604800,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   lpPoolAddress: '0x87af795710df24a458F1D2dfbc0B961b75073BF9',
@@ -300,10 +186,13 @@ const baseSepoliaConfig: networkConfigItem = {
   unlocker: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   genesisNftVestingAllocation: parseEther('113075416'),
   genesisNftVestingLeftoversUnlockDelay: 604800,
-  genesisNftVestingStartTimestamp: 0,
+  genesisNftVestingStartTimestamp: 1717070400,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('20')
+  alphaFundMinimumInvestment: toUsdc('20'),
+  bonusStakingStartTimestamp: 1717244100,
+  bonusStakingDuration: 259200,
+  bonusStakingTotalReward: parseEther('63998117')
 };
 
 const baseConfig: networkConfigItem = {
@@ -347,7 +236,10 @@ const baseConfig: networkConfigItem = {
   genesisNftVestingStartTimestamp: 0,
   pricelessFundMinimumInvestment: toUsdc('50'),
   defaultMinimumInvestment: toUsdc('50'),
-  alphaFundMinimumInvestment: toUsdc('20')
+  alphaFundMinimumInvestment: toUsdc('20'),
+  bonusStakingStartTimestamp: 1717244100,
+  bonusStakingDuration: 259200,
+  bonusStakingTotalReward: parseEther('63998117')
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig,
@@ -362,34 +254,6 @@ export const networkConfig: networkConfigInfo = {
   31337: {
     ...localConfig
   },
-  11155111: {
-    ...localConfig,
-    dev: { ...sepoliaZkTestnetDevConfig },
-    stage: { ...sepoliaZkTestnetStageConfig }
-  },
-  5: {
-    ...localConfig,
-    dev: { ...zkTestnetDevConfig },
-    stage: { ...zkTestnetStageConfig },
-    beta: { ...zkSyncTestnet }
-  },
-  280: {
-    ...zkSyncTestnet,
-    dev: { ...zkTestnetDevConfig },
-    stage: { ...zkTestnetStageConfig }
-  },
-  300: {
-    ...zkSyncTestnet,
-    dev: { ...sepoliaZkTestnetDevConfig },
-    stage: { ...sepoliaZkTestnetStageConfig }
-  },
-
-  245022926: {
-    ...zkSyncTestnet,
-    dev: { ...sepoliaZkTestnetDevConfig },
-    stage: { ...sepoliaZkTestnetStageConfig }
-  },
-
   84532: {
     ...baseSepoliaConfig,
     dev: { ...baseSepoliaDevConfig },

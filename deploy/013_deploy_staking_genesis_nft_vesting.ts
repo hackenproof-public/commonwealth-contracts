@@ -14,7 +14,7 @@ const deployStakingGenNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnv
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'wlth', value: wlth },
     { name: 'allocation', value: deploymentCofing.stakingRewardsAllocation },
-    { name: 'distributionStartTimestamp', value: 0 },
+    { name: 'distributionStartTimestamp', value: deploymentCofing.stakingRewardsDistributionStartTimestamp },
     {
       name: 'leftoversUnlockDelay',
       value: deploymentCofing.stakingRewardsLeftoversUnlockDelay

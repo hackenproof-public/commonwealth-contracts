@@ -6,7 +6,6 @@ import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deploy } from '../../scripts/utils';
 import { GenesisNFT, GenesisNFTVesting, Wlth } from '../../typechain-types';
-import { toWlth } from '../utils';
 
 describe('Genesis NFT Vesting unit tests', function () {
   const deployGenesisNFTVesting = async () => {
@@ -457,7 +456,7 @@ describe('Genesis NFT Vesting unit tests', function () {
           .to.emit(genesisNFTVesting, 'Released')
           .withArgs(user1.address, series1TokenReward, user1Series1Tokens[0], '29577777777777777777778');
 
-        expect(wlth.transfer).to.have.been.calledWith(user1.address, toWlth('14422222222222222222222'));
+        expect(wlth.transfer).to.have.been.calledWith(user1.address, '14422222222222222222222');
 
         /*
         Penalty calculations for this case:
