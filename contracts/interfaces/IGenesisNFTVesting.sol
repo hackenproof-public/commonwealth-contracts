@@ -263,7 +263,6 @@ interface IGenesisNFTVesting {
      */
     function getTokenDetails(bool _series1, uint256 _tokenId) external view returns (TokenDetails memory);
 
-
     /**
      * @notice Returns the details of multiple NFTs.
      * @param _series1 Boolean indicating whether the NFTs are of Series 1 or not.

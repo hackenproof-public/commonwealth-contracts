@@ -3,7 +3,7 @@ import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getEnvByNetwork } from '../scripts/utils';
-import { GenesisNFTVesting, StakingGenesisNFTVesting, WhitelistedVesting, SimpleVesting } from '../typechain-types';
+import { GenesisNFTVesting, SimpleVesting, StakingGenesisNFTVesting, WhitelistedVesting } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
 
 const setVestingsStartTimestamp: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
@@ -15,7 +15,7 @@ const setVestingsStartTimestamp: DeployFunction = async (hre: HardhatRuntimeEnvi
   const genesisNftVestingAddress = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTVesting');
 
   const marketingAddress = '0xcA8310e5fC441f9c7e575C64a8d992F455e6b7BF';
-  const strategicPartnersRound1Address ='0x7f44155a0E58384dF4919797Cd5689FeeD667F91';
+  const strategicPartnersRound1Address = '0x7f44155a0E58384dF4919797Cd5689FeeD667F91';
   const strategicPartnersRound2Address = '0x7Fd2f60b159920d7Dd4544150CE140890052000d';
   const advisoryAddress = '0x34D6aaba93AfEE10fAC35818f9d40FD0F393848E';
   const teamAddress = '0xA02A79793227c368772D934681d84C099c5B8497';
@@ -65,16 +65,8 @@ const setVestingsStartTimestamp: DeployFunction = async (hre: HardhatRuntimeEnvi
     advisoryAddress,
     wallet
   )) as WhitelistedVesting;
-  const teamVesting = (await ethers.getContractAt(
-    'WhitelistedVesting',
-    teamAddress,
-    wallet
-  )) as WhitelistedVesting;
-  const treasuryVesting = (await ethers.getContractAt(
-    'SimpleVesting',
-    treasuryAddress,
-    wallet
-  )) as SimpleVesting;
+  const teamVesting = (await ethers.getContractAt('WhitelistedVesting', teamAddress, wallet)) as WhitelistedVesting;
+  const treasuryVesting = (await ethers.getContractAt('SimpleVesting', treasuryAddress, wallet)) as SimpleVesting;
   const rewardsVesting = (await ethers.getContractAt(
     'WhitelistedVesting',
     rewardsAddress,
@@ -99,12 +91,16 @@ const setVestingsStartTimestamp: DeployFunction = async (hre: HardhatRuntimeEnvi
   console.log('marketing start timestamp is set', marketingWhitelistedVestingTx.hash);
 
   console.log('Setting up strategicPartnersRound1 vesting start timestamp');
-  const strategicPartnersRound1VestingTx = await strategicPartnersRound1Vesting.setVestingStartTimestamp(startTimestamp);
+  const strategicPartnersRound1VestingTx = await strategicPartnersRound1Vesting.setVestingStartTimestamp(
+    startTimestamp
+  );
   await strategicPartnersRound1VestingTx.wait();
   console.log('strategicPartnersRound1 start timestamp is set', strategicPartnersRound1VestingTx.hash);
 
   console.log('Setting up strategicPartnersRound2 vesting start timestamp');
-  const strategicPartnersRound2VestingTx = await strategicPartnersRound2Vesting.setVestingStartTimestamp(startTimestamp);
+  const strategicPartnersRound2VestingTx = await strategicPartnersRound2Vesting.setVestingStartTimestamp(
+    startTimestamp
+  );
   await strategicPartnersRound2VestingTx.wait();
   console.log('strategicPartnersRound2 start timestamp is set', strategicPartnersRound2VestingTx.hash);
 

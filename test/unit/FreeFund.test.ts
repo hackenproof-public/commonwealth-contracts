@@ -753,7 +753,7 @@ describe('FreeFund', () => {
   describe('Invest', () => {
     describe('Reverts', () => {
       it('Should always revert', async () => {
-        const { user1, freeFund} = await loadFixture(deployInvestmentFund);
+        const { user1, freeFund } = await loadFixture(deployInvestmentFund);
 
         await expect(freeFund.connect(user1).invest(toUsdc('10000'))).to.be.revertedWithCustomError(
           freeFund,
@@ -766,7 +766,7 @@ describe('FreeFund', () => {
   describe('AirdropInvestmentNFT', () => {
     describe('Success', () => {
       it('Should airdrop an investment nft', async () => {
-        const { freeFund, investmentNft, owner, user1} = await loadFixture(deployInvestmentFund);
+        const { freeFund, investmentNft, owner, user1 } = await loadFixture(deployInvestmentFund);
         const amount = toUsdc('1000');
 
         await expect(freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address))
@@ -777,7 +777,7 @@ describe('FreeFund', () => {
       });
 
       it('Should change the state to CapReached when total investment reaches the cap', async () => {
-        const { owner, freeFund, user1, investmentNft, cap} = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund, user1, investmentNft, cap } = await loadFixture(deployInvestmentFund);
 
         await expect(freeFund.connect(owner).airdropInvestmentNFT(cap, user1.address))
           .to.emit(freeFund, 'CapReached')
@@ -790,20 +790,21 @@ describe('FreeFund', () => {
     });
     describe('Reverts', () => {
       it('Should revert when not called by owner', async () => {
-        const { user1, freeFund} = await loadFixture(deployInvestmentFund);
+        const { user1, freeFund } = await loadFixture(deployInvestmentFund);
         await expect(freeFund.connect(user1).airdropInvestmentNFT(1000, user1.address)).to.be.revertedWith(
           'Ownable: caller is not the owner'
         );
       });
 
       it("Should revert when not in 'FundsIn' state", async () => {
-        const { owner, freeFund} = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
 
         await freeFund.connect(owner).stopCollectingFunds();
 
-        await expect(
-          freeFund.connect(owner).airdropInvestmentNFT(1000, owner.address)
-        ).to.be.revertedWithCustomError(freeFund, 'StateMachine__NotAllowedInCurrentState');
+        await expect(freeFund.connect(owner).airdropInvestmentNFT(1000, owner.address)).to.be.revertedWithCustomError(
+          freeFund,
+          'StateMachine__NotAllowedInCurrentState'
+        );
       });
 
       it('Should revert when exceed the cap', async () => {
@@ -815,11 +816,12 @@ describe('FreeFund', () => {
       });
 
       it('Should revert when amount less then minimum investment', async () => {
-        const { owner, freeFund} = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
 
-        await expect(
-          freeFund.connect(owner).airdropInvestmentNFT(1, owner.address)
-        ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__InvestmentTooLow');
+        await expect(freeFund.connect(owner).airdropInvestmentNFT(1, owner.address)).to.be.revertedWithCustomError(
+          freeFund,
+          'InvestmentFund__InvestmentTooLow'
+        );
       });
     });
   });
@@ -865,10 +867,12 @@ describe('FreeFund', () => {
         );
       });
 
-      it("Should revert when the fund not in 'FundsIn' state", async () => {
+      it("Should revert when the fund not in 'Close' state", async () => {
         const { owner, freeFund, project } = await loadFixture(deployInvestmentFund);
 
         await freeFund.connect(owner).stopCollectingFunds();
+        await freeFund.connect(owner).deployFunds();
+        await freeFund.connect(owner).closeFund();
 
         await expect(freeFund.connect(owner).addProject(project.address)).to.be.revertedWithCustomError(
           freeFund,
@@ -910,11 +914,11 @@ describe('FreeFund', () => {
       });
 
       it("Should revert when the fund not in 'FundsIn' state", async () => {
-        const { owner, freeFund, usdc, investmentNft, cap, project, user1} = await loadFixture(
-          deployInvestmentFund
-        );
+        const { owner, freeFund, usdc, investmentNft, cap, project, user1 } = await loadFixture(deployInvestmentFund);
 
         await freeFund.connect(owner).stopCollectingFunds();
+        await freeFund.connect(owner).deployFunds();
+        await freeFund.connect(owner).closeFund();
 
         await expect(freeFund.connect(owner).removeProject(project.address)).to.be.revertedWithCustomError(
           freeFund,
@@ -990,9 +994,7 @@ describe('FreeFund', () => {
   describe('DeployFundsToProject', () => {
     describe('Success', () => {
       it("Should deploy funds to the project's address", async () => {
-        const { owner, user1, freeFund, project, investmentNft, usdc, cap } = await loadFixture(
-          deployInvestmentFund
-        );
+        const { owner, user1, freeFund, project, investmentNft, usdc, cap } = await loadFixture(deployInvestmentFund);
         const amount = toUsdc('10000');
 
         usdc.transferFrom.returns(true);
@@ -1378,9 +1380,7 @@ describe('FreeFund', () => {
       });
 
       it('Should return zero when no payout is unlocked', async () => {
-        const { freeFund, user1, investmentNft, owner, cap, project, usdc } = await loadFixture(
-          deployInvestmentFund
-        );
+        const { freeFund, user1, investmentNft, owner, cap, project, usdc } = await loadFixture(deployInvestmentFund);
 
         const amount = toUsdc('10000');
         investmentNft.getTotalInvestmentValue.returns(cap.sub(amount));
@@ -1471,8 +1471,9 @@ describe('FreeFund', () => {
     });
 
     it('Should carry fee be zero when max discount', async () => {
-      const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker, staking } =
-        await loadFixture(deployInvestmentFund);
+      const { freeFund, user1, investmentNft, owner, cap, project, usdc, unlocker, staking } = await loadFixture(
+        deployInvestmentFund
+      );
 
       const amount = toUsdc('100000');
       investmentNft.getTotalInvestmentValue.returns(cap.sub(amount));
@@ -1599,7 +1600,7 @@ describe('FreeFund', () => {
       });
 
       it('Should revert when nothing to withdraw', async () => {
-        const { owner, freeFund, user1, investmentNft, cap, usdc} = await loadFixture(deployInvestmentFund);
+        const { owner, freeFund, user1, investmentNft, cap, usdc } = await loadFixture(deployInvestmentFund);
         await freeFund.connect(owner).stopCollectingFunds();
         await freeFund.connect(owner).deployFunds();
 

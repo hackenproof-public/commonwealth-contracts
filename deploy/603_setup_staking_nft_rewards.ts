@@ -1,5 +1,6 @@
 import { NonceManager } from '@ethersproject/experimental';
 import parse from 'csv-parser';
+import { parseEther } from 'ethers/lib/utils';
 import fs from 'fs';
 import { ethers } from 'hardhat';
 import { DeployFunction } from 'hardhat-deploy/dist/types';
@@ -7,7 +8,6 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { getEnvByNetwork } from '../scripts/utils';
 import { StakingGenesisNFTVesting } from '../typechain-types';
 import { getContractAddress } from '../utils/addresses';
-import { parseEther } from 'ethers/lib/utils';
 
 type Reward = {
   account: string;
@@ -49,7 +49,7 @@ const setupRewards: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
         });
       }
     });
-   
+
   for await (const chunk of readStream) {
   }
   const out = async () => {

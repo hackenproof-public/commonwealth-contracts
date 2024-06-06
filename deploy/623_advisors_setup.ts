@@ -109,9 +109,7 @@ async function whitelistedWalletSetup(
     vestingAddress
   )) as WhitelistedVesting;
 
-  await vestingContract
-    .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
+  await vestingContract.connect(ownerWallet).whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   // const tab = [];
   // for (let i = 0; i<33; i++) {

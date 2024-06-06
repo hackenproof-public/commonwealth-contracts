@@ -176,7 +176,7 @@ const baseSepoliaConfig: networkConfigItem = {
   investmentFundTreasuryWallet: '0x1F0c955209bf317f66562F672f71a3747D390f80',
   investmentFundManagementFee: 1000,
   nftVestingCadence: 2592000,
-  nftVestingDuration: 62208000, 
+  nftVestingDuration: 62208000,
   stakingRewardsDistributionStartTimestamp: 1717070400,
   stakingRewardsLeftoversUnlockDelay: 604800,
   genesisNftRevenueAddress: '0x1F0c955209bf317f66562F672f71a3747D390f80',
@@ -238,7 +238,7 @@ const baseConfig: networkConfigItem = {
   defaultMinimumInvestment: toUsdc('50'),
   alphaFundMinimumInvestment: toUsdc('20'),
   bonusStakingStartTimestamp: 1717244100,
-  bonusStakingDuration: 259200,
+  bonusStakingDuration: 2678400,
   bonusStakingTotalReward: parseEther('63998117')
 };
 const baseSepoliaDevConfig: networkConfigItem = {

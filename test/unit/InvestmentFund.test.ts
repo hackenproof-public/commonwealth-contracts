@@ -922,7 +922,7 @@ describe('InvestmentFund', () => {
         );
       });
 
-      it("Should revert when the fund not in 'FundsIn' state", async () => {
+      it("Should revert when the fund not in 'Close' state", async () => {
         const { owner, investmentFund, usdc, investmentNft, cap, project, user1 } = await loadFixture(
           deployInvestmentFund
         );
@@ -931,6 +931,8 @@ describe('InvestmentFund', () => {
         investmentNft.getTotalInvestmentValue.returns(cap.sub(amount));
         usdc.transferFrom.returns(true);
         await investmentFund.connect(user1).invest(amount);
+        await investmentFund.connect(owner).deployFunds();
+        await investmentFund.connect(owner).closeFund();
 
         await expect(investmentFund.connect(owner).addProject(project.address)).to.be.revertedWithCustomError(
           investmentFund,
@@ -971,7 +973,7 @@ describe('InvestmentFund', () => {
           .withArgs(project.address);
       });
 
-      it("Should revert when the fund not in 'FundsIn' state", async () => {
+      it("Should revert when the fund not in 'Close' state", async () => {
         const { owner, investmentFund, usdc, investmentNft, cap, project, user1 } = await loadFixture(
           deployInvestmentFund
         );
@@ -980,6 +982,8 @@ describe('InvestmentFund', () => {
         investmentNft.getTotalInvestmentValue.returns(cap.sub(amount));
         usdc.transferFrom.returns(true);
         await investmentFund.connect(user1).invest(amount);
+        await investmentFund.connect(owner).deployFunds();
+        await investmentFund.connect(owner).closeFund();
 
         await expect(investmentFund.connect(owner).removeProject(project.address)).to.be.revertedWithCustomError(
           investmentFund,

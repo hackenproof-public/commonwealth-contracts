@@ -32,7 +32,6 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
     { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
     { name: 'minimumValue', value: deploymentConfig.defaultMinimumInvestment }
-
   ];
 
   const nft = await deploy(hre, 'InvestmentNFTOld', nftParameters, true, false);

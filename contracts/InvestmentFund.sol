@@ -477,6 +477,11 @@ contract InvestmentFund is
 
     function allowFunctionsInStates() external onlyOwner {
         allowFunction(LibFund.STATE_FUNDS_IN, this.invest.selector);
+        allowFunction(LibFund.STATE_CAP_REACHED, this.addProject.selector);
+        allowFunction(LibFund.STATE_CAP_REACHED, this.removeProject.selector);
+
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.addProject.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.removeProject.selector);
     }
 
     /**
@@ -735,6 +740,15 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.unlockPayoutsTo.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.withdraw.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.closeFund.selector);
+
+        allowFunction(LibFund.STATE_FUNDS_IN, this.addProject.selector);
+        allowFunction(LibFund.STATE_FUNDS_IN, this.removeProject.selector);
+
+        allowFunction(LibFund.STATE_CAP_REACHED, this.addProject.selector);
+        allowFunction(LibFund.STATE_CAP_REACHED, this.removeProject.selector);
+
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.addProject.selector);
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.removeProject.selector);
     }
 
     function _invest(address _investor, uint256 _amount) private {

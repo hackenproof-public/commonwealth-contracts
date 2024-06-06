@@ -67,10 +67,7 @@ contract FreeFund is InvestmentFund {
      * @param _amount Amount of tokens to be invested
      * @param _wallet Address of wallet to receive investment NFT
      */
-    function airdropInvestmentNFT(
-        uint240 _amount,
-        address _wallet
-    ) external onlyOwner onlyAllowedStates {
+    function airdropInvestmentNFT(uint240 _amount, address _wallet) external onlyOwner onlyAllowedStates {
         if (_amount <= s_minimumInvestment) revert InvestmentFund__InvestmentTooLow();
         uint256 actualCap = s_cap;
 

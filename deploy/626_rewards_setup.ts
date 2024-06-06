@@ -72,9 +72,7 @@ async function whitelistedWalletSetup(
     vestingAddress
   )) as WhitelistedVesting;
 
-  await vestingContract
-    .connect(ownerWallet)
-    .whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
+  await vestingContract.connect(ownerWallet).whitelistedWalletSetup(walletAddress, tokenDistribution(allocation));
 
   console.log(`Successfully setted up wallet ${walletAddress}`);
 }
