@@ -62,6 +62,20 @@ interface IWhitelistedVesting {
     event VestingStartTimestampSetted(uint256 indexed vestingStartTimestamp);
 
     /**
+     * @notice Emitted when owner sets vesting start timestamp
+     * @param oldAllocation old token distribution array
+     * @param newAllocation new token distribution array
+     */
+    event AllocationIncreased(uint256[] indexed oldAllocation, uint256[] indexed newAllocation);
+
+    /**
+     * @notice Emitted when owner sets vesting start timestamp
+     * @param oldAllocation old token distribution array
+     * @param newAllocation new token distribution array
+     */
+    event AllocationDecreased(uint256[] indexed oldAllocation, uint256[] indexed newAllocation);
+
+    /**
      * @notice Wallet setup along with respective checks
      * @param _whitelistedAddress address of wallet to be whitelisted
      * @param _distribution Array of WLTH amounts which represents allocation per cadence, where array index reflects cadence number
@@ -101,6 +115,18 @@ interface IWhitelistedVesting {
      * @param _timestamp desired vesting start timestamp
      */
     function setVestingStartTimestamp(uint256 _timestamp) external;
+
+    /**
+     * @notice Increase contract allocation. WLTH should be sent to the contract after this action
+     * @param newAllocation new token distribution array
+     */
+    function increaseAllocation(uint256[] calldata newAllocation) external;
+
+    /**
+     * @notice Decrease contract allocation and sends WLTH surplus to given wallet
+     * @param newAllocation new token distribution array
+     */
+    function decreaseAllocation(uint256[] calldata newAllocation) external;
 
     /**
      * @notice calculates the penalty, gamification
@@ -204,4 +230,14 @@ interface IWhitelistedVesting {
      * @notice Returns amount of WLTH already released by given wallet
      */
     function releasedAmountPerWallet(address _wallet) external view returns (uint256);
+
+    /**
+     * @notice Returns total amount of WLTH allocated to whitelisted wallets
+     */
+    function totalWalletAllocation() external view returns (uint256);
+
+    /**
+     * @notice Returns amount of WLTH allocated to whitelisted wallets for specific cadence
+     */
+    function totalWalletAllocationInCadence(uint256 _cadence) external view returns (uint256);
 }

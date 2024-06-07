@@ -345,6 +345,37 @@ describe('Whitelisted vesting unit tests', () => {
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
     });
 
+    it('Should revert when initialize again', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        wlth,
+        allocation,
+        duration,
+        cadence,
+        vestingStartTimestamp,
+        gamification,
+        communityFund,
+        tokenReleaseDistribution,
+        leftoversUnlockDelay
+      } = await loadFixture(deploySimpleVesting);
+
+      await expect(
+        whitelistedVesting.initialize(
+          gamification,
+          owner.address,
+          wlth.address,
+          communityFund.address,
+          allocation,
+          duration,
+          cadence,
+          leftoversUnlockDelay,
+          vestingStartTimestamp,
+          tokenReleaseDistribution
+        )
+      ).to.be.revertedWith('Initializable: contract is already initialized');
+    });
+
     it('Should deploy and return initial parameters', async () => {
       const {
         whitelistedVesting,
@@ -1004,6 +1035,697 @@ describe('Whitelisted vesting unit tests', () => {
       await expect(
         whitelistedVesting.connect(owner).setVestingStartTimestamp(vestingStartTimestamp)
       ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__PastVestingStartTimestamp');
+    });
+
+    it('Should revert decrease contract allocation when not called by owner', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total reduction by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6955000'),
+        toWlth('12185000'),
+        toWlth('17395000'), // missing previous cadence element
+        toWlth('22615000'),
+        toWlth('27835000'),
+        toWlth('33055000'),
+        toWlth('38275000'),
+        toWlth('43495000'),
+        toWlth('48715000'),
+        toWlth('53935000'),
+        toWlth('59155000'),
+        toWlth('64375000'),
+        toWlth('69595000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'),
+        toWlth('12180000'),
+        toWlth('17390000'),
+        toWlth('22610000'),
+        toWlth('27830000'),
+        toWlth('33050000'),
+        toWlth('38270000'),
+        toWlth('43490000'),
+        toWlth('48710000'),
+        toWlth('53930000'),
+        toWlth('59150000'),
+        toWlth('64370000'),
+        toWlth('69590000')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(beneficiary1).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('Should revert decrease contract allocation due to too short array', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total reduction by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6955000'),
+        toWlth('17395000'), // missing previous cadence element
+        toWlth('22615000'),
+        toWlth('27835000'),
+        toWlth('33055000'),
+        toWlth('38275000'),
+        toWlth('43495000'),
+        toWlth('48715000'),
+        toWlth('53935000'),
+        toWlth('59155000'),
+        toWlth('64375000'),
+        toWlth('69595000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'),
+        toWlth('12170000'),
+        toWlth('17390000'),
+        toWlth('22610000'),
+        toWlth('27830000'),
+        toWlth('33050000'),
+        toWlth('38270000'),
+        toWlth('43490000'),
+        toWlth('48710000'),
+        toWlth('53930000'),
+        toWlth('59150000'),
+        toWlth('64370000'),
+        toWlth('69590000')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayLength');
+    });
+
+    it('Should revert decrease contract allocation due to cadence below actual allocation for given cadence', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('49999'), // cadence allocation lower than actual amount of token already allocated to wallets for this cadence
+        toWlth('12185000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69599000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('50000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should revert decrease contract allocation if new allocation for cadence is bigger than actual one', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('12180001'), // bigger cadence allocation than actual one
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69599000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('12170000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('17390000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('22610000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('27830000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('33050000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('38270000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('43490000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('48710000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('53930000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('59150000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('64370000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('69590000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should revert decrease contract allocation due to array inconsistency', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6500000'),
+        toWlth('6000000'), // next cadence cannot have lower allocation than previous one
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69599000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000'),
+        toWlth('10000')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should revert decrease contract allocation due to incorrect total allocation', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('12185000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('70000000') // total allocation higher than actual one (69600000)
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('12170000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('17390000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('22610000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('27830000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('33050000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('38270000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('43490000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('48710000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('53930000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('59150000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('64370000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('69590000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidTotalAllocation');
+    });
+
+    it('Should revert decrease contract allocation due to higher cadence compared to actual allocation', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('13185000'), // cadence with too high allocation compared to actual contract allocation (12185000)
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69599000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('12170000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('17390000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('22610000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('27830000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('33050000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('38270000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('43490000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('48710000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('53930000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('59150000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('64370000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('69590000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+
+      await expect(
+        whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should decrease contract allocation', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        beneficiary1,
+        tokenReleaseDistribution,
+        wlth,
+        vestingStartTimestamp,
+        cadence
+      } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total reduction by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6955000'),
+        toWlth('12175000'),
+        toWlth('17395000'),
+        toWlth('22615000'),
+        toWlth('27835000'),
+        toWlth('33055000'),
+        toWlth('38275000'),
+        toWlth('43495000'),
+        toWlth('48715000'),
+        toWlth('53935000'),
+        toWlth('59155000'),
+        toWlth('64375000'),
+        toWlth('69595000')
+      ];
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('12170000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('17390000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('22610000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('27830000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('33050000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('38270000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('43490000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('48710000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('53930000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('59150000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('64370000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('69590000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+      // there is 10000 WLTH unallocated
+      wlth.balanceOf.returns(toWlth('10000'));
+      wlth.transfer.returns(true);
+
+      expect(await whitelistedVesting.connect(owner).decreaseAllocation(newTokenReleaseDistribution))
+        .to.emit(whitelistedVesting, 'AllocationDecreased')
+        .withArgs(tokenReleaseDistribution, newTokenReleaseDistribution);
+
+      await time.increaseTo(vestingStartTimestamp + cadence * 8);
+      expect(whitelistedVesting.connect(beneficiary1).release(toWlth('10000'), beneficiary1.address));
+    });
+
+    it('Should revert increase contract allocation when not called by owner', async () => {
+      const { whitelistedVesting, beneficiary1 } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('12185000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69605000')
+      ];
+
+      await expect(
+        whitelistedVesting.connect(beneficiary1).increaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('Should revert increase contract allocation due to too short array', async () => {
+      const { whitelistedVesting, owner, tokenReleaseDistribution } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('12185000'), // missing previous cadence
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69605000')
+      ];
+
+      await expect(
+        whitelistedVesting.connect(owner).increaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayLength');
+    });
+
+    it('Should revert increase contract allocation due to incorrect total allocation', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('12185000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69500000') // total allocation lower than actual one (69600000)
+      ];
+
+      await expect(
+        whitelistedVesting.connect(owner).increaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidTotalAllocation');
+    });
+
+    it('Should revert increase contract allocation due to array inconsistency', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('12185000'), // next cadence cannot have lower allocation than previous one
+        toWlth('6965000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69605000')
+      ];
+
+      await expect(
+        whitelistedVesting.connect(owner).increaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should revert increase contract allocation due to lower cadence compared to actual allocation', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('10185000'), // cadence with too low allocation compared to actual contract allocation (12185000)
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69605000')
+      ];
+
+      await expect(
+        whitelistedVesting.connect(owner).increaseAllocation(newTokenReleaseDistribution)
+      ).to.be.revertedWithCustomError(whitelistedVesting, 'WhitelistedVesting__InvalidDistributionArrayAllocation');
+    });
+
+    it('Should increase contract allocation', async () => {
+      const {
+        whitelistedVesting,
+        owner,
+        tokenReleaseDistribution,
+        wlth,
+        vestingStartTimestamp,
+        cadence,
+        beneficiary1
+      } = await loadFixture(deploySimpleVesting);
+      const newTokenReleaseDistribution = [
+        // total increase by 5000 WLTH
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6965000'),
+        toWlth('12185000'),
+        toWlth('17405000'),
+        toWlth('22625000'),
+        toWlth('27845000'),
+        toWlth('33065000'),
+        toWlth('38285000'),
+        toWlth('43505000'),
+        toWlth('48725000'),
+        toWlth('53945000'),
+        toWlth('59165000'),
+        toWlth('64385000'),
+        toWlth('69605000')
+      ];
+
+      wlth.transfer.returns(true);
+      wlth.balanceOf.returns(toWlth('100000'));
+
+      const walletDistribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('6950000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('12170000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('17390000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('22610000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('27830000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('33050000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('38270000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('43490000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('48710000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('53930000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('59150000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('64370000'), // contract corresponding allocation - 10000 WLTH
+        toWlth('69590000') // contract corresponding allocation - 10000 WLTH
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, walletDistribution);
+
+      expect(await whitelistedVesting.connect(owner).increaseAllocation(newTokenReleaseDistribution))
+        .to.emit(whitelistedVesting, 'AllocationIncreased')
+        .withArgs(tokenReleaseDistribution, newTokenReleaseDistribution);
+
+      await time.increaseTo(vestingStartTimestamp + cadence * 8);
+      expect(whitelistedVesting.connect(beneficiary1).release(toWlth('10000'), beneficiary1.address));
     });
   });
 
@@ -1785,6 +2507,74 @@ describe('Whitelisted vesting unit tests', () => {
 
       expect(await whitelistedVesting.connect(owner).released()).to.equal(0);
     });
+
+    it('Should return total amount of WLTH allocated to whitelisted wallets', async () => {
+      const { whitelistedVesting, owner, vestingStartTimestamp, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution);
+
+      expect(await whitelistedVesting.connect(owner).totalWalletAllocation()).to.equal(toWlth('100'));
+    });
+
+    it('Should return total amount of WLTH allocated to whitelisted wallets', async () => {
+      const { whitelistedVesting, owner, vestingStartTimestamp, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      await time.increaseTo(vestingStartTimestamp - ONE_SECOND);
+
+      const distribution = [
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('0'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100'),
+        toWlth('100')
+      ];
+
+      await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, distribution);
+
+      expect(await whitelistedVesting.connect(owner).totalWalletAllocationInCadence(1)).to.equal(0);
+      expect(await whitelistedVesting.connect(owner).totalWalletAllocationInCadence(7)).to.equal(toWlth('100'));
+    });
+
     it('Should return zero vested WLTH amount before vesting start timestamp', async () => {
       const { whitelistedVesting, owner, allocation, beneficiary1, vestingStartTimestamp, cadence } = await loadFixture(
         deploySimpleVesting

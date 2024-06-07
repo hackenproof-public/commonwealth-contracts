@@ -12,7 +12,6 @@ import {OwnablePausable} from "../OwnablePausable.sol";
 import {ERC165Upgradeable, IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 error WhitelistedVesting__VestingNotStarted();
-error WhitelistedVesting__OwnerZeroAddress();
 error WhitelistedVesting__WlthZeroAddress();
 error WhitelistedVesting__CommunityFundZeroAddress();
 error WhitelistedVesting__InvalidDistributionArrayAllocation();
@@ -31,6 +30,7 @@ error WhitelistedVesting__PastCadenceModificationNotAllowed();
 error WhitelistedVesting__InvalidSingleCadenceWalletAllocation();
 error WhitelistedVesting__WalletClaimedWithPenalty();
 error WhitelistedVesting__SameWalletAllocationForCadenceProvided();
+error WhitelistedVesting__InvalidTotalAllocation();
 
 /**
  * @title WhitelistedVesting
@@ -170,15 +170,13 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         uint256 _leftoversUnlockDelay,
         uint256 _vestingStartTimestamp,
         uint256[] memory _tokenReleaseDistribution
-    ) 
-    public virtual initializer {
+    ) public virtual initializer {
         __Context_init();
         {
             __OwnablePausable_init(_owner);
         }
         __ReentrancyGuard_init();
 
-        if (_owner == address(0)) revert WhitelistedVesting__OwnerZeroAddress();
         if (_wlth == address(0)) revert WhitelistedVesting__WlthZeroAddress();
         if (_communityFund == address(0)) revert WhitelistedVesting__CommunityFundZeroAddress();
         if (_vestingStartTimestamp > 0 && _vestingStartTimestamp < block.timestamp)
@@ -252,7 +250,7 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         if (s_claimedWithPenalty[_whitelistedAddress]) {
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }
-        
+
         if (_distribution.length != s_cadenceAmount + 1) revert WhitelistedVesting__InvalidDistributionArrayLength();
         uint256 walletAllocation = _distribution[_distribution.length - 1];
         uint256 totalWalletsAllocation = s_totalWalletsAllocation;
@@ -354,7 +352,6 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         IERC20(s_wlth).safeTransfer(_wallet, surplus);
     }
 
-
     /**
      * @inheritdoc IWhitelistedVesting
      */
@@ -365,6 +362,54 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         s_vestingStartTimestamp = _timestamp;
 
         emit VestingStartTimestampSetted(_timestamp);
+    }
+
+    /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function increaseAllocation(uint256[] calldata _newAllocation) external override onlyOwner {
+        uint256[] memory oldAllocation = s_tokenReleaseDistribution;
+        if (s_cadenceAmount + 1 != _newAllocation.length) revert WhitelistedVesting__InvalidDistributionArrayLength();
+        if (_newAllocation[_newAllocation.length - 1] <= s_allocation)
+            revert WhitelistedVesting__InvalidTotalAllocation();
+
+        for (uint256 i; i < _newAllocation.length - 1; ) {
+            if (_newAllocation[i] < oldAllocation[i] || _newAllocation[i] > _newAllocation[i + 1])
+                revert WhitelistedVesting__InvalidDistributionArrayAllocation();
+            unchecked {
+                i++;
+            }
+        }
+
+        s_tokenReleaseDistribution = _newAllocation;
+        s_allocation = _newAllocation[_newAllocation.length - 1];
+
+        emit AllocationIncreased(oldAllocation, _newAllocation);
+    }
+
+    /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function decreaseAllocation(uint256[] calldata _newAllocation) external override onlyOwner {
+        uint256[] memory oldAllocation = s_tokenReleaseDistribution;
+        if (s_cadenceAmount + 1 != _newAllocation.length) revert WhitelistedVesting__InvalidDistributionArrayLength();
+        if (_newAllocation[_newAllocation.length - 1] >= s_allocation)
+            revert WhitelistedVesting__InvalidTotalAllocation();
+
+        for (uint256 i; i < _newAllocation.length - 1; ) {
+            if (
+                (_newAllocation[i] < s_cadenceAllocation[i] || _newAllocation[i] > oldAllocation[i]) ||
+                _newAllocation[i] > _newAllocation[i + 1]
+            ) revert WhitelistedVesting__InvalidDistributionArrayAllocation();
+            unchecked {
+                i++;
+            }
+        }
+
+        s_tokenReleaseDistribution = _newAllocation;
+        s_allocation = _newAllocation[_newAllocation.length - 1];
+
+        emit AllocationDecreased(oldAllocation, _newAllocation);
     }
 
     /**
@@ -441,11 +486,17 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         return s_whitelistedAddressesAmount;
     }
 
-    function totalWalletAllocation() external view returns (uint256) {
+    /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function totalWalletAllocation() external view override returns (uint256) {
         return s_totalWalletsAllocation;
     }
 
-    function totalWalletAllocationInCadence(uint256 _cadence) external view returns (uint256) {
+    /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function totalWalletAllocationInCadence(uint256 _cadence) external view override returns (uint256) {
         return s_cadenceAllocation[_cadence];
     }
 
@@ -571,8 +622,7 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
 
     function _release(uint256 _amount, address _beneficiary, bool _penalty) private {
         uint256 alreadyReleased = s_whitelistedWalletReleased[_beneficiary];
-        uint256 availableTokensAmount = s_distribution[_beneficiary][s_cadenceAmount] -
-            alreadyReleased;
+        uint256 availableTokensAmount = s_distribution[_beneficiary][s_cadenceAmount] - alreadyReleased;
         uint256 toRelease;
         if (!_penalty) {
             uint256 currentReleaseableAmount = _releaseableAmountPerWallet(_beneficiary);
