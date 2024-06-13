@@ -10,6 +10,7 @@ import {
   InvestmentNFT,
   IProject__factory,
   PeriodicVesting,
+  ProfitProvider,
   Project,
   StakingWlth,
   UniswapSwapper,
@@ -292,6 +293,7 @@ describe('Project unit tests', () => {
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       investmentNft.supportsInterface.returns(true);
       const minimumInvestment = toUsdc('50');
+      const profitProvider: FakeContract<ProfitProvider> = await smock.fake('ProfitProvider');
       const investmentFund: InvestmentFund = await deployProxy(
         'InvestmentFund',
         [
@@ -305,7 +307,8 @@ describe('Project unit tests', () => {
           defaultManagementFee,
           defaultInvestmentCap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider.address
         ],
         deployer
       );
@@ -355,6 +358,8 @@ describe('Project unit tests', () => {
       const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
       investmentNft.supportsInterface.returns(true);
       const minimumInvestment = toUsdc('50');
+      const profitProvider: FakeContract<ProfitProvider> = await smock.fake('ProfitProvider');
+
       const investmentFund: InvestmentFund = await deployProxy(
         'InvestmentFund',
         [
@@ -368,7 +373,8 @@ describe('Project unit tests', () => {
           defaultManagementFee,
           defaultInvestmentCap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider.address
         ],
         deployer
       );

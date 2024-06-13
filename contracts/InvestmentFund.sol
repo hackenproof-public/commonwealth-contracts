@@ -43,6 +43,8 @@ error InvestmentFund__InvalidManagementFee();
 error InvestmentFund__InvalidInvestmentCap();
 error InvestmentFund__InvestmentNftInterfaceNotSupported();
 error InvestmmentFund__MaxPercentageWalletInvestmentLimitReached();
+error InvestmentFund__ProfitProviderZeroAddress();
+error InvestmentFund__OperationNotAllowed(address account);
 
 /**
  * @title Investment Fund contract
@@ -157,6 +159,11 @@ contract InvestmentFund is
      */
     EnumerableSetUpgradeable.AddressSet private s_projects;
 
+    /**
+     * @notice Address of profit provider
+     */
+    address public s_profitProvider;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -175,6 +182,7 @@ contract InvestmentFund is
      * @param _cap Cap value
      * @param _maxPercentageWalletInvestmentLimit Maximum percentage of wallet investment limit
      * @param _minimumInvestment Minimum investment value
+     * @param _profitProvider Address of profit provider
      */
     function initialize(
         address _owner,
@@ -187,7 +195,8 @@ contract InvestmentFund is
         uint16 _managementFee,
         uint256 _cap,
         uint256 _maxPercentageWalletInvestmentLimit,
-        uint256 _minimumInvestment
+        uint256 _minimumInvestment,
+        address _profitProvider
     ) public virtual initializer {
         __Context_init();
         {
@@ -200,7 +209,7 @@ contract InvestmentFund is
         if (_unlocker == address(0)) revert InvestmentFund__UnlockerZeroAddress();
         if (_currency == address(0)) revert InvestmentFund__CurrencyZeroAddress();
         if (_investmentNft == address(0)) revert InvestmentFund__InvestmentNftZeroAddress();
-        // if (_stakingWlth == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
+        if (_stakingWlth == address(0)) revert InvestmentFund__StakingWlthZeroAddress();
         if (_feeDistributionAddresses.treasuryWallet == address(0)) revert InvestmentFund__TreasuryZeroAddress();
         if (_feeDistributionAddresses.lpPool == address(0)) revert InvestmentFund__LpPoolZeroAddress();
         if (_feeDistributionAddresses.burn == address(0)) revert InvestmentFund__BurnZeroAddress();
@@ -226,6 +235,7 @@ contract InvestmentFund is
         s_cap = _cap;
         s_maxPercentageWalletInvestmentLimit = _maxPercentageWalletInvestmentLimit;
         s_minimumInvestment = _minimumInvestment;
+        s_profitProvider = _profitProvider;
 
         _initializeStates();
     }
@@ -257,33 +267,11 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-
     function unlockPayoutsTo(uint256 _index) external onlyAllowedStates {
         if (_msgSender() != s_unlocker) {
             revert InvestmentFund__NotTheUnlocker(_msgSender());
         }
-        uint payoutsCount = s_payouts.length;
-        uint256 nextPayout = s_nextPayoutToUnlock;
-
-        if (nextPayout >= payoutsCount) {
-            revert InvestmentFund__NoPayoutToUnclock();
-        }
-        if (_index < nextPayout) {
-            revert InvestmentFund__PayoutIndexTooLow();
-        }
-        if (_index >= payoutsCount) {
-            revert InvestmentFund__PayoutIndexTooHigh();
-        }
-
-        for (uint256 i = nextPayout; i <= _index; ) {
-            s_payouts[i].locked = false;
-            unchecked {
-                i++;
-            }
-        }
-
-        s_nextPayoutToUnlock = _index + 1;
-        emit PayoutsUnlocked(nextPayout, _index);
+        unlockPayouts(_index);
     }
 
     /**
@@ -370,9 +358,9 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
-    function provideProfit(uint256 _amount) external onlyAllowedStates nonReentrant {
-        if (!s_projects.contains(_msgSender())) {
-            revert InvestmentFund__NotRegisteredProject(_msgSender());
+    function provideProfit(uint256 _amount, bool _unlockPayouts) external onlyAllowedStates nonReentrant {
+        if (!s_projects.contains(_msgSender()) && _msgSender() != s_profitProvider) {
+            revert InvestmentFund__OperationNotAllowed(_msgSender());
         }
         if (_amount == 0) {
             revert InvestmentFund__ZeroProfitProvided();
@@ -407,13 +395,17 @@ contract InvestmentFund is
 
         s_totalIncome = newTotalIncome;
 
+        emit ProfitProvided(address(this), _amount, initialCarryFee, blockData.number);
+
+        if (_unlockPayouts) {
+            unlockPayouts(s_payouts.length - 1);
+        }
+
         _transferFrom(s_currency, _msgSender(), address(this), _amount);
 
         if (initialCarryFee > 0) {
             _carryFeeDistribution(initialCarryFee);
         }
-
-        emit ProfitProvided(address(this), _amount, initialCarryFee, blockData.number);
     }
 
     /**
@@ -469,6 +461,15 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
+    function setProfitProvider(address _profitProvider) external override onlyOwner {
+        if (_profitProvider == address(0)) revert InvestmentFund__ProfitProviderZeroAddress();
+        s_profitProvider = _profitProvider;
+        emit ProfitProviderSet(_profitProvider);
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
     function increaseCapTo(uint256 _cap) external onlyOwner {
         if (_cap <= s_cap) revert InvestmentFund__InvalidInvestmentCap();
         s_cap = _cap;
@@ -482,6 +483,10 @@ contract InvestmentFund is
 
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.addProject.selector);
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.removeProject.selector);
+
+        allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.provideProfit.selector);
+
+        emit FunctionsAllowed();
     }
 
     /**
@@ -687,6 +692,13 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
+    function profitProvider() external view override returns (address) {
+        return s_profitProvider;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
     function getAvailableFundsDetails(
         address _account
     ) public view returns (uint256 _amount, uint256 _carryFee, uint256 _nextUserPayoutIndex) {
@@ -724,6 +736,31 @@ contract InvestmentFund is
             }
         }
         return (_amount, _carryFee, nextPayoutIndex);
+    }
+
+    function unlockPayouts(uint256 _index) private {
+        uint payoutsCount = s_payouts.length;
+        uint256 nextPayout = s_nextPayoutToUnlock;
+
+        if (nextPayout >= payoutsCount) {
+            revert InvestmentFund__NoPayoutToUnclock();
+        }
+        if (_index < nextPayout) {
+            revert InvestmentFund__PayoutIndexTooLow();
+        }
+        if (_index >= payoutsCount) {
+            revert InvestmentFund__PayoutIndexTooHigh();
+        }
+
+        for (uint256 i = nextPayout; i <= _index; ) {
+            s_payouts[i].locked = false;
+            unchecked {
+                i++;
+            }
+        }
+
+        s_nextPayoutToUnlock = _index + 1;
+        emit PayoutsUnlocked(nextPayout, _index);
     }
 
     function _initializeStates() private {
@@ -803,5 +840,5 @@ contract InvestmentFund is
         }
     }
 
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }

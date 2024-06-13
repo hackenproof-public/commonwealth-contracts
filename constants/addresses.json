@@ -15,7 +15,8 @@
     "UniswapWlthPriceOracle": "0xfa33c7e21b88F6DBe524392e92a1229C6C7fe6aD",
     "StakingWlth": "0x7519461fBd96ABB539c770d57f38C2E91f8262AA",
     "GenesisNFTVesting": "0x048aC8a33dF81FfbD8397A98A667a10cfC8aD92a",
-    "WlthBonusStaking": "0xD7E31990883250E53314b15EE555345f04D011E8"
+    "WlthBonusStaking": "0xD7E31990883250E53314b15EE555345f04D011E8",
+    "PricelessProfitProvider": "0x6Cdf60e71611eb91951c8F09c0699d9120f2e7ea"
   },
   "84532": {
     "stage": {
@@ -29,7 +30,8 @@
       "StakingWlth": "0x1dA8F0065c9AFb286eB1cFBe26b98556871a7288",
       "StakingGenesisNFTVesting": "0x637A409F2113416363a7fAcF705D79c5fdeAf510",
       "GenesisNFTVesting": "0x5A12da98ABDcAA90a36E80Dc90eAf68a19D9a30e",
-      "WlthBonusStaking": "0xc60CcA6F912AAe682F0a4FE3C395Aa487172C080"
+      "WlthBonusStaking": "0xc60CcA6F912AAe682F0a4FE3C395Aa487172C080",
+      "PricelessProfitProvider": "0x78bd8e666b13FB9DA02184d372199d49bA86E69b"
     },
     "dev": {
       "GenesisNFTV1": "0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587",
@@ -61,7 +63,10 @@
       "GenesisNFTV1": "0x0CC7866848e737522722D071A9FB3E20c354BDBc",
       "GenesisNFTV2": "0x801d710dC06A44c3dF7b10a3a54AfEBa7d66C978",
       "StakingGenesisNFT": "0xCC32bAF142de5Ac24e934549595E9C5d18542189",
-      "GenNFT": "0x2edd159057aBb3f2F6956782F73dEB0e2855EB72"
+      "GenNFT": "0x2edd159057aBb3f2F6956782F73dEB0e2855EB72",
+      "USDC": "0x5CCaff16D99d43D163B3eDE753ba5B14e2289d76",
+      "InvestmentFundRegistry": "0x3c08Ea54c3d1Acf0A88517231668bb1b9461Bcf2",
+      "FreeFundProfitProvider": "0x2B29212A20f8c1C0fB5C96EE0aD7e0edB08b6c00"
     }
   }
 }
