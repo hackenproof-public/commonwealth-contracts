@@ -30,7 +30,6 @@ contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 public constant MAX_TOKEN_ALLOCATION = 44000000000000000000000;
-    uint256 public constant MAX_TOKEN_ALLOCATION_BONUS = 48400000000000000000000;
     bool public constant SERIES1 = true;
 
     address private s_owner;
@@ -97,7 +96,8 @@ contract GenesisNFT is
             name: _metadata.name,
             description: _metadata.description,
             image: _metadata.image,
-            externalUrl: _metadata.externalUrl
+            externalUrl: _metadata.externalUrl,
+            id: _metadata.id
         });
     }
 
@@ -200,13 +200,22 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
+     */ function setMetadataId(string memory _id) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        metadata.id = _id;
+
+        emit MetadataIdChanged(_id);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
      */ function setAllMetadata(Metadata memory _metadata) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         metadata.name = _metadata.name;
         metadata.description = _metadata.description;
         metadata.image = _metadata.image;
         metadata.externalUrl = _metadata.externalUrl;
+        metadata.id = _metadata.id;
 
-        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl);
+        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl, _metadata.id);
     }
 
     /**
@@ -229,15 +238,6 @@ contract GenesisNFT is
      */
     function burn(uint256 _tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _burn(_tokenId);
-    }
-
-    /**
-     * @notice Sets metadata URI for all tokens
-     * @param _uri New metadata URI
-     */
-    function setTokenURI(string calldata _uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        s_tokenURI = _uri;
-        emit TokenURIChanged(msg.sender, _uri);
     }
 
     /**
@@ -319,6 +319,9 @@ contract GenesisNFT is
                         '",',
                         '"external_url": "',
                         metadata.externalUrl,
+                        '",',
+                        '"series_id": "',
+                        metadata.id,
                         '",',
                         '"attributes": [{"trait_type":"unvested_tokens","value":"',
                         fetchTokenDetails(tokenId),

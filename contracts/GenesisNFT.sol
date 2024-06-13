@@ -30,7 +30,6 @@ contract GenesisNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     uint256 public constant MAX_TOKEN_ALLOCATION = 44000000000000000000000;
-    uint256 public constant MAX_TOKEN_ALLOCATION_BONUS = 48400000000000000000000;
     bool public constant SERIES1 = true;
 
     address private s_owner;
