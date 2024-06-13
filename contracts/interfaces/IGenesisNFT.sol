@@ -12,6 +12,7 @@ interface IGenesisNFT {
         string description;
         string image;
         string externalUrl;
+        string id;
     }
     /**
      * @notice Emitted when zkSync GenesisNFTmirror notification about moving a token is sent
@@ -35,7 +36,7 @@ interface IGenesisNFT {
      * @param image Metadata image
      * @param externalUrl Metadata external URL
      */
-    event MetadataChanged(string indexed name, string indexed description, string indexed image, string externalUrl);
+    event MetadataChanged(string indexed name, string indexed description, string indexed image, string externalUrl, string id);
 
     /**
      * @notice Emitted when metadata name for NFT is changed
@@ -62,6 +63,12 @@ interface IGenesisNFT {
     event MetadataExternalUrlChanged(string indexed externalUrl);
 
     /**
+     * @notice Emitted when metadata series id for NFT is changed
+     * @param id id of the series
+     */
+    event MetadataIdChanged(string indexed id);
+
+    /**
      * @notice Set new metadata name
      * @param _name New metadata name
      */
@@ -84,6 +91,12 @@ interface IGenesisNFT {
      * @param _extenralUrl New metadata external URL
      */
     function setMetadataExternalUrl(string memory _extenralUrl) external;
+
+    /**
+     * @notice Set new metadata series
+     * @param _id New metadata series id
+     */
+    function setMetadataId(string memory _id) external;
 
     /**
      * @notice Set all metadata at once
