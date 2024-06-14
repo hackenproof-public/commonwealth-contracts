@@ -198,7 +198,7 @@ contract GenesisNFT is
     /**
      * @inheritdoc IGenesisNFT
      */ function setMetadataImage(string[] memory _metadataImages) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_metadataImages.length != 12) revert GenesisNFT__LengthMismatch();
+        if (_metadataImages.length != 11) revert GenesisNFT__LengthMismatch();
         metadataImages = _metadataImages;
 
         emit MetadataImageChanged(_metadataImages);
@@ -312,7 +312,7 @@ contract GenesisNFT is
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        return details.unvested; // Access the first element
+        return details.unvested + details.vested - details.claimed - details.penalty; // Access the first element
     }
 
     /**
@@ -323,7 +323,10 @@ contract GenesisNFT is
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        uint256 slices = details.unvested / (token_allocation / 10);
+        uint256 slices = (details.unvested + details.vested - details.claimed - details.penalty) / (token_allocation / 10);
+        if (slices > 10) {
+            slices = 10;
+        }
         return slices; // Access the first element
     }
 
@@ -359,10 +362,8 @@ contract GenesisNFT is
                         '"series_id": "',
                         metadata.id,
                         '",',
-                        '"attributes": [{"trait_type":"unvested_tokens","value":"',
+                        '"attributes": [{"trait_type":"value","value":"',
                         fetchTokenDetails(tokenId),
-                        '"},{"trait_type":"slices","value":"',
-                        getSlices(tokenId),
                         '"}]',
                         "}"
                     )

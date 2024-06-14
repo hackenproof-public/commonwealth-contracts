@@ -17,13 +17,28 @@ describe('Genesis NFT unit tests', () => {
   const defaultTokenURI = 'ipfs://token-uri';
   const IERC721MintableId = utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()));
   const IGenesisNFTId = utils.arrayify(getInterfaceId(IGenesisNFT__factory.createInterface()));
+  const mName = 'Name';
+  const description = 'Description';
+  const externalUrl = 'External Url';
+  const id = '1';
+  const token_allocation = 44000000000000000000000;
+  const series1 = true;
+ 
+
+
+  const metadata = {
+    name: mName,
+    description: description,
+    externalUrl: externalUrl,
+    id: id
+  };
 
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
     const genesisNft: GenesisNFT = await deployProxy(
       'GenesisNFT',
-      [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI],
+      [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI, token_allocation, series1],
       deployer
     );
     await genesisNft.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, admin.address);
@@ -64,7 +79,7 @@ describe('Genesis NFT unit tests', () => {
       const { genesisNft, deployer, owner, admin, minter, pauser } = await loadFixture(deployGenesisNft);
 
       await expect(
-        genesisNft.initialize(name, symbol, series, owner.address, owner.address, royalty, defaultTokenURI)
+        genesisNft.initialize(name, symbol, series, owner.address, owner.address, royalty, defaultTokenURI, token_allocation, series1)
       ).to.be.revertedWith('Initializable: contract is already initialized');
     });
 
@@ -75,7 +90,7 @@ describe('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI],
+          [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI, token_allocation, series1],
           deployer
         )
       ).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
@@ -87,7 +102,7 @@ describe('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, owner.address, constants.AddressZero, royalty, defaultTokenURI],
+          [name, symbol, series, owner.address, constants.AddressZero, royalty, defaultTokenURI, token_allocation, series1],
           deployer
         )
       ).to.be.revertedWith('ERC2981: invalid receiver');
@@ -95,7 +110,7 @@ describe('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, owner.address, royaltyAccount.address, 10001, defaultTokenURI],
+          [name, symbol, series, owner.address, royaltyAccount.address, 10001, defaultTokenURI, token_allocation, series1],
           deployer
         )
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
