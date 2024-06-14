@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import {IGenesisNFTVesting} from "./IGenesisNFTVesting.sol";
-
 interface IGenesisNFT {
     /**
      * @notice Metadata structure for NFT
@@ -10,7 +8,6 @@ interface IGenesisNFT {
     struct Metadata {
         string name;
         string description;
-        string image;
         string externalUrl;
         string id;
     }
@@ -33,10 +30,9 @@ interface IGenesisNFT {
      * @notice Emitted when metadata for NFT is changed
      * @param name Metadata name
      * @param description Metadata description
-     * @param image Metadata image
      * @param externalUrl Metadata external URL
      */
-    event MetadataChanged(string indexed name, string indexed description, string indexed image, string externalUrl, string id);
+    event MetadataChanged(string indexed name, string indexed description, string externalUrl, string id);
 
     /**
      * @notice Emitted when metadata name for NFT is changed
@@ -52,9 +48,9 @@ interface IGenesisNFT {
 
     /**
      * @notice Emitted when metadata image for NFT is changed
-     * @param image Metadata image
+     * @param metadataImages Metadata images
      */
-    event MetadataImageChanged(string indexed image);
+    event MetadataImageChanged(string[] indexed metadataImages);
 
     /**
      * @notice Emitted when metadata external URL for NFT is changed
@@ -67,6 +63,18 @@ interface IGenesisNFT {
      * @param id id of the series
      */
     event MetadataIdChanged(string indexed id);
+
+    /**
+     * @notice Emitted when token allocation is changed
+     * @param _token_allocation token allocation of the series
+     */
+    event TokenAllocationChanged(uint256 _token_allocation);
+
+    /**
+     * @notice Emitted when series1 boolean is changed
+     * @param _series1 if true, s1
+     */
+    event Series1Changed(bool _series1);
 
     /**
      * @notice Set new metadata name
@@ -82,9 +90,9 @@ interface IGenesisNFT {
 
     /**
      * @notice Set new metadata image
-     * @param _image New metadata image
+     * @param metadataImages New metadata image
      */
-    function setMetadataImage(string memory _image) external;
+    function setMetadataImage(string[] memory metadataImages) external;
 
     /**
      * @notice Set new metadata external URL
@@ -103,6 +111,18 @@ interface IGenesisNFT {
      * @param _metadata Metadata structure
      */
     function setAllMetadata(Metadata memory _metadata) external;
+
+    /**
+     * @notice Set token allocation for series
+     * @param _token_allocation token allocation
+     */
+    function setTokenAllocation(uint256 _token_allocation) external;
+
+    /**
+     * @notice Set series1 bool
+     * @param _series1 if true, s1
+     */
+    function setSeries1(bool _series1) external;
 
     /**
      * @notice Returns Genesis NFT series number
