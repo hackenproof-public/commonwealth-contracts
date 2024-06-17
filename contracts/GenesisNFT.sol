@@ -305,10 +305,11 @@ contract GenesisNFT is
     }
 
     /**
-     * @inheritdoc IGenesisNFT
+     * @notice Returns Unvested Tokens
+     * @return Tokens unclaimed tokens
      */
     function fetchTokenDetails(uint256 _tokenId)
-        public view override
+        private view
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
@@ -316,10 +317,11 @@ contract GenesisNFT is
     }
 
     /**
-     * @inheritdoc IGenesisNFT
+     * @notice Returns Number of Slices
+     * @return Number of slices
      */
     function getSlices(uint256 _tokenId)
-        public view override
+        private view
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);

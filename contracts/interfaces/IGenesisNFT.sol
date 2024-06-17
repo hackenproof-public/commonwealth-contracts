@@ -129,16 +129,4 @@ interface IGenesisNFT {
      * @return Genesis NFT series number
      */
     function getSeries() external view returns (uint256);
-
-    /**
-     * @notice Returns Unvested Tokens
-     * @return Unvested Tokens
-     */
-    function fetchTokenDetails(uint256 _tokenId) external view returns (uint256);
-
-    /**
-     * @notice Returns Number of Slices
-     * @return Number of slices
-     */
-    function getSlices(uint256 _tokenId) external view returns (uint256);
 }
