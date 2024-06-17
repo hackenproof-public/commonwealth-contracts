@@ -104,7 +104,8 @@ contract GenesisNFT is
             name: _metadata.name,
             description: _metadata.description,
             externalUrl: _metadata.externalUrl,
-            id: _metadata.id
+            id: _metadata.id,
+            percentage: _metadata.percentage
         });
         token_allocation = _token_allocation;
         series1 = _series1;
@@ -224,18 +225,29 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
+     */ function setMetadataPercentage(string memory _percentage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
+        metadata.percentage = _percentage;
+
+        emit MetadataIdChanged(_percentage);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
      */ function setAllMetadata(Metadata memory _metadata) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_metadata.name).length == 0) revert GenesisNFT__EmptyString("name");
         if (bytes(_metadata.description).length == 0) revert GenesisNFT__EmptyString("description");
         if (bytes(_metadata.externalUrl).length == 0) revert GenesisNFT__EmptyString("externalUrl");
         if (bytes(_metadata.id).length == 0) revert GenesisNFT__EmptyString("id");
+        if (bytes(_metadata.percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
 
         metadata.name = _metadata.name;
         metadata.description = _metadata.description;
         metadata.externalUrl = _metadata.externalUrl;
         metadata.id = _metadata.id;
+        metadata.percentage = _metadata.percentage;
 
-        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.externalUrl, _metadata.id);
+        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.externalUrl, _metadata.id, _metadata.percentage);
     }
 
     /**
@@ -364,8 +376,10 @@ contract GenesisNFT is
                         '"series_id": "',
                         metadata.id,
                         '",',
-                        '"attributes": [{"trait_type":"value","value":"',
+                        '"attributes": [{"trait_type":"token allocation","value":"',
                         fetchTokenDetails(tokenId),
+                        '"},{"trait_type":"profit","value":"',
+                        metadata.percentage,
                         '"}]',
                         "}"
                     )

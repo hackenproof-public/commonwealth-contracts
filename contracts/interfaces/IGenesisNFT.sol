@@ -10,6 +10,7 @@ interface IGenesisNFT {
         string description;
         string externalUrl;
         string id;
+        string percentage;
     }
     /**
      * @notice Emitted when zkSync GenesisNFTmirror notification about moving a token is sent
@@ -32,7 +33,7 @@ interface IGenesisNFT {
      * @param description Metadata description
      * @param externalUrl Metadata external URL
      */
-    event MetadataChanged(string indexed name, string indexed description, string externalUrl, string id);
+    event MetadataChanged(string indexed name, string indexed description, string externalUrl, string id, string percentage);
 
     /**
      * @notice Emitted when metadata name for NFT is changed
@@ -63,6 +64,12 @@ interface IGenesisNFT {
      * @param id id of the series
      */
     event MetadataIdChanged(string indexed id);
+
+    /**
+     * @notice Emitted when metadata series percentage for NFT is changed
+     * @param percentage percentage profit of the series
+     */
+    event MetadataPercentageChanged(string indexed percentage);
 
     /**
      * @notice Emitted when token allocation is changed
@@ -105,6 +112,12 @@ interface IGenesisNFT {
      * @param _id New metadata series id
      */
     function setMetadataId(string memory _id) external;
+
+    /**
+     * @notice Set new metadata percentage
+     * @param _percentage New metadata series id
+     */
+    function setMetadataPercentage(string memory _percentage) external;
 
     /**
      * @notice Set all metadata at once
