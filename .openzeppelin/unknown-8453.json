@@ -6537,6 +6537,1994 @@
           }
         }
       }
+    },
+    "9ed944f9752c9dda72b8c6a1b5a072fd4d132c779fe7f055d2a9abf6bdf98c82": {
+      "address": "0xf2Ea850891fBB19b1B4f84aab04eC68E4e6EFB94",
+      "txHash": "0xd7cc1f83a9c08d72dc90f6585c7204bb33fc05d88d372897934e7e9964ce79c2",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "0841b55ba73e3b6b952d2440a0f778112e09f65d0c39669b52d39ebaea91273c": {
+      "address": "0xc47FF82d8daAc2759E952Ed82edb70399397a91a",
+      "txHash": "0xd24ac261be3965c74d10d6cee589e551c6980786b574156a2d962a375f8777fd",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "d70f6cce313f8a79fca3829a8b10aa246ca6aaaa939dc0d051119cb8d6ce951c": {
+      "address": "0x17B9d297396D884Da9DF670d53f132F46D520214",
+      "txHash": "0x9e0c642c20f0cfa8ef71bfa4b6c96bbfe2f190a547ae2c2c53d385c0218055c4",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "58bf392df1bbf5b4100e0a694cc7e004a8d8b07503a38c824b632c751742c389": {
+      "address": "0xeaab7787711A42aB25aB0B0C0901E1CF90Cfd3ca",
+      "txHash": "0xaa793c54a671bb6f3b3171c6e85d23ccb940d7ecb1540750778fe8a58587f070",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "f782bf3c7641a102871320b04cf67a52e9d631ddf651e669bae70846d8409a71": {
+      "address": "0x061287F6a8c3d3E6D9Ec21bd243c0008c37eA0FA",
+      "txHash": "0x2930e4145a2293c99b9fe37bc7f9640f7295f1aa8eeb967e681f9471d0c4f390",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "f4f4744f86155b6a9fbb9bfc3c7160f73573cdf55f358f1f0f98920299eb8a19": {
+      "address": "0x7Aa01126Bb0F2b678AAf1919c61A87834D28632D",
+      "txHash": "0x2a5a1d4802e0b8118e82818771233b20d582e2e23f20efdc119bd9eaea88a799",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:652"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "3e00964a7cb0b77fb5f7019caf6e7fcb443a2afe13c0e47e916124368016e2b6": {
+      "address": "0xbBc15a08b7C170226726Ac79A58B850039E8d519",
+      "txHash": "0xa13faaac235e29fc5c39307c06961f43c98d4982497fce21e3d5be90eaee3e9f",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "s_gamification",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_bool",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:46"
+          },
+          {
+            "label": "s_wlth",
+            "offset": 1,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:51"
+          },
+          {
+            "label": "s_communityFund",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:56"
+          },
+          {
+            "label": "s_cadenceAmount",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:61"
+          },
+          {
+            "label": "s_leftoversUnlockDelay",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:66"
+          },
+          {
+            "label": "s_allocation",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:71"
+          },
+          {
+            "label": "s_duration",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:76"
+          },
+          {
+            "label": "s_cadence",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:81"
+          },
+          {
+            "label": "s_vestingStartTimestamp",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:86"
+          },
+          {
+            "label": "s_whitelistedAddressesAmount",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:91"
+          },
+          {
+            "label": "s_totalWalletsAllocation",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:96"
+          },
+          {
+            "label": "s_released",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:101"
+          },
+          {
+            "label": "s_tokenReleaseDistribution",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:106"
+          },
+          {
+            "label": "s_cadenceAllocation",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:111"
+          },
+          {
+            "label": "s_whitelistedWalletReleased",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:116"
+          },
+          {
+            "label": "s_distribution",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_uint256))",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:121"
+          },
+          {
+            "label": "s_claimedWithPenalty",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:126"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_array(t_uint256)48_storage",
+            "contract": "WhitelistedVesting",
+            "src": "contracts\\tge\\WhitelistedVesting.sol:651"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)48_storage": {
+            "label": "uint256[48]",
+            "numberOfBytes": "1536"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_uint256))": {
+            "label": "mapping(address => mapping(uint256 => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
     }
   }
 }
