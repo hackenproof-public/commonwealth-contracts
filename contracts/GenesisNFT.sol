@@ -10,6 +10,7 @@ import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
 import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
 import {IGenesisNFTVesting} from "./interfaces/IGenesisNFTVesting.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 error GenesisNFT__ZeroAddress();
 error GenesisNFT__LengthMismatch();
@@ -322,10 +323,10 @@ contract GenesisNFT is
      */
     function fetchTokenDetails(uint256 _tokenId)
         private view
-        returns (uint256)
+        returns (string memory)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        return details.unvested + details.vested - details.claimed - details.penalty; // Access the first element
+        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty)/1000000000000000000); // Access the first element
     }
 
     /**
@@ -431,5 +432,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }
