@@ -35,7 +35,8 @@ contract FreeFund is InvestmentFund {
         uint16,
         uint256 _cap,
         uint256,
-        uint256 _minimumInvestment
+        uint256 _minimumInvestment,
+        address _profitProvider
     ) public override initializer {
         super.initialize(
             _owner,
@@ -48,7 +49,8 @@ contract FreeFund is InvestmentFund {
             0,
             _cap,
             0,
-            _minimumInvestment
+            _minimumInvestment,
+            _profitProvider
         );
 
         allowFunction(LibFund.STATE_FUNDS_IN, this.airdropInvestmentNFT.selector);

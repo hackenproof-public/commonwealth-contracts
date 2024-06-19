@@ -169,6 +169,17 @@ interface IInvestmentFund {
     event CapIncreased(uint256 indexed cap);
 
     /**
+     * @notice Emitted when profit provider is set
+     * @param profitProvider Address of profit provider
+     */
+    event ProfitProviderSet(address indexed profitProvider);
+
+    /**
+     * @notice Emitted when functions are allowed in states
+     */
+    event FunctionsAllowed();
+
+    /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:
@@ -249,7 +260,7 @@ interface IInvestmentFund {
      *
      * @param _amount Amount of tokens provided within payout
      */
-    function provideProfit(uint256 _amount) external;
+    function provideProfit(uint256 _amount, bool unlockPayouts) external;
 
     /**
      * @notice Sets staking WLTH contract address.
@@ -280,6 +291,8 @@ interface IInvestmentFund {
      * @param _cap Cap value
      */
     function increaseCapTo(uint256 _cap) external;
+
+    function setProfitProvider(address _profitProvider) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
@@ -416,4 +429,9 @@ interface IInvestmentFund {
      * @notice Returns total investment
      */
     function payout(uint256 _index) external view returns (Payout memory);
+
+    /**
+     * @notice Returns profit provider
+     */
+    function profitProvider() external view returns (address);
 }

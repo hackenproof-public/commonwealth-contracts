@@ -24,6 +24,7 @@
     "validate-all": "yarn clean && yarn compile && yarn static-analyze && yarn coverage && REPORT_GAS=true yarn test && yarn docgen && yarn export-abi"
   },
   "devDependencies": {
+    "@chainlink/contracts": "^1.1.1",
     "@defi-wonderland/smock": "2.3.4",
     "@ethersproject/abi": "5.7.0",
     "@ethersproject/providers": "5.7.2",

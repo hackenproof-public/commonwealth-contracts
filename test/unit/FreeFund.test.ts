@@ -9,6 +9,7 @@ import {
   IERC165Upgradeable__factory,
   IInvestmentFund__factory,
   InvestmentNFT,
+  ProfitProvider,
   Project,
   StakingWlth,
   USDC
@@ -62,9 +63,15 @@ describe('FreeFund', () => {
     const staking: FakeContract<StakingWlth> = await smock.fake('StakingWlth');
     staking.getDiscountFromPreviousInvestmentInTimestamp.reset();
     const project: FakeContract<Project> = await smock.fake('Project');
+    const profitProvider: FakeContract<ProfitProvider> = await smock.fake('ProfitProvider');
 
     await owner.sendTransaction({
       to: project.address,
+      value: ethers.utils.parseEther('1000')
+    });
+
+    await owner.sendTransaction({
+      to: profitProvider.address,
       value: ethers.utils.parseEther('1000')
     });
 
@@ -81,7 +88,8 @@ describe('FreeFund', () => {
         managementFee,
         cap,
         maxPercentageWalletInvestmentLimit,
-        minimumInvestment
+        minimumInvestment,
+        profitProvider.address
       ],
       deployer
     );
@@ -107,7 +115,8 @@ describe('FreeFund', () => {
       minimumInvestment,
       user1,
       user2,
-      basisPoint
+      basisPoint,
+      profitProvider
     };
   };
 
@@ -130,7 +139,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         const details = await freeFund.getDetails();
@@ -152,6 +162,7 @@ describe('FreeFund', () => {
         expect(await freeFund.minimumInvestment()).to.be.equal(minimumInvestment);
         expect(await freeFund.totalIncome()).to.be.equal(0);
         expect(await freeFund.payouts()).to.have.lengthOf(0);
+        expect(await freeFund.profitProvider()).to.be.equal(profitProvider.address);
         expect(parseBytes32String(await freeFund.currentState())).to.equal(FundState.FundsIn);
         expect(
           await freeFund.supportsInterface(
@@ -203,7 +214,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -226,7 +238,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -250,7 +263,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -273,7 +287,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -297,7 +312,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -320,59 +336,61 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
         ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__InvestmentNftZeroAddress');
       });
-      //TODO Uncoment when staking is on production
-      // it('Should revert when staking address is zero address', async () => {
-      //   const {
-      //     deployer,
-      //     owner,
-      //     unlocker,
-      //     treasuryWallet,
-      //     lpPool,
-      //     burnAddr,
-      //     communityFund,
-      //     genesisNftRevenue,
-      //     freeFund,
-      //     usdc,
-      //     investmentNft,
-      //     fundName,
-      //     managementFee,
-      //     cap,
-      //     maxPercentageWalletInvestmentLimit,
-      //     minimumInvestment
-      //   } = await loadFixture(deployInvestmentFund);
+      it('Should revert when staking address is zero address', async () => {
+        const {
+          deployer,
+          owner,
+          unlocker,
+          treasuryWallet,
+          lpPool,
+          burnAddr,
+          communityFund,
+          genesisNftRevenue,
+          freeFund,
+          usdc,
+          investmentNft,
+          fundName,
+          managementFee,
+          cap,
+          maxPercentageWalletInvestmentLimit,
+          minimumInvestment,
+          profitProvider
+        } = await loadFixture(deployInvestmentFund);
 
-      //   await expect(
-      //     deployProxy(
-      //       'FreeFund',
-      //       [
-      //         owner.address,
-      //         unlocker.address,
-      //         fundName,
-      //         usdc.address,
-      //         investmentNft.address,
-      //         ethers.constants.AddressZero,
-      //         {
-      //           treasuryWallet: treasuryWallet.address,
-      //           lpPool: lpPool.address,
-      //           burn: burnAddr.address,
-      //           communityFund: communityFund.address,
-      //           genesisNftRevenue: genesisNftRevenue.address
-      //         },
-      //         managementFee,
-      //         cap,
-      //         maxPercentageWalletInvestmentLimit,
-      //         minimumInvestment
-      //       ],
-      //       deployer
-      //     )
-      //   ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
-      // });
+        await expect(
+          deployProxy(
+            'FreeFund',
+            [
+              owner.address,
+              unlocker.address,
+              fundName,
+              usdc.address,
+              investmentNft.address,
+              ethers.constants.AddressZero,
+              {
+                treasuryWallet: treasuryWallet.address,
+                lpPool: lpPool.address,
+                burn: burnAddr.address,
+                communityFund: communityFund.address,
+                genesisNftRevenue: genesisNftRevenue.address
+              },
+              managementFee,
+              cap,
+              maxPercentageWalletInvestmentLimit,
+              minimumInvestment,
+              profitProvider.address
+            ],
+            deployer
+          )
+        ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__StakingWlthZeroAddress');
+      });
       it('Should revert when treasuryWallet address is zero address', async () => {
         const {
           deployer,
@@ -390,7 +408,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -413,7 +432,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -437,7 +457,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -460,7 +481,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -484,7 +506,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -507,7 +530,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -531,7 +555,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -554,7 +579,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -578,7 +604,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -601,7 +628,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -625,7 +653,8 @@ describe('FreeFund', () => {
           fundName,
           managementFee,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -648,7 +677,8 @@ describe('FreeFund', () => {
               managementFee,
               0,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -672,7 +702,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         const investmentNft: FakeContract<InvestmentNFT> = await smock.fake('InvestmentNFT');
@@ -698,7 +729,8 @@ describe('FreeFund', () => {
               managementFee,
               cap,
               maxPercentageWalletInvestmentLimit,
-              minimumInvestment
+              minimumInvestment,
+              profitProvider.address
             ],
             deployer
           )
@@ -722,7 +754,8 @@ describe('FreeFund', () => {
           managementFee,
           cap,
           maxPercentageWalletInvestmentLimit,
-          minimumInvestment
+          minimumInvestment,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         await expect(
@@ -743,7 +776,8 @@ describe('FreeFund', () => {
             managementFee,
             cap,
             maxPercentageWalletInvestmentLimit,
-            minimumInvestment
+            minimumInvestment,
+            profitProvider.address
           )
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
@@ -1055,7 +1089,8 @@ describe('FreeFund', () => {
           genesisNftRevenue,
           lpPool,
           burnAddr,
-          communityFund
+          communityFund,
+          profitProvider
         } = await loadFixture(deployInvestmentFund);
 
         const amount = toUsdc('10000');
@@ -1079,7 +1114,8 @@ describe('FreeFund', () => {
           genesisNftRevenue,
           lpPool,
           burnAddr,
-          communityFund
+          communityFund,
+          profitProvider
         };
       };
 
@@ -1090,7 +1126,7 @@ describe('FreeFund', () => {
 
         const payoutAmount = toUsdc('1000');
 
-        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount))
+        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount, false))
           .to.emit(freeFund, 'ProfitProvided')
           .withArgs(freeFund.address, payoutAmount, 0, blockNumberAfterOperation);
         expect(usdc.transferFrom).to.have.been.calledWith(project.address, freeFund.address, payoutAmount);
@@ -1112,7 +1148,7 @@ describe('FreeFund', () => {
         const payoutAmount = cap;
         const blockNumberAfterOperation = (await time.latestBlock()) + 1;
 
-        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount))
+        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount, false))
           .to.emit(freeFund, 'BreakevenReached')
           .withArgs(cap)
           .to.emit(freeFund, 'ProfitProvided')
@@ -1140,7 +1176,7 @@ describe('FreeFund', () => {
 
         const initialCarryFee = payoutAmount.sub(cap).mul(1000).div(10000);
 
-        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount))
+        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount, false))
           .to.emit(freeFund, 'BreakevenReached')
           .withArgs(cap)
           .to.emit(freeFund, 'ProfitProvided')
@@ -1178,11 +1214,11 @@ describe('FreeFund', () => {
 
         const payoutAmount = toUsdc('100');
         const initialCarryFee = payoutAmount.mul(10).div(100);
-        await freeFund.connect(project.wallet).provideProfit(cap);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
 
         const blockNumberAfterOperation = (await time.latestBlock()) + 1;
 
-        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount))
+        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount, false))
           .to.emit(freeFund, 'ProfitProvided')
           .withArgs(freeFund.address, payoutAmount, initialCarryFee, blockNumberAfterOperation);
 
@@ -1205,16 +1241,61 @@ describe('FreeFund', () => {
         expect(usdc.transfer).to.have.been.calledWith(communityFund.address, initialCarryFee.mul(2).div(1000));
         expect(usdc.transfer).to.have.been.calledWith(genesisNftRevenue.address, initialCarryFee.mul(12).div(100));
       });
+
+      it('Should provide profit and unlock payouts', async () => {
+        const { freeFund, usdc, project } = await loadFixture(setup);
+
+        const blockNumberAfterOperation = (await time.latestBlock()) + 1;
+
+        const payoutAmount = toUsdc('1000');
+
+        expect(await freeFund.connect(project.wallet).provideProfit(payoutAmount, true))
+          .to.emit(freeFund, 'ProfitProvided')
+          .withArgs(freeFund.address, payoutAmount, 0, blockNumberAfterOperation);
+        expect(usdc.transferFrom).to.have.been.calledWith(project.address, freeFund.address, payoutAmount);
+        expect(await freeFund.getPayoutsCount()).to.be.equal(1);
+        expect(await freeFund.isInProfit()).to.be.false;
+        const payouts = await freeFund.payouts();
+        expect(payouts).to.have.lengthOf(1);
+        expect(payouts[0].value).to.be.equal(payoutAmount);
+        expect(payouts[0].inProfit).to.be.false;
+        expect(payouts[0].locked).to.be.false;
+        expect(payouts[0].blockData.number).to.be.equal(blockNumberAfterOperation);
+        expect(payouts[0].blockData.timestamp).to.be.equal(await time.latest());
+        expect(await freeFund.payout(0)).to.be.deep.equal(payouts[0]);
+      });
+
+      it('Should provide profit and unlock payouts when profit provider', async () => {
+        const { freeFund, usdc, profitProvider } = await loadFixture(setup);
+
+        const blockNumberAfterOperation = (await time.latestBlock()) + 1;
+
+        const payoutAmount = toUsdc('1000');
+
+        expect(await freeFund.connect(profitProvider.wallet).provideProfit(payoutAmount, true))
+          .to.emit(freeFund, 'ProfitProvided')
+          .withArgs(freeFund.address, payoutAmount, 0, blockNumberAfterOperation);
+        expect(usdc.transferFrom).to.have.been.calledWith(profitProvider.address, freeFund.address, payoutAmount);
+        expect(await freeFund.getPayoutsCount()).to.be.equal(1);
+        expect(await freeFund.isInProfit()).to.be.false;
+        const payouts = await freeFund.payouts();
+        expect(payouts).to.have.lengthOf(1);
+        expect(payouts[0].value).to.be.equal(payoutAmount);
+        expect(payouts[0].inProfit).to.be.false;
+        expect(payouts[0].locked).to.be.false;
+        expect(payouts[0].blockData.number).to.be.equal(blockNumberAfterOperation);
+        expect(payouts[0].blockData.timestamp).to.be.equal(await time.latest());
+        expect(await freeFund.payout(0)).to.be.deep.equal(payouts[0]);
+      });
     });
 
     describe('Reverts', () => {
       it("Should revert when the fund not in 'FundsDeployed' state", async () => {
         const { owner, freeFund, project } = await loadFixture(deployInvestmentFund);
 
-        await expect(freeFund.connect(project.wallet).provideProfit(toUsdc('100'))).to.be.revertedWithCustomError(
-          freeFund,
-          'StateMachine__NotAllowedInCurrentState'
-        );
+        await expect(
+          freeFund.connect(project.wallet).provideProfit(toUsdc('100'), false)
+        ).to.be.revertedWithCustomError(freeFund, 'StateMachine__NotAllowedInCurrentState');
       });
 
       it('Should revert when the project is not registered', async () => {
@@ -1222,8 +1303,8 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).stopCollectingFunds();
         await freeFund.connect(owner).deployFunds();
 
-        await expect(freeFund.connect(project.wallet).provideProfit(toUsdc('100')))
-          .to.be.revertedWithCustomError(freeFund, 'InvestmentFund__NotRegisteredProject')
+        await expect(freeFund.connect(project.wallet).provideProfit(toUsdc('100'), false))
+          .to.be.revertedWithCustomError(freeFund, 'InvestmentFund__OperationNotAllowed')
           .withArgs(project.address);
       });
 
@@ -1233,7 +1314,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).stopCollectingFunds();
         await freeFund.connect(owner).deployFunds();
 
-        await expect(freeFund.connect(project.wallet).provideProfit(0)).to.be.revertedWithCustomError(
+        await expect(freeFund.connect(project.wallet).provideProfit(0, false)).to.be.revertedWithCustomError(
           freeFund,
           'InvestmentFund__ZeroProfitProvided'
         );
@@ -1255,9 +1336,9 @@ describe('FreeFund', () => {
         usdc.transfer.returns(true);
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(cap);
-        await freeFund.connect(project.wallet).provideProfit(cap);
-        await freeFund.connect(project.wallet).provideProfit(cap);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
 
         await expect(freeFund.connect(unlocker).unlockPayoutsTo(2)).to.emit(freeFund, 'PayoutsUnlocked').withArgs(0, 2);
         expect((await freeFund.payout(0)).locked).to.be.false;
@@ -1309,7 +1390,7 @@ describe('FreeFund', () => {
         usdc.transfer.returns(true);
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(cap);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
 
         await expect(freeFund.connect(unlocker).unlockPayoutsTo(0)).to.be.revertedWithCustomError(
@@ -1331,7 +1412,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
 
-        await freeFund.connect(project.wallet).provideProfit(amount);
+        await freeFund.connect(project.wallet).provideProfit(amount, false);
 
         await expect(freeFund.connect(unlocker).unlockPayoutsTo(1)).to.be.revertedWithCustomError(
           freeFund,
@@ -1389,7 +1470,7 @@ describe('FreeFund', () => {
         usdc.transfer.returns(true);
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(amount);
+        await freeFund.connect(project.wallet).provideProfit(amount, false);
 
         expect(await freeFund.getAvailableFundsDetails(user1.address)).to.be.deep.equal([0, 0, 0]);
       });
@@ -1406,7 +1487,7 @@ describe('FreeFund', () => {
         usdc.transfer.returns(true);
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(amount);
+        await freeFund.connect(project.wallet).provideProfit(amount, false);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
 
         // 10% of total investment
@@ -1432,7 +1513,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
+        await freeFund.connect(project.wallet).provideProfit(cap.mul(2), false);
         await freeFund.connect(unlocker).unlockPayoutsTo(1);
 
         // 10% of total investment
@@ -1463,7 +1544,7 @@ describe('FreeFund', () => {
         usdc.transfer.returns(true);
         investmentNft.getPastParticipation.returns([0, 0]);
 
-        await freeFund.connect(project.wallet).provideProfit(cap);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
 
         expect(await freeFund.getAvailableFundsDetails(user1.address)).to.be.deep.equal([0, 0, 1]);
@@ -1483,7 +1564,7 @@ describe('FreeFund', () => {
       await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
       investmentNft.getTotalInvestmentValue.returns(cap);
       await freeFund.connect(owner).deployFunds();
-      await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
+      await freeFund.connect(project.wallet).provideProfit(cap.mul(2), false);
       await freeFund.connect(unlocker).unlockPayoutsTo(1);
       staking.getDiscountFromPreviousInvestmentInTimestamp.returns(3000);
 
@@ -1518,7 +1599,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(cap);
+        await freeFund.connect(project.wallet).provideProfit(cap, false);
         await freeFund.connect(unlocker).unlockPayoutsTo(0);
 
         // 10% of total investment
@@ -1560,7 +1641,7 @@ describe('FreeFund', () => {
         await freeFund.connect(owner).airdropInvestmentNFT(amount, user1.address);
         investmentNft.getTotalInvestmentValue.returns(cap);
         await freeFund.connect(owner).deployFunds();
-        await freeFund.connect(project.wallet).provideProfit(cap.mul(2));
+        await freeFund.connect(project.wallet).provideProfit(cap.mul(2), false);
         await freeFund.connect(unlocker).unlockPayoutsTo(1);
 
         // 10% of total investment
@@ -1743,6 +1824,39 @@ describe('FreeFund', () => {
           freeFund,
           'InvestmentFund__UnlockerZeroAddress'
         );
+      });
+    });
+  });
+
+  describe('Set the profit provider', () => {
+    describe('Success', () => {
+      it('Should set the minimum investment amount', async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        const newProfitProvider = ethers.Wallet.createRandom();
+
+        expect(await freeFund.connect(owner).setProfitProvider(newProfitProvider.address))
+          .to.emit(freeFund, 'ProfitProviderSet')
+          .withArgs(newProfitProvider.address);
+        expect(await freeFund.profitProvider()).to.be.equal(newProfitProvider.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, freeFund } = await loadFixture(deployInvestmentFund);
+        const newProfitProvider = ethers.Wallet.createRandom();
+
+        await expect(freeFund.connect(user1).setProfitProvider(newProfitProvider.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it("Should revert when zero address is passed as the profit provider's address", async () => {
+        const { owner, freeFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          freeFund.connect(owner).setProfitProvider(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(freeFund, 'InvestmentFund__ProfitProviderZeroAddress');
       });
     });
   });

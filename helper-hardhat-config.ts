@@ -260,6 +260,12 @@ export const networkConfig: networkConfigInfo = {
     stage: { ...baseSepoliaStageConfig }
   },
 
+  11155111: {
+    ...baseSepoliaConfig,
+    dev: { ...baseSepoliaDevConfig },
+    stage: { ...baseSepoliaStageConfig }
+  },
+
   8453: {
     ...baseConfig
   }

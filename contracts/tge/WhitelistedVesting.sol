@@ -31,6 +31,7 @@ error WhitelistedVesting__InvalidSingleCadenceWalletAllocation();
 error WhitelistedVesting__WalletClaimedWithPenalty();
 error WhitelistedVesting__SameWalletAllocationForCadenceProvided();
 error WhitelistedVesting__InvalidTotalAllocation();
+error WhitelistedVesting__WalletAlreadySet();
 
 /**
  * @title WhitelistedVesting
@@ -247,6 +248,7 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
         address _whitelistedAddress,
         uint256[] calldata _distribution
     ) external override onlyOwner {
+        if (s_distribution[_whitelistedAddress][_distribution.length+1] != 0) revert WhitelistedVesting__WalletAlreadySet(); 
         if (s_claimedWithPenalty[_whitelistedAddress]) {
             revert WhitelistedVesting__WalletClaimedWithPenalty();
         }

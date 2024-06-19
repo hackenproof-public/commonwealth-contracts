@@ -140,7 +140,7 @@ contract Project is IProject, OwnablePausable, ERC165Upgradeable, ReentrancyGuar
         uint256 amountOut = swapper.swap(_amount, inputToken, outputToken, _fee, _amountOutMinimum, _sqrtPriceLimitX96);
 
         IERC20Upgradeable(outputToken).safeIncreaseAllowance(address(investmentFund), amountOut);
-        IInvestmentFund(investmentFund).provideProfit(amountOut);
+        IInvestmentFund(investmentFund).provideProfit(amountOut, true);
     }
 
     /**
