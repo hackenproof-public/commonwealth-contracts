@@ -407,9 +407,9 @@ contract GenesisNFT is
                         '"series_id": "',
                         metadata.id,
                         '",',
-                        '"attributes": [{"trait_type":"token_allocation","value":"',
+                        '"attributes": [{"trait_type":"WLTH_tokens","value":"',
                         fetchTokenDetails(tokenId),
-                        '"},{"trait_type":"profit","value":"',
+                        '"},{"trait_type":"profit_share","value":"',
                         metadata.percentage,
                         '"}]',
                         "}"

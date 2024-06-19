@@ -29,7 +29,7 @@ const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnviron
   const series1Metadata = {
     name: "Common Wealth Genesis NFT Series 1",
     description: "Common Wealth OG. Welcome to All Street",
-    externalUrl: 'https://joincommonwealth.xyz/genesis-nft.html',
+    externalUrl: 'https://app.joincommonwealth.xyz/community/treasury#GenesisNFT',
     id: "1",
     percentage: "12%"
   };
@@ -37,7 +37,7 @@ const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnviron
   const series2Metadata = {
     name: "Common Wealth Genesis NFT Series 2",
     description: "Common Wealth OG. Welcome to All Street",
-    externalUrl: 'https://joincommonwealth.xyz/genesis-nft.html',
+    externalUrl: 'https://app.joincommonwealth.xyz/community/treasury#GenesisNFT',
     id: "2",
     percentage: "3%"
   };
@@ -48,29 +48,29 @@ const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnviron
   const series1Bool = true;
   const series2Bool = false;
 
-  const series1Images = ["https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-0%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-10%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-20%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-30%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-40%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-50%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-60%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-70%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-80%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-90%.png",
-                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-100%.png"
+  const series1Images = ["https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-0%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-10%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-20%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-30%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-40%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-50%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-60%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-70%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-80%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-90%.png",
+                         "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s1/s1-100%.png"
   ];
-  const series2Images = ["https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-0%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-10%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-20%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-30%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-40%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-50%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-60%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-70%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-80%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-90%.png",
-                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-100%.png"
+  const series2Images = ["https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-0%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-10%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-20%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-30%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-40%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-50%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-60%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-70%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-80%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-90%.png",
+                        "https://ipfs.io/ipfs/QmNSxCA1gBMHG5i8qBMjUYyu5MdbxtH5MUfyR3HwMPS58X/s2/s2-100%.png"
 ];
 
 
