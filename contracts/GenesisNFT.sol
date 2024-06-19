@@ -8,10 +8,14 @@ import {ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable, IERC
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
 import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
+import {IGenesisNFTVesting} from "./interfaces/IGenesisNFTVesting.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 error GenesisNFT__ZeroAddress();
 error GenesisNFT__LengthMismatch();
 error GenesisNFT__ZeroAmount();
+error GenesisNFT__EmptyString(string field);
 
 /**
  * @title Genesis NFT contract
@@ -31,6 +35,13 @@ contract GenesisNFT is
     address private s_owner;
     string private s_tokenURI;
     uint256 private s_series;
+    uint256 private token_allocation;
+    bool private series1;
+
+    Metadata public metadata;
+    string[] public metadataImages;
+
+    IGenesisNFTVesting public genesisNFTVesting;
 
     /**
      * @notice Emitted when token URI is changed
@@ -53,6 +64,10 @@ contract GenesisNFT is
      * @param _royaltyAccount Address where to send royalty
      * @param _royaltyValue Royalty value in basis points
      * @param _tokenUri Base token URI
+     * @param _metadata Metadata structure
+     * @param _token_allocation Metadata structure
+     * @param _series1 Metadata structure
+     * @param _metadataImages Metadata structure
      */
     function initialize(
         string memory _name,
@@ -61,7 +76,11 @@ contract GenesisNFT is
         address _owner,
         address _royaltyAccount,
         uint96 _royaltyValue,
-        string memory _tokenUri
+        string memory _tokenUri,
+        Metadata memory _metadata,
+        uint256 _token_allocation,
+        bool _series1,
+        string[] memory _metadataImages
     ) public initializer {
         __ERC721_init(_name, _symbol);
         __ERC721Enumerable_init();
@@ -81,6 +100,17 @@ contract GenesisNFT is
         s_series = _series;
 
         _setDefaultRoyalty(_royaltyAccount, _royaltyValue);
+
+        metadata = Metadata({
+            name: _metadata.name,
+            description: _metadata.description,
+            externalUrl: _metadata.externalUrl,
+            id: _metadata.id,
+            percentage: _metadata.percentage
+        });
+        token_allocation = _token_allocation;
+        series1 = _series1;
+        metadataImages = _metadataImages;
     }
 
     /**
@@ -140,6 +170,104 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Sets Genesis NFT Vesting address
+     * @dev Sets up the contract address for Genesis NFT Vesting
+     * @param _vestingContractAddress Address of Genesis NFT Vesting contract
+     */
+    function setVestingAddress(address _vestingContractAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_vestingContractAddress == address(0)) revert GenesisNFT__ZeroAddress();
+        genesisNFTVesting = IGenesisNFTVesting(_vestingContractAddress);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataName(string memory _name) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_name).length == 0) revert GenesisNFT__EmptyString("name");
+        metadata.name = _name;
+
+        emit MetadataNameChanged(_name);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataDescription(string memory _description) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_description).length == 0) revert GenesisNFT__EmptyString("description");
+        metadata.description = _description;
+
+        emit MetadataDescriptionChanged(_description);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataImage(string[] memory _metadataImages) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_metadataImages.length != 11) revert GenesisNFT__LengthMismatch();
+        metadataImages = _metadataImages;
+
+        emit MetadataImageChanged(_metadataImages);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataExternalUrl(string memory _externalUrl) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_externalUrl).length == 0) revert GenesisNFT__EmptyString("externalUrl");
+        metadata.externalUrl = _externalUrl;
+
+        emit MetadataExternalUrlChanged(_externalUrl);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataId(string memory _id) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_id).length == 0) revert GenesisNFT__EmptyString("id");
+        metadata.id = _id;
+
+        emit MetadataIdChanged(_id);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setMetadataPercentage(string memory _percentage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
+        metadata.percentage = _percentage;
+
+        emit MetadataPercentageChanged(_percentage);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setAllMetadata(Metadata memory _metadata) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bytes(_metadata.name).length == 0) revert GenesisNFT__EmptyString("name");
+        if (bytes(_metadata.description).length == 0) revert GenesisNFT__EmptyString("description");
+        if (bytes(_metadata.externalUrl).length == 0) revert GenesisNFT__EmptyString("externalUrl");
+        if (bytes(_metadata.id).length == 0) revert GenesisNFT__EmptyString("id");
+        if (bytes(_metadata.percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
+
+        metadata.name = _metadata.name;
+        metadata.description = _metadata.description;
+        metadata.externalUrl = _metadata.externalUrl;
+        metadata.id = _metadata.id;
+        metadata.percentage = _metadata.percentage;
+
+        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.externalUrl, _metadata.id, _metadata.percentage);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setTokenAllocation(uint256 _token_allocation) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        token_allocation = _token_allocation;
+
+        emit TokenAllocationChanged(_token_allocation);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */ function setSeries1(bool _series1) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        series1 = _series1;
+
+        emit Series1Changed(_series1);
+    }
+
+    /**
      * @notice Disables operations on contract
      */
     function pause() external onlyRole(PAUSER_ROLE) {
@@ -159,15 +287,6 @@ contract GenesisNFT is
      */
     function burn(uint256 _tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _burn(_tokenId);
-    }
-
-    /**
-     * @notice Sets metadata URI for all tokens
-     * @param _uri New metadata URI
-     */
-    function setTokenURI(string calldata _uri) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        s_tokenURI = _uri;
-        emit TokenURIChanged(msg.sender, _uri);
     }
 
     /**
@@ -199,6 +318,60 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Returns Unvested Tokens
+     * @return Tokens unclaimed tokens
+     */
+    function fetchTokenDetails(uint256 _tokenId)
+        private view
+        returns (string memory)
+    {
+        IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
+        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty)/1000000000000000000); // Access the first element
+    }
+
+    /**
+     * @notice Returns Number of Slices
+     * @return Number of slices
+     */
+    function getSlices(uint256 _tokenId)
+        private view
+        returns (uint256)
+    {
+        IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
+        uint256 slices = (details.unvested + details.vested - details.claimed - details.penalty) / (token_allocation / 10);
+        if (slices > 10) {
+            slices = 10;
+        }
+        return slices; // Access the first element
+    }
+
+    /**
+     * @notice Returns token allocation
+     * @return token_allocation
+     */
+    function getTokenAllocation() external view returns (uint256) {
+        return token_allocation;
+    }
+
+    /**
+     * @notice Returns series1 boolean
+     * @return series1
+     */
+    function getSeries1() external view returns (bool) {
+        return series1;
+    }
+
+    /**
+     * @notice Returns image url at the index
+     * @param index index of the element
+     * @return image_url image url at the index 
+     */
+    function getMetadataImageAtIndex(uint256 index) external view returns (string memory) {
+        require(index < metadataImages.length, "Index out of bounds");
+        return metadataImages[index];
+    }
+
+    /**
      * @notice Returns contract owner
      * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
      * @dev It is not equivalent of contract admin and has no special rights by itself. Roles are managed by AccessControl contract
@@ -211,9 +384,42 @@ contract GenesisNFT is
     /**
      * @inheritdoc IERC721MetadataUpgradeable
      */
-    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
-        _requireMinted(_tokenId);
-        return s_tokenURI;
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721Upgradeable) returns (string memory) {
+        _requireMinted(tokenId);
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        metadata.name,
+                        '",',
+                        '"description": "',
+                        metadata.description,
+                        '",',
+                        '"image": "',
+                        metadataImages[getSlices(tokenId)],
+                        '",',
+                        '"external_url": "',
+                        metadata.externalUrl,
+                        '",',
+                        '"series_id": "',
+                        metadata.id,
+                        '",',
+                        '"attributes": [{"trait_type":"WLTH tokens allocation","value":"',
+                        fetchTokenDetails(tokenId),
+                        '"},{"trait_type":"profit share","value":"',
+                        metadata.percentage,
+                        '"}]',
+                        "}"
+                    )
+                )
+            )
+        );
+
+        // Create token URI
+        return string(abi.encodePacked("data:application/json;base64,", json));
     }
 
     /**
@@ -256,5 +462,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[48] private __gap;
+    uint256[39] private __gap;
 }
