@@ -43,7 +43,7 @@ const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnviron
   };
 
   const series1Allocation = toWlth("44000");
-  const series2Allocation = toWlth("6400");
+  const series2Allocation = toWlth("6444");
 
   const series1Bool = true;
   const series2Bool = false;
