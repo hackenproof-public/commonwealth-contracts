@@ -230,7 +230,7 @@ contract GenesisNFT is
         if (bytes(_percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
         metadata.percentage = _percentage;
 
-        emit MetadataIdChanged(_percentage);
+        emit MetadataPercentageChanged(_percentage);
     }
 
     /**
@@ -346,6 +346,32 @@ contract GenesisNFT is
     }
 
     /**
+     * @notice Returns token allocation
+     * @return token_allocation
+     */
+    function getTokenAllocation() external view returns (uint256) {
+        return token_allocation;
+    }
+
+    /**
+     * @notice Returns series1 boolean
+     * @return series1
+     */
+    function getSeries1() external view returns (bool) {
+        return series1;
+    }
+
+    /**
+     * @notice Returns image url at the index
+     * @param index index of the element
+     * @return image_url image url at the index 
+     */
+    function getMetadataImageAtIndex(uint256 index) external view returns (string memory) {
+        require(index < metadataImages.length, "Index out of bounds");
+        return metadataImages[index];
+    }
+
+    /**
      * @notice Returns contract owner
      * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
      * @dev It is not equivalent of contract admin and has no special rights by itself. Roles are managed by AccessControl contract
@@ -355,9 +381,13 @@ contract GenesisNFT is
         return s_owner;
     }
 
+    /**
+     * @inheritdoc IERC721MetadataUpgradeable
+     */
     function tokenURI(
         uint256 tokenId
     ) public view override(ERC721Upgradeable) returns (string memory) {
+        _requireMinted(tokenId);
         string memory json = Base64.encode(
             bytes(
                 string(

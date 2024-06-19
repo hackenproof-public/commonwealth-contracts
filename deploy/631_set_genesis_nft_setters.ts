@@ -8,10 +8,12 @@ import { getContractAddress } from '../utils/addresses';
 import { toWlth } from '../test/utils';
 
 const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
-  const genesisNftSeries1Address = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTV1');
-  const genesisNftSeries2Address = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTV2');
-  const genesisNftVestingAddress = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTVesting');
-
+  // const genesisNftSeries1Address = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTV1');
+  // const genesisNftSeries2Address = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTV2');
+  // const genesisNftVestingAddress = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTVesting');
+  const genesisNftSeries1Address = "0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587";
+  const genesisNftSeries2Address = "0xFF20595Ed2e2281E07f07CDe40898D695410eFFE";
+  const genesisNftVestingAddress = "0x90D636Bb5B95FA3c4e31f5Aa485316cd2930D8D5";
   const rpc = getEnvByNetwork('RPC_URL', hre.network.name)!;
 
   const provider = new ethers.providers.JsonRpcProvider(rpc);
@@ -46,29 +48,29 @@ const setupGenesisNFTSetters: DeployFunction = async (hre: HardhatRuntimeEnviron
   const series1Bool = true;
   const series2Bool = false;
 
-  const series1Images = ["https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-1.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-2.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-3.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-4.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-5.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-6.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-7.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-8.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-9.png",
-                         "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s1/S1-10.png"
+  const series1Images = ["https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-0%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-10%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-20%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-30%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-40%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-50%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-60%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-70%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-80%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-90%.png",
+                         "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s1/s1-100%.png"
   ];
-  const series2Images = ["https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-1.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-2.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-3.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-4.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-5.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-6.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-7.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-8.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-9.png",
-                        "https://ipfs.io/ipfs/QmNSHxiPshwm2GSax4sM6hFJCrVmB9wctJdPaWFXttQhvV/s2/S2-10.png"
+  const series2Images = ["https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-0%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-10%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-20%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-30%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-40%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-50%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-60%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-70%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-80%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-90%.png",
+                        "https://ipfs.io/ipfs/QmcU2gLAZ8aVYakTh82pgiYaDeVLwuvnPgETd1GDmPXx2E/s2/s2-100%.png"
 ];
 
 
