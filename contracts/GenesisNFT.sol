@@ -345,6 +345,16 @@ contract GenesisNFT is
         return slices; // Access the first element
     }
 
+    // Public wrapper for testing
+    function fetchTokenDetailsPublic(uint256 _tokenId) external view returns (string memory) {
+        return fetchTokenDetails(_tokenId);
+    }
+
+    // Public wrapper for testing
+    function getSlicesPublic(uint256 _tokenId) external view returns (uint256) {
+        return getSlices(_tokenId);
+    }
+
     /**
      * @notice Returns token allocation
      * @return token_allocation

@@ -3,8 +3,9 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
+import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTVesting } from '../../typechain-types';
 import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
+import { FakeContract, smock } from '@defi-wonderland/smock';
 
 describe.only('Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
@@ -40,6 +41,8 @@ describe.only('Genesis NFT unit tests', () => {
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
+    const vestingContractMock: FakeContract<GenesisNFTVesting> = await smock.fake('GenesisNFTVesting');
+
     const genesisNft: GenesisNFT = await deployProxy(
       'GenesisNFT',
       [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI, metadata, token_allocation, series1, images],
@@ -49,7 +52,7 @@ describe.only('Genesis NFT unit tests', () => {
     await genesisNft.connect(owner).grantRole(MINTER_ROLE, minter.address);
     await genesisNft.connect(owner).grantRole(PAUSER_ROLE, pauser.address);
 
-    return { genesisNft, deployer, owner, admin, minter, pauser };
+    return { genesisNft, deployer, owner, admin, minter, pauser, vestingContractMock };
   };
 
   describe('Deployment', () => {
@@ -695,7 +698,6 @@ describe.only('Genesis NFT unit tests', () => {
 
       for (let i = 0; i < newImages.length; i++) {
         const metadataImage = await genesisNft.getMetadataImageAtIndex(i);
-        console.log(`Metadata image at index ${i}:`, metadataImage);
         expect(metadataImage).to.equal(newImages[i]);
       }
     });
@@ -826,4 +828,33 @@ describe.only('Genesis NFT unit tests', () => {
     });
   });
 
+  describe('#fetchTokenDetails()', () => {
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.connect(owner).fetchTokenDetailsPublic(tokenId)).to.be.reverted;
+    });
+  });
+
+  describe('#getSlices()', () => {
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.connect(owner).getSlicesPublic(tokenId)).to.be.reverted;
+    });
+  });
+
+  describe('#tokenURI()', () => {
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.connect(owner).tokenURI(tokenId)).to.be.reverted;
+    });
+  });
 });
