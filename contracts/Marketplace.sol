@@ -51,7 +51,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @notice Count of listings
      */
-    uint256 public listingCount;
+    uint256 private listingCount;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -96,6 +96,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         }
         allowedContracts[_nftContract] = true;
         allowedERC721Addresses.push(_nftContract);
+
+        emit AddressAdded(_nftContract);
     }
 
     /**
@@ -112,6 +114,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
             revert Marketplace__NotOwner();
         }
         allowedContracts[_nftContract] = false;
+
+        emit AddressRemoved(_nftContract);
     }
 
     /**
@@ -210,6 +214,13 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     function getOneListing(uint256 _listingId) external view returns (Listing memory) {
         Listing storage listing = listings[_listingId];
         return listing;
+    }
+
+    /**
+     * @inheritdoc IMarketplace
+     */
+    function getListingCount() external view returns (uint256) {
+        return listingCount;
     }
 
     uint256[50] private __gap;

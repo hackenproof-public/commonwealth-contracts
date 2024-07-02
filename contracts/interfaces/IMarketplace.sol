@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 /**
- * @title Investment Fund interface
+ * @title Marketplace interface
  */
 interface IMarketplace {
     /**
@@ -18,11 +18,11 @@ interface IMarketplace {
 
     /**
      * @notice Emitted when listing is created and state changed
-     * @param listingId Address of investment fund to which profit is provided
-     * @param seller Provided income, including fee
-     * @param nftContract Carry Fee
-     * @param tokenId Number of block in which profit is provided
-     * @param price Provided income, including fee
+     * @param listingId Id of the listing
+     * @param seller Seller of the nft
+     * @param nftContract Contract address for nft
+     * @param tokenId Token id of the nft
+     * @param price Price of the nft for sale, including fees
      */
     event Listed(
         uint256 listingId,
@@ -33,11 +33,11 @@ interface IMarketplace {
     );
 
     /**
-     * @notice Emitted when new profit is provided to investment fund
-     * @param listingId Address of investment fund to which profit is provided
-     * @param buyer Provided income, including fee
-     * @param seller Carry Fee
-     * @param price Number of block in which profit is provided
+     * @notice Emitted when nft is sold
+     * @param listingId Id of the listing
+     * @param buyer Buyer of the nft
+     * @param seller Seller of the nft
+     * @param price Price of the nft for sale, including fees
      */
     event Sale(
         uint256 listingId,
@@ -47,81 +47,102 @@ interface IMarketplace {
     );
 
     /**
-     * @notice Emitted when new profit is provided to investment fund
-     * @param listingId Address of investment fund to which profit is provided
-     * @param seller Provided income, including fee
+     * @notice Emitted when listing is cancelled
+     * @param listingId Id of the listing
+     * @param seller Seller of the nft
      */
     event Canceled(uint256 listingId, address seller);
 
     /**
-     * @notice Adds address to investment fund. Throws if project already exists in fund.
+     * @notice Emitted when nft is added
+     * @param __nftContract address of nft
+     */
+    event AddressAdded(address __nftContract);
+
+    /**
+     * @notice Emitted when nft is removed
+     * @param __nftContract address of nft
+     */
+    event AddressRemoved(address __nftContract);
+
+    /**
+     * @notice Adds address of nft that can be listed in marketplace
      *
      * Requirements:
-     * - Project must not exist in fund
+     * - Address must not exist in fund
+     * - Address must not be zero
+     * - msg sender needs to be owner
      *
-     * Emits ProjectAdded event
+     * Emits AddressAdded event
      *
-     * @param _nftContract Address of project to be added
+     * @param _nftContract Address of the nft to be listed
      */
     function addAllowedContract(address _nftContract) external;
 
     /**
-     * @notice Adds address to investment fund. Throws if project already exists in fund.
+     * @notice Removes address of nft that can be listed in marketplace
      *
      * Requirements:
-     * - Project must not exist in fund
+     * - Address must exist in array
+     * - Address must not be zero
+     * - msg sender needs to be owner
      *
-     * Emits ProjectAdded event
+     * Emits AddressRemoved event
      *
-     * @param _nftContract Address of project to be added
+     * @param _nftContract Address of nft to be removed
      */
     function removeAllowedContract(address _nftContract) external;
 
     /**
-     * @notice Adds address to investment fund. Throws if project already exists in fund.
+     * @notice Cancels the listing in the marketplace
      *
      * Requirements:
-     * - Project must not exist in fund
+     * - Msg sender needs to be seller or owner
      *
-     * Emits ProjectAdded event
+     * Emits Canceled event
      *
-     * @param _listingId Address of project to be added
+     * @param _listingId listing id to be cancelled
      */
     function cancelListing(uint256 _listingId) external;
 
     /**
-     * @notice Adds address to investment fund. Throws if project already exists in fund.
+     * @notice Lists the nft in the marketplace
      *
      * Requirements:
-     * - Project must not exist in fund
+     * - NFT address exists in AllowedAddresses
+     * - Msg sender needs to be owner of nft
      *
-     * Emits ProjectAdded event
+     * Emits Listed event
      *
-     * @param _nftContract Address of project to be added
-     * @param _tokenId Address of project to be added
-     * @param _price Address of project to be added
+     * @param _nftContract contract address of the nft
+     * @param _tokenId token id of the nft
+     * @param _price price for buyers
      */
     function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external;
 
     /**
-     * @notice Adds address to investment fund. Throws if project already exists in fund.
+     * @notice Buying the listed nft
      *
-     * Requirements:
-     * - Project must not exist in fund
+     * Emits Sale event
      *
-     * Emits ProjectAdded event
-     *
-     * @param _listingId Address of project to be added
+     * @param _listingId id of the listing to be sold
      */
     function buyNFT(uint256 _listingId) external;
 
     /**
-     * @notice Returns amount of profit payouts made within a fund.
+     * @notice Returns all listings
      */
      function getAllListings() external view returns (Listing[] memory);
 
      /**
-     * @notice Returns amount of profit payouts made within a fund.
+     * @notice Returns a listing with specific listing id
+     *
+     * @param _listingId id of the listing to be returned
      */
      function getOneListing(uint256 _listingId) external view returns (Listing memory);
+
+     /**
+     * @notice Returns count of listings
+     */
+     function getListingCount() external view returns (uint256);
 }
