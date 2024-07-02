@@ -26,9 +26,9 @@ interface IMarketplace {
      */
     event Listed(
         uint256 listingId,
-        address seller,
-        address nftContract,
-        uint256 tokenId,
+        address indexed seller,
+        address indexed nftContract,
+        uint256 indexed tokenId,
         uint256 price
     );
 
@@ -41,9 +41,9 @@ interface IMarketplace {
      */
     event Sale(
         uint256 listingId,
-        address buyer,
-        address seller,
-        uint256 price
+        address indexed buyer,
+        address indexed seller,
+        uint256 indexed price
     );
 
     /**
@@ -51,19 +51,19 @@ interface IMarketplace {
      * @param listingId Id of the listing
      * @param seller Seller of the nft
      */
-    event Canceled(uint256 listingId, address seller);
+    event Canceled(uint256 indexed listingId, address indexed seller);
 
     /**
      * @notice Emitted when nft is added
      * @param __nftContract address of nft
      */
-    event AddressAdded(address __nftContract);
+    event AddressAdded(address indexed __nftContract);
 
     /**
      * @notice Emitted when nft is removed
      * @param __nftContract address of nft
      */
-    event AddressRemoved(address __nftContract);
+    event AddressRemoved(address indexed __nftContract);
 
     /**
      * @notice Adds address of nft that can be listed in marketplace
@@ -145,4 +145,19 @@ interface IMarketplace {
      * @notice Returns count of listings
      */
      function getListingCount() external view returns (uint256);
+
+     /**
+     * @notice Returns payment token
+     */
+    function paymentToken() external view returns (address);
+
+    /**
+     * @notice Returns fee address
+     */
+    function feeAddress() external view returns (address);
+
+    /**
+     * @notice Returns royalty address
+     */
+    function royaltyAddress() external view returns (address);
 }
