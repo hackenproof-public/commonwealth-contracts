@@ -7,7 +7,7 @@ import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTV
 import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
 import { FakeContract, smock } from '@defi-wonderland/smock';
 
-describe.only('Genesis NFT unit tests', () => {
+describe('Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
