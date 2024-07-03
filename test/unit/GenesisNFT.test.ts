@@ -3,10 +3,11 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
+import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTVesting } from '../../typechain-types';
 import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
+import { FakeContract, smock } from '@defi-wonderland/smock';
 
-describe.only('Genesis NFT unit tests', () => {
+describe('Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
@@ -40,6 +41,8 @@ describe.only('Genesis NFT unit tests', () => {
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
+    const vestingContractMock: FakeContract<GenesisNFTVesting> = await smock.fake('GenesisNFTVesting');
+
     const genesisNft: GenesisNFT = await deployProxy(
       'GenesisNFT',
       [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI, metadata, token_allocation, series1, images],
@@ -49,7 +52,7 @@ describe.only('Genesis NFT unit tests', () => {
     await genesisNft.connect(owner).grantRole(MINTER_ROLE, minter.address);
     await genesisNft.connect(owner).grantRole(PAUSER_ROLE, pauser.address);
 
-    return { genesisNft, deployer, owner, admin, minter, pauser };
+    return { genesisNft, deployer, owner, admin, minter, pauser, vestingContractMock };
   };
 
   describe('Deployment', () => {
@@ -71,6 +74,16 @@ describe.only('Genesis NFT unit tests', () => {
       expect(await genesisNft.getSeries()).to.equal(series);
       expect(await genesisNft.supportsInterface(IGenesisNFTId)).to.equal(true);
       expect(await genesisNft.supportsInterface(IERC721MintableId)).to.equal(true);
+      expect(
+        await genesisNft.supportsInterface(
+          ethers.utils.arrayify(getInterfaceId(IGenesisNFT__factory.createInterface()))
+        )
+      ).to.be.true;
+      expect(
+        await genesisNft.supportsInterface(
+          ethers.utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()))
+        )
+      ).to.be.true;
       validateRoles(owner.address, [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE], []);
       validateRoles(deployer.address, [], [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE]);
       validateRoles(admin.address, [DEFAULT_ADMIN_ROLE], [MINTER_ROLE, PAUSER_ROLE]);
@@ -695,7 +708,6 @@ describe.only('Genesis NFT unit tests', () => {
 
       for (let i = 0; i < newImages.length; i++) {
         const metadataImage = await genesisNft.getMetadataImageAtIndex(i);
-        console.log(`Metadata image at index ${i}:`, metadataImage);
         expect(metadataImage).to.equal(newImages[i]);
       }
     });
@@ -826,4 +838,161 @@ describe.only('Genesis NFT unit tests', () => {
     });
   });
 
+  describe('#fetchTokenDetails()', () => {
+    it('Should return slice', async () => {
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const tokenDetails = {
+        series1 : false,
+        tokenId : 0,
+        vested: toWlth("200"), // 200
+        unvested: toWlth("100"), // 100
+        released : 0,
+        claimed: toWlth("50"), // 50
+        releasable : 0,
+        penalty: toWlth("10"), // 10
+        bonus : 0,
+        lost : false,
+        gamified : false
+      };
+      await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
+      await genesisNft.connect(owner).setSeries1(series1);
+      await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
+      const owner2 = await genesisNft.ownerOf(1);
+      await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+      const result = await genesisNft.fetchTokenDetails(1);
+      expect(result).to.equal("240");
+  });
+    
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.fetchTokenDetails(tokenId)).to.be.reverted;
+    });
+  });
+
+  describe('#getSlices()', () => {
+    it('Should return slice', async () => {
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const tokenDetails = {
+        series1 : false,
+        tokenId : 0,
+        vested: toWlth("20000"), // 200
+        unvested: toWlth("10000"), // 100
+        released : 0,
+        claimed: toWlth("5000"), // 50
+        releasable : 0,
+        penalty: toWlth("1000"), // 10
+        bonus : 0,
+        lost : false,
+        gamified : false
+      };
+      await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
+      await genesisNft.connect(owner).setSeries1(series1);
+      await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
+      await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
+      const owner2 = await genesisNft.ownerOf(1);
+      await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+      const result = await genesisNft.getSlices(1);
+      expect(result).to.equal(5);
+  });
+  it('Should return max 10', async () => {
+    const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+    const tokenDetails = {
+      series1 : false,
+      tokenId : 0,
+      vested: toWlth("2000000"), // 200
+      unvested: toWlth("10000"), // 100
+      released : 0,
+      claimed: toWlth("5000"), // 50
+      releasable : 0,
+      penalty: toWlth("1000"), // 10
+      bonus : 0,
+      lost : false,
+      gamified : false
+    };
+    await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
+    await genesisNft.connect(owner).setSeries1(series1);
+    await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
+    await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
+    const owner2 = await genesisNft.ownerOf(1);
+    await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+    const result = await genesisNft.getSlices(1);
+    expect(result).to.equal(10);
+    });
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.connect(owner).getSlices(tokenId)).to.be.reverted;
+    });
+
+  });
+
+  describe('#tokenURI()', () => {
+    it('Should return uri', async () => {
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const tokenDetails = {
+        series1 : false,
+        tokenId : 0,
+        vested: toWlth("2000000"), // 200
+        unvested: toWlth("10000"), // 100
+        released : 0,
+        claimed: toWlth("5000"), // 50
+        releasable : 0,
+        penalty: toWlth("1000"), // 10
+        bonus : 0,
+        lost : false,
+        gamified : false
+      };
+      const newMetadata = {
+        name: "Name",
+        description: "Description",
+        externalUrl: "https://example.com",
+        id: "ID123",
+        percentage: "50%"
+      };
+
+      const newImages = ["image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+
+      await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
+      await genesisNft.connect(owner).setSeries1(series1);
+      await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
+      await genesisNft.connect(owner).setAllMetadata(newMetadata);
+      await genesisNft.connect(owner).setMetadataImage(newImages);
+      await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
+      const owner2 = await genesisNft.ownerOf(1);
+      await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+      const result = await genesisNft.tokenURI(1);
+      expect(result).to.equal("data:application/json;base64,eyJuYW1lIjogIk5hbWUiLCJkZXNjcmlwdGlvbiI6ICJEZXNjcmlwdGlvbiIsImltYWdlIjogImltYWdlX3VybCIsImV4dGVybmFsX3VybCI6ICJodHRwczovL2V4YW1wbGUuY29tIiwic2VyaWVzX2lkIjogIklEMTIzIiwiYXR0cmlidXRlcyI6IFt7InRyYWl0X3R5cGUiOiJXTFRIX3Rva2VucyIsInZhbHVlIjoiMjAwNDAwMCJ9LHsidHJhaXRfdHlwZSI6IlByb2ZpdF9TaGFyZSIsInZhbHVlIjoiNTAlIn1dfQ==");
+      });
+
+    it('Should revert if token details are not set', async () => {
+        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+        // Attempt to fetch details for a token that doesn't exist
+        const tokenId = 2;
+        await expect(genesisNft.connect(owner).tokenURI(tokenId)).to.be.reverted;
+    });
+  });
+  describe('#getMetadataImageAtIndex()', () => {
+    it('Should return image', async () => {
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const newImages = ["image_url","image_url1","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+
+      await genesisNft.connect(owner).setMetadataImage(newImages);
+      const result = await genesisNft.getMetadataImageAtIndex(1);
+      expect(result).to.equal("image_url1");
+      });
+
+      it('Should revert with out of bounds', async () => {
+        const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+        const newImages = ["image_url","image_url1","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+  
+        await genesisNft.connect(owner).setMetadataImage(newImages);
+        await expect(genesisNft.getMetadataImageAtIndex(15)).to.be.revertedWith("Index out of bounds");
+        });
+  });
 });
