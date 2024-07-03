@@ -322,11 +322,11 @@ contract GenesisNFT is
      * @return Tokens unclaimed tokens
      */
     function fetchTokenDetails(uint256 _tokenId)
-        private view
+        public view
         returns (string memory)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty)/1000000000000000000); // Access the first element
+        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty)/1e18); // Access the first element
     }
 
     /**
@@ -334,7 +334,7 @@ contract GenesisNFT is
      * @return Number of slices
      */
     function getSlices(uint256 _tokenId)
-        private view
+        public view
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
@@ -343,16 +343,6 @@ contract GenesisNFT is
             slices = 10;
         }
         return slices; // Access the first element
-    }
-
-    // Public wrapper for testing
-    function fetchTokenDetailsPublic(uint256 _tokenId) external view returns (string memory) {
-        return fetchTokenDetails(_tokenId);
-    }
-
-    // Public wrapper for testing
-    function getSlicesPublic(uint256 _tokenId) external view returns (uint256) {
-        return getSlices(_tokenId);
     }
 
     /**
