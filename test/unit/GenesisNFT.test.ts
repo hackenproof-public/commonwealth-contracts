@@ -74,6 +74,16 @@ describe('Genesis NFT unit tests', () => {
       expect(await genesisNft.getSeries()).to.equal(series);
       expect(await genesisNft.supportsInterface(IGenesisNFTId)).to.equal(true);
       expect(await genesisNft.supportsInterface(IERC721MintableId)).to.equal(true);
+      expect(
+        await genesisNft.supportsInterface(
+          ethers.utils.arrayify(getInterfaceId(IGenesisNFT__factory.createInterface()))
+        )
+      ).to.be.true;
+      expect(
+        await genesisNft.supportsInterface(
+          ethers.utils.arrayify(getInterfaceId(IERC721Mintable__factory.createInterface()))
+        )
+      ).to.be.true;
       validateRoles(owner.address, [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE], []);
       validateRoles(deployer.address, [], [DEFAULT_ADMIN_ROLE, MINTER_ROLE, PAUSER_ROLE]);
       validateRoles(admin.address, [DEFAULT_ADMIN_ROLE], [MINTER_ROLE, PAUSER_ROLE]);
