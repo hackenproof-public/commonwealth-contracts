@@ -62,6 +62,12 @@ interface IWhitelistedVesting {
     event VestingStartTimestampSetted(uint256 indexed vestingStartTimestamp);
 
     /**
+     * @notice Emitted when owner sets gamification
+     * @param flag gamification flag
+     */
+    event GamificationSet(bool indexed flag);
+
+    /**
      * @notice Emitted when owner sets vesting start timestamp
      * @param oldAllocation old token distribution array
      * @param newAllocation new token distribution array
@@ -127,6 +133,12 @@ interface IWhitelistedVesting {
      * @param newAllocation new token distribution array
      */
     function decreaseAllocation(uint256[] calldata newAllocation) external;
+
+    /**
+     * @notice Turn on/off gamification
+     * @param flag if gamification is active
+     */
+    function setGamification(bool flag) external;
 
     /**
      * @notice calculates the penalty, gamification
