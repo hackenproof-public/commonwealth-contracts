@@ -1952,7 +1952,7 @@ describe('InvestmentFund', () => {
 
   describe('Set the profit provider', () => {
     describe('Success', () => {
-      it('Should set the minimum investment amount', async () => {
+      it('Should set the profit provider', async () => {
         const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
 
         const newProfitProvider = ethers.Wallet.createRandom();
@@ -1979,6 +1979,39 @@ describe('InvestmentFund', () => {
         await expect(
           investmentFund.connect(owner).setProfitProvider(ethers.constants.AddressZero)
         ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__ProfitProviderZeroAddress');
+      });
+    });
+  });
+
+  describe('Set the buyback and burn address', () => {
+    describe('Success', () => {
+      it('Should set the buyback and burn address', async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        const newBuybackAndBurnAddress = ethers.Wallet.createRandom();
+
+        expect(await investmentFund.connect(owner).setBuybackAndBurnAddress(newBuybackAndBurnAddress.address))
+          .to.emit(investmentFund, 'BuybackAndBurnAddressSet')
+          .withArgs(newBuybackAndBurnAddress.address);
+        expect(await investmentFund.burnAddress()).to.be.equal(newBuybackAndBurnAddress.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund } = await loadFixture(deployInvestmentFund);
+        const newBuybackAndBurnAddress = ethers.Wallet.createRandom();
+
+        await expect(
+          investmentFund.connect(user1).setBuybackAndBurnAddress(newBuybackAndBurnAddress.address)
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+
+      it("Should revert when zero address is passed as the profit provider's address", async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          investmentFund.connect(owner).setBuybackAndBurnAddress(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__BurnZeroAddress');
       });
     });
   });

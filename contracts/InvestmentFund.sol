@@ -467,6 +467,12 @@ contract InvestmentFund is
         emit ProfitProviderSet(_profitProvider);
     }
 
+    function setBuybackAndBurnAddress(address _burnAddress) external override onlyOwner {
+        if (_burnAddress == address(0)) revert InvestmentFund__BurnZeroAddress();
+        s_burnAddress = _burnAddress;
+        emit BuybackAndBurnAddressSet(_burnAddress);
+    }
+
     /**
      * @inheritdoc IInvestmentFund
      */

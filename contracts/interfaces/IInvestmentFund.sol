@@ -175,6 +175,12 @@ interface IInvestmentFund {
     event ProfitProviderSet(address indexed profitProvider);
 
     /**
+     * @notice Emitted when buyback and burn address  is set
+     * @param buybackAndBurn Address of buyback and burn
+     */
+    event BuybackAndBurnAddressSet(address indexed buybackAndBurn);
+
+    /**
      * @notice Emitted when functions are allowed in states
      */
     event FunctionsAllowed();
@@ -292,7 +298,17 @@ interface IInvestmentFund {
      */
     function increaseCapTo(uint256 _cap) external;
 
+    /**
+     * @notice Sets profit provider address
+     * @param _profitProvider Address of profit provider
+     */
     function setProfitProvider(address _profitProvider) external;
+
+    /**
+     * @notice Sets buyback and burn address
+     * @param _buybackAndBurn Address of buyback and burn contract
+     */
+    function setBuybackAndBurnAddress(address _buybackAndBurn) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
