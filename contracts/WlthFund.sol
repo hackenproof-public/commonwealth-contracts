@@ -9,6 +9,20 @@ import "./interfaces/GovernorBravoInterfaces.sol";
 contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDelegateStorageV2, GovernorBravoEvents {
     /// @notice Address of Investee.
     mapping (uint256 => address) public investeeDetails;
+
+    /// @notice user vote by uuid hash.
+    mapping (bytes32 => Vote) public userVotes;
+
+    /// @notice to which user given wallet is registered
+    mapping (address => bytes32) public UserByWallet;
+
+    /// @notice top 50 stakers
+    bytes32[50] public top50stakers;
+
+    struct Vote {
+        uint8 vote;
+        uint256 votePower;
+    }
     
     /// @notice Next investee to support
     uint256 public nextInvestee;
@@ -87,7 +101,7 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
       * @param description String description of the proposal
       * @return Proposal id of new proposal
       */
-    function propose(address[] memory targets, uint[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
+    function createProposal(address _target, uint256 _values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
         // Allow addresses above proposal threshold and whitelisted addresses to propose
         require(dCult.checkHighestStaker(0,msg.sender),"GovernorBravo::propose: only top staker");
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorBravo::propose: proposal function information arity mismatch");
@@ -153,7 +167,7 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
       * @notice Executes a queued proposal if eta has passed
       * @param proposalId The id of the proposal to execute
       */
-    function execute(uint proposalId) external payable {
+    function executeProposal(uint proposalId) external payable {
         require(state(proposalId) == ProposalState.Queued, "GovernorBravo::execute: proposal can only be executed if it is queued");
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
@@ -167,7 +181,7 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
       * @notice Cancels a proposal only if sender is the proposer
       * @param proposalId The id of the proposal to cancel
       */
-    function cancel(uint proposalId) external {
+    function cancelProposal(uint proposalId) external {
         require(state(proposalId) != ProposalState.Executed, "GovernorBravo::cancel: cannot cancel executed proposal");
 
         Proposal storage proposal = proposals[proposalId];
@@ -192,15 +206,15 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
         return (p.targets, p.values, p.signatures, p.calldatas);
     }
 
-    /**
-      * @notice Gets the receipt for a voter on a given proposal
-      * @param proposalId the id of proposal
-      * @param voter The address of the voter
-      * @return The voting receipt
-      */
-    function getReceipt(uint proposalId, address voter) external view returns (Receipt memory) {
-        return proposals[proposalId].receipts[voter];
-    }
+    // /**
+    //   * @notice Gets the receipt for a voter on a given proposal
+    //   * @param proposalId the id of proposal
+    //   * @param voter The address of the voter
+    //   * @return The voting receipt
+    //   */
+    // function getReceipt(uint proposalId, address voter) external view returns (Receipt memory) {
+    //     return proposals[proposalId].receipts[voter];
+    // }
 
     /**
       * @notice Gets the state of a proposal
@@ -336,9 +350,10 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
 
         nextInvesteeFund =add256(nextInvesteeFund,1);
         emit InvesteeFunded(investeeDetails[sub256(nextInvesteeFund,1)],sub256(nextInvesteeFund,1));
+
+
         return investeeDetails[sub256(nextInvesteeFund,1)];
     }
-
 
     /**
       * @notice Admin function for setting the voting period
@@ -405,57 +420,6 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
         initialProposalId = proposalCount;
         timelock.acceptAdmin();
         emit GovernanceInitiated(governorAlpha);
-    }
-
-    /**
-      * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-      * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-      * @param newPendingAdmin New pending admin.
-      */
-    function _setPendingAdmin(address newPendingAdmin) external {
-        // Check address is not zero
-        require(newPendingAdmin != address(0), "GovernorBravo:_setPendingAdmin: zero address");
-        // Check caller = admin
-        require(msg.sender == admin, "GovernorBravo:_setPendingAdmin: admin only");
-
-        // Save current value, if any, for inclusion in log
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store pendingAdmin with value newPendingAdmin
-        pendingAdmin = newPendingAdmin;
-
-        // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
-        emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
-    }
-
-    /**
-      * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
-      * @dev Admin function for pending admin to accept role and update admin
-      */
-    function _acceptAdmin() external {
-        // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
-        require(msg.sender == pendingAdmin && msg.sender != address(0), "GovernorBravo:_acceptAdmin: pending admin only");
-
-        // Save current values for inclusion in log
-        address oldAdmin = admin;
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store admin with value pendingAdmin
-        admin = pendingAdmin;
-
-        // Clear the pending value
-        pendingAdmin = address(0);
-
-        emit NewAdmin(oldAdmin, admin);
-        emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
-    }
-
-        /**
-      * @notice Accepts Admin for timelock of admin rights.
-      * @dev Admin function for transferring admin to accept role and update admin
-      */
-    function _AcceptTimelockAdmin() external {
-        timelock.acceptAdmin();
     }
 
     function _authorizeUpgrade(address) internal view override {
