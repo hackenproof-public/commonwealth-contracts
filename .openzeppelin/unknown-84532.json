@@ -11477,7 +11477,7 @@
             "slot": "0",
             "type": "t_uint8",
             "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
             "retypedFrom": "bool"
           },
           {
@@ -11486,7 +11486,7 @@
             "slot": "0",
             "type": "t_bool",
             "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
           },
           {
             "label": "__gap",
@@ -11494,7 +11494,7 @@
             "slot": "1",
             "type": "t_array(t_uint256)50_storage",
             "contract": "ContextUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
           },
           {
             "label": "_owner",
@@ -11502,7 +11502,7 @@
             "slot": "51",
             "type": "t_address",
             "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
           },
           {
             "label": "__gap",
@@ -11510,7 +11510,7 @@
             "slot": "52",
             "type": "t_array(t_uint256)49_storage",
             "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
           },
           {
             "label": "_paused",
@@ -11518,7 +11518,7 @@
             "slot": "101",
             "type": "t_bool",
             "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
           },
           {
             "label": "__gap",
@@ -11526,7 +11526,7 @@
             "slot": "102",
             "type": "t_array(t_uint256)49_storage",
             "contract": "PausableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:116"
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
           },
           {
             "label": "__gap",
@@ -11534,7 +11534,7 @@
             "slot": "151",
             "type": "t_array(t_uint256)50_storage",
             "contract": "OwnablePausable",
-            "src": "contracts/OwnablePausable.sol:46"
+            "src": "contracts\\OwnablePausable.sol:46"
           },
           {
             "label": "_status",
@@ -11542,7 +11542,7 @@
             "slot": "201",
             "type": "t_uint256",
             "contract": "ReentrancyGuardUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
           },
           {
             "label": "__gap",
@@ -11550,7 +11550,7 @@
             "slot": "202",
             "type": "t_array(t_uint256)49_storage",
             "contract": "ReentrancyGuardUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:80"
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
           },
           {
             "label": "token",
@@ -11558,7 +11558,7 @@
             "slot": "251",
             "type": "t_address",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:48"
+            "src": "contracts\\StakingWlth.sol:48"
           },
           {
             "label": "usdc",
@@ -11566,7 +11566,7 @@
             "slot": "252",
             "type": "t_address",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:49"
+            "src": "contracts\\StakingWlth.sol:49"
           },
           {
             "label": "transactionFee",
@@ -11574,7 +11574,7 @@
             "slot": "253",
             "type": "t_uint256",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:50"
+            "src": "contracts\\StakingWlth.sol:50"
           },
           {
             "label": "treasury",
@@ -11582,7 +11582,7 @@
             "slot": "254",
             "type": "t_address",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:51"
+            "src": "contracts\\StakingWlth.sol:51"
           },
           {
             "label": "communityFund",
@@ -11590,7 +11590,7 @@
             "slot": "255",
             "type": "t_address",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:52"
+            "src": "contracts\\StakingWlth.sol:52"
           },
           {
             "label": "maxDiscount",
@@ -11598,31 +11598,31 @@
             "slot": "256",
             "type": "t_uint256",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:53"
+            "src": "contracts\\StakingWlth.sol:53"
           },
           {
             "label": "uniswapWlthPrice",
             "offset": 0,
             "slot": "257",
-            "type": "t_contract(IUniswapWlthPrice)42283",
+            "type": "t_contract(IUniswapWlthPrice)16071",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:54"
+            "src": "contracts\\StakingWlth.sol:54"
           },
           {
             "label": "counter",
             "offset": 0,
             "slot": "258",
-            "type": "t_struct(Counter)15168_storage",
+            "type": "t_struct(Counter)1442_storage",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:55"
+            "src": "contracts\\StakingWlth.sol:55"
           },
           {
             "label": "stakingPositions",
             "offset": 0,
             "slot": "259",
-            "type": "t_mapping(t_uint256,t_struct(Position)41898_storage)",
+            "type": "t_mapping(t_uint256,t_struct(Position)15686_storage)",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:57"
+            "src": "contracts\\StakingWlth.sol:57"
           },
           {
             "label": "stakesPerAccount",
@@ -11630,31 +11630,31 @@
             "slot": "260",
             "type": "t_mapping(t_address,t_mapping(t_address,t_array(t_uint256)dyn_storage))",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:58"
+            "src": "contracts\\StakingWlth.sol:58"
           },
           {
             "label": "durationCoefficients",
             "offset": 0,
             "slot": "261",
-            "type": "t_struct(UintToUintMap)18119_storage",
+            "type": "t_struct(UintToUintMap)2677_storage",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:59"
+            "src": "contracts\\StakingWlth.sol:59"
           },
           {
             "label": "registeredFunds",
             "offset": 0,
             "slot": "264",
-            "type": "t_struct(AddressSet)19321_storage",
+            "type": "t_struct(AddressSet)3879_storage",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:60"
+            "src": "contracts\\StakingWlth.sol:60"
           },
           {
             "label": "stakingAccounts",
             "offset": 0,
             "slot": "266",
-            "type": "t_struct(AddressSet)19321_storage",
+            "type": "t_struct(AddressSet)3879_storage",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:61"
+            "src": "contracts\\StakingWlth.sol:61"
           },
           {
             "label": "__gap",
@@ -11662,7 +11662,7 @@
             "slot": "268",
             "type": "t_array(t_uint256)38_storage",
             "contract": "StakingWlth",
-            "src": "contracts/StakingWlth.sol:1245"
+            "src": "contracts\\StakingWlth.sol:1245"
           }
         ],
         "types": {
@@ -11698,7 +11698,7 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IUniswapWlthPrice)42283": {
+          "t_contract(IUniswapWlthPrice)16071": {
             "label": "contract IUniswapWlthPrice",
             "numberOfBytes": "20"
           },
@@ -11718,40 +11718,40 @@
             "label": "mapping(bytes32 => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(Position)41898_storage)": {
+          "t_mapping(t_uint256,t_struct(Position)15686_storage)": {
             "label": "mapping(uint256 => struct IStakingWlth.Position)",
             "numberOfBytes": "32"
           },
-          "t_struct(AddressSet)19321_storage": {
+          "t_struct(AddressSet)3879_storage": {
             "label": "struct EnumerableSetUpgradeable.AddressSet",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)19006_storage",
+                "type": "t_struct(Set)3564_storage",
                 "offset": 0,
                 "slot": "0"
               }
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Bytes32Set)19200_storage": {
+          "t_struct(Bytes32Set)3758_storage": {
             "label": "struct EnumerableSetUpgradeable.Bytes32Set",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Set)19006_storage",
+                "type": "t_struct(Set)3564_storage",
                 "offset": 0,
                 "slot": "0"
               }
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(Bytes32ToBytes32Map)17889_storage": {
+          "t_struct(Bytes32ToBytes32Map)2447_storage": {
             "label": "struct EnumerableMapUpgradeable.Bytes32ToBytes32Map",
             "members": [
               {
                 "label": "_keys",
-                "type": "t_struct(Bytes32Set)19200_storage",
+                "type": "t_struct(Bytes32Set)3758_storage",
                 "offset": 0,
                 "slot": "0"
               },
@@ -11764,7 +11764,7 @@
             ],
             "numberOfBytes": "96"
           },
-          "t_struct(Counter)15168_storage": {
+          "t_struct(Counter)1442_storage": {
             "label": "struct CountersUpgradeable.Counter",
             "members": [
               {
@@ -11776,7 +11776,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(Period)41878_storage": {
+          "t_struct(Period)15666_storage": {
             "label": "struct IStakingWlth.Period",
             "members": [
               {
@@ -11794,7 +11794,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(Position)41898_storage": {
+          "t_struct(Position)15686_storage": {
             "label": "struct IStakingWlth.Position",
             "members": [
               {
@@ -11835,7 +11835,7 @@
               },
               {
                 "label": "period",
-                "type": "t_struct(Period)41878_storage",
+                "type": "t_struct(Period)15666_storage",
                 "offset": 0,
                 "slot": "5"
               },
@@ -11854,7 +11854,7 @@
             ],
             "numberOfBytes": "256"
           },
-          "t_struct(Set)19006_storage": {
+          "t_struct(Set)3564_storage": {
             "label": "struct EnumerableSetUpgradeable.Set",
             "members": [
               {
@@ -11872,12 +11872,12 @@
             ],
             "numberOfBytes": "64"
           },
-          "t_struct(UintToUintMap)18119_storage": {
+          "t_struct(UintToUintMap)2677_storage": {
             "label": "struct EnumerableMapUpgradeable.UintToUintMap",
             "members": [
               {
                 "label": "_inner",
-                "type": "t_struct(Bytes32ToBytes32Map)17889_storage",
+                "type": "t_struct(Bytes32ToBytes32Map)2447_storage",
                 "offset": 0,
                 "slot": "0"
               }
@@ -17851,6 +17851,440 @@
           "t_uint16": {
             "label": "uint16",
             "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "35d4c881eafe52d6372789109adfb4027cd03d82a23e61b283dfdbf631304a60": {
+      "address": "0x1dC4FbC32a1f39F977D894423a065558c88a55aE",
+      "txHash": "0xeaf877508959896dfe2ead3601d20e19962c0050ea1085d557f1cdc3d263615c",
+      "layout": {
+        "solcVersion": "0.8.18",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:116"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "OwnablePausable",
+            "src": "contracts\\OwnablePausable.sol:46"
+          },
+          {
+            "label": "_status",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "ReentrancyGuardUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:80"
+          },
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_address",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:48"
+          },
+          {
+            "label": "usdc",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_address",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:49"
+          },
+          {
+            "label": "transactionFee",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_uint256",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:50"
+          },
+          {
+            "label": "treasury",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_address",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:51"
+          },
+          {
+            "label": "communityFund",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_address",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:52"
+          },
+          {
+            "label": "maxDiscount",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_uint256",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:53"
+          },
+          {
+            "label": "uniswapWlthPrice",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_contract(IUniswapWlthPrice)47919",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:54"
+          },
+          {
+            "label": "counter",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_struct(Counter)15768_storage",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:55"
+          },
+          {
+            "label": "stakingPositions",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_mapping(t_uint256,t_struct(Position)47534_storage)",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:57"
+          },
+          {
+            "label": "stakesPerAccount",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_array(t_uint256)dyn_storage))",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:58"
+          },
+          {
+            "label": "durationCoefficients",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_struct(UintToUintMap)18779_storage",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:59"
+          },
+          {
+            "label": "registeredFunds",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_struct(AddressSet)19981_storage",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:60"
+          },
+          {
+            "label": "stakingAccounts",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_struct(AddressSet)19981_storage",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_array(t_uint256)38_storage",
+            "contract": "StakingWlth",
+            "src": "contracts\\StakingWlth.sol:1245"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_bytes32)dyn_storage": {
+            "label": "bytes32[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)38_storage": {
+            "label": "uint256[38]",
+            "numberOfBytes": "1216"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IUniswapWlthPrice)47919": {
+            "label": "contract IUniswapWlthPrice",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_array(t_uint256)dyn_storage))": {
+            "label": "mapping(address => mapping(address => uint256[]))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_bytes32)": {
+            "label": "mapping(bytes32 => bytes32)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_uint256)": {
+            "label": "mapping(bytes32 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Position)47534_storage)": {
+            "label": "mapping(uint256 => struct IStakingWlth.Position)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AddressSet)19981_storage": {
+            "label": "struct EnumerableSetUpgradeable.AddressSet",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)19666_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Bytes32Set)19860_storage": {
+            "label": "struct EnumerableSetUpgradeable.Bytes32Set",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Set)19666_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(Bytes32ToBytes32Map)18549_storage": {
+            "label": "struct EnumerableMapUpgradeable.Bytes32ToBytes32Map",
+            "members": [
+              {
+                "label": "_keys",
+                "type": "t_struct(Bytes32Set)19860_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_values",
+                "type": "t_mapping(t_bytes32,t_bytes32)",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(Counter)15768_storage": {
+            "label": "struct CountersUpgradeable.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Period)47514_storage": {
+            "label": "struct IStakingWlth.Period",
+            "members": [
+              {
+                "label": "start",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "duration",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Position)47534_storage": {
+            "label": "struct IStakingWlth.Position",
+            "members": [
+              {
+                "label": "id",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "staker",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "fund",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "amountInWlth",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "amountInUsdc",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "investment",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "period",
+                "type": "t_struct(Period)47514_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "isCRP",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "unstakedEnded",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
+          },
+          "t_struct(Set)19666_storage": {
+            "label": "struct EnumerableSetUpgradeable.Set",
+            "members": [
+              {
+                "label": "_values",
+                "type": "t_array(t_bytes32)dyn_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_indexes",
+                "type": "t_mapping(t_bytes32,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(UintToUintMap)18779_storage": {
+            "label": "struct EnumerableMapUpgradeable.UintToUintMap",
+            "members": [
+              {
+                "label": "_inner",
+                "type": "t_struct(Bytes32ToBytes32Map)18549_storage",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
           },
           "t_uint256": {
             "label": "uint256",

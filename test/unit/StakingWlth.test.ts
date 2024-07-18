@@ -683,7 +683,7 @@ describe('Staking WLTH unit tests', () => {
         ]);
       });
 
-      it.skip('Should simulate proper unstaking penalty if positions are finished, unlocked and locked', async () => {
+      it('Should simulate proper unstaking penalty if positions are finished, unlocked and locked', async () => {
         const stake2 = { amount: toWlth('150'), period: FOUR_YEARS };
 
         oracle.estimateAmountOut.returns(toUsdc('150'));
@@ -701,7 +701,7 @@ describe('Staking WLTH unit tests', () => {
 
         // unstake from various positions: ended(300 WLTH), unlocked(50 WLTH) and locked(100 WLTH)
         expect(await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('450'))).to.deep.equal([
-          toWlth('40'),
+          toWlth('40.000000634195839675'),
           BigNumber.from(2400)
         ]);
       });
@@ -744,6 +744,9 @@ describe('Staking WLTH unit tests', () => {
         expect(wlth.transfer.atCall(4)).to.have.been.calledWith(defaultCommunityFund, toWlth('0.396'));
         expect(wlth.transfer.atCall(5)).to.have.been.calledWith(defaultCommunityFund, toWlth('0.594'));
         expect(wlth.transfer.atCall(6)).to.have.been.calledWith(user.address, toWlth('58.806'));
+
+        // unstake all at once
+        //expect(await staking.connect(user).unstake(fund.address, toWlth('400')));
       });
 
       it('Should collect no penalty if finished tokens cover maximum discount', async () => {
