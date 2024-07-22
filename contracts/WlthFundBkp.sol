@@ -5,23 +5,35 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/GovernorBravoInterfaces.sol";
+import {OwnablePausable} from "./OwnablePausable.sol";
 
-contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDelegateStorageV2, GovernorBravoEvents {
+error WlthFund__TimelockAddressZero();
+error WlthFund__InvalidVotingPeriod();
+error WlthFund__InvalidVotingDelay();
+error WlthFund__InvalidProposalTreshold();
+error WlthFund__NonTop50Staker();
+error WlthFund__Top50Staker();
+
+contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDelegateStorageV2, GovernorBravoEvents, OwnablePausable {
     /// @notice Address of Investee.
     mapping (uint256 => address) public investeeDetails;
 
-    /// @notice user vote by uuid hash.
-    mapping (bytes32 => Vote) public userVotes;
+    /// @notice user by uuid hash.
+    mapping (bytes32 => User) public userVotes;
 
     /// @notice to which user given wallet is registered
     mapping (address => bytes32) public UserByWallet;
 
-    /// @notice top 50 stakers
-    bytes32[50] public top50stakers;
+    /// @notice holds initial proposals
+    mapping (uint256 => Proposal) public initialProposals;
 
-    struct Vote {
-        uint8 vote;
+    /// @notice top 50 stakers
+    //bytes32[50] public top50stakers;
+    mapping (bytes32 => bool) public top50stakers;
+
+    struct User {
         uint256 votePower;
+        address[] wallets;
     }
     
     /// @notice Next investee to support
@@ -34,7 +46,7 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
     address public treasury;
 
     /// @notice The name of this contract
-    string public constant name = "Cult Governor Bravo";
+    string public constant name = "WLTH Fund Governor Bravo";
 
     /// @notice The minimum setable proposal threshold
     uint public constant MIN_PROPOSAL_THRESHOLD = 50000e18; // 50,000 Cult
@@ -66,30 +78,35 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
     /// @notice The EIP-712 typehash for the ballot struct used by the contract
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
+    modifier onlyTop50stakers() {
+        if(top50stakers[UserByWallet[_msgSender()]]) revert WlthFund__NonTop50Staker();
+        _;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+
     /**
       * @notice Used to initialize the contract during delegator constructor
-      * @param timelock_ The address of the Timelock
-      * @param dCult_ The address of the dCULT token
-      * @param votingPeriod_ The initial voting period
-      * @param votingDelay_ The initial voting delay
-      * @param proposalThreshold_ The initial proposal threshold
+      * @param _timelock The address of the Timelock
+      * @param _votingPeriod The initial voting period
+      * @param _votingDelay The initial voting delay
+      * @param _proposalThreshold The initial proposal threshold
       */
-    function initialize(address timelock_, address dCult_, uint votingPeriod_, uint votingDelay_, uint proposalThreshold_, address treasury_) public initializer{
-        require(address(timelock) == address(0), "GovernorBravo::initialize: can only initialize once");
-        require(timelock_ != address(0), "GovernorBravo::initialize: invalid timelock address");
-        require(dCult_ != address(0), "GovernorBravo::initialize: invalid dCult address");
-        require(votingPeriod_ >= MIN_VOTING_PERIOD && votingPeriod_ <= MAX_VOTING_PERIOD, "GovernorBravo::initialize: invalid voting period");
-        require(votingDelay_ >= MIN_VOTING_DELAY && votingDelay_ <= MAX_VOTING_DELAY, "GovernorBravo::initialize: invalid voting delay");
-        require(proposalThreshold_ >= MIN_PROPOSAL_THRESHOLD && proposalThreshold_ <= MAX_PROPOSAL_THRESHOLD, "GovernorBravo::initialize: invalid proposal threshold");
-        require(treasury_ != address(0), "GovernorBravo::initialize: invalid treasury address");
+    function initialize(address _timelock, uint256 _votingPeriod, uint256 _votingDelay, uint256 _proposalThreshold) public initializer{
+        if(_timelock == address(0)) revert WlthFund__TimelockAddressZero();
+        if(!(_votingPeriod >= MIN_VOTING_PERIOD && _votingPeriod <= MAX_VOTING_PERIOD)) revert WlthFund__InvalidVotingPeriod();
+        if(!(_votingDelay >= MIN_VOTING_DELAY && _votingDelay <= MAX_VOTING_DELAY)) revert WlthFund__InvalidVotingDelay();
+        if(!(_proposalThreshold >= MIN_PROPOSAL_THRESHOLD && _proposalThreshold <= MAX_PROPOSAL_THRESHOLD)) revert WlthFund__InvalidProposalTreshold();
 
-        timelock = TimelockInterface(timelock_);
-        dCult = dCultInterface(dCult_);
-        votingPeriod = votingPeriod_;
-        votingDelay = votingDelay_;
-        proposalThreshold = proposalThreshold_;
-        admin = timelock_;
-        treasury = treasury_;
+        timelock = TimelockInterface(_timelock);
+        votingPeriod = _votingPeriod;
+        votingDelay = _votingDelay;
+        proposalThreshold = _proposalThreshold;
+        admin = _timelock;
     }
 
     /**
@@ -101,7 +118,7 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
       * @param description String description of the proposal
       * @return Proposal id of new proposal
       */
-    function createProposal(address _target, uint256 _values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
+    function createProposal(address[] calldata targets, uint256[] calldata values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint) {
         // Allow addresses above proposal threshold and whitelisted addresses to propose
         require(dCult.checkHighestStaker(0,msg.sender),"GovernorBravo::propose: only top staker");
         require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorBravo::propose: proposal function information arity mismatch");
@@ -139,7 +156,49 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
 
         latestProposalIds[newProposal.proposer] = newProposal.id;
 
-        emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, startBlock, endBlock, description);
+        emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, startBlock, endBlock); // missing description parameter
+        return newProposal.id;
+    }
+
+    function createInitialProposal(address[] calldata targets, uint256[] calldata values, string[] memory signatures, bytes[] memory calldatas, string memory description) onlyTop50stakers public returns (uint) {
+        // Allow addresses above proposal threshold and whitelisted addresses to propose
+        require(dCult.checkHighestStaker(0,msg.sender),"GovernorBravo::propose: only top staker");
+        require(targets.length == values.length && targets.length == signatures.length && targets.length == calldatas.length, "GovernorBravo::propose: proposal function information arity mismatch");
+        require(targets.length != 0, "GovernorBravo::propose: must provide actions");
+        require(targets.length <= proposalMaxOperations, "GovernorBravo::propose: too many actions");
+
+        uint latestProposalId = latestProposalIds[msg.sender];
+        if (latestProposalId != 0) {
+          ProposalState proposersLatestProposalState = state(latestProposalId);
+          require(proposersLatestProposalState != ProposalState.Active, "GovernorBravo::propose: one live proposal per proposer, found an already active proposal");
+          require(proposersLatestProposalState != ProposalState.Pending, "GovernorBravo::propose: one live proposal per proposer, found an already pending proposal");
+        }
+
+        uint startBlock = add256(block.number, votingDelay);
+        uint endBlock = add256(startBlock, votingPeriod);
+
+        proposalCount++;
+
+        Proposal storage newProposal = proposals[proposalCount];
+
+        newProposal.id = proposalCount;
+        newProposal.proposer= msg.sender;
+        newProposal.eta= 0;
+        newProposal.targets= targets;
+        newProposal.values= values;
+        newProposal.signatures= signatures;
+        newProposal.calldatas= calldatas;
+        newProposal.startBlock= startBlock;
+        newProposal.endBlock= endBlock;
+        newProposal.forVotes= 0;
+        newProposal.againstVotes= 0;
+        newProposal.abstainVotes= 0;
+        newProposal.canceled= false;
+        newProposal.executed= false;
+
+        latestProposalIds[newProposal.proposer] = newProposal.id;
+
+        emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, startBlock, endBlock); // missing description parameter
         return newProposal.id;
     }
 
@@ -206,15 +265,15 @@ contract GovernorBravoDelegate is Initializable,UUPSUpgradeable,GovernorBravoDel
         return (p.targets, p.values, p.signatures, p.calldatas);
     }
 
-    // /**
-    //   * @notice Gets the receipt for a voter on a given proposal
-    //   * @param proposalId the id of proposal
-    //   * @param voter The address of the voter
-    //   * @return The voting receipt
-    //   */
-    // function getReceipt(uint proposalId, address voter) external view returns (Receipt memory) {
-    //     return proposals[proposalId].receipts[voter];
-    // }
+    /**
+      * @notice Gets the receipt for a voter on a given proposal
+      * @param proposalId the id of proposal
+      * @param voter The address of the voter
+      * @return The voting receipt
+      */
+    function getReceipt(uint proposalId, address voter) external view returns (Receipt memory) {
+        return proposals[proposalId].receipts[voter];
+    }
 
     /**
       * @notice Gets the state of a proposal
