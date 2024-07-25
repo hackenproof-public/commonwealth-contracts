@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {FEE_PERCENTAGE, ROYALTY_PERCENTAGE} from "./libraries/Constants.sol";
+import {FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -19,6 +19,7 @@ error Marketplace__ERC721AddressNotAllowed();
 error Marketplace__NFTNotOwnedByMsgSender();
 error Marketplace__ListingNotActive();
 error Marketplace__NotOwnerOrSeller();
+error Marketplace__NotSeller();
 error Marketplace__ZeroPrice();
 
 contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace{
@@ -40,7 +41,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @notice The address royalties are transferred to
      */
-    address private s_royaltyAddress;
+    address private s_secondarySales;
 
     /**
      * @notice Token used for buy sell
@@ -95,7 +96,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         s_paymentAddress = _paymentToken; 
         s_paymentToken = IERC20(_paymentToken);
         s_feeAddress = _feeAddress;
-        s_royaltyAddress = _royaltyAddress;
+        s_secondarySales = _royaltyAddress;
     }
 
     /**
@@ -146,6 +147,19 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
+    function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant{
+        if (msg.sender != s_listings[_listingId].seller) {
+            revert Marketplace__NotSeller();
+        }
+
+        s_listings[_listingId].price = _price;
+
+        emit PriceUpdated(_listingId, _price);
+    }
+
+    /**
+     * @inheritdoc IMarketplace
+     */
     function listNFT(
         address _nftContract,
         uint256 _tokenId,
@@ -189,12 +203,14 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
             revert Marketplace__ListingNotActive();
         }
 
-        uint256 fee = (listing.price * FEE_PERCENTAGE) / 100;
-        uint256 royalty = (listing.price * ROYALTY_PERCENTAGE) / 1000;
+        uint256 fee = (listing.price * FEE_PERCENTAGE) / BASIS_POINT_DIVISOR;
+        uint256 royalty = (listing.price * ROYALTY_PERCENTAGE) / BASIS_POINT_DIVISOR;
+        uint256 transaction_fee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
         uint256 sellerAmount = listing.price - fee - royalty;
 
         s_paymentToken.transferFrom(msg.sender, s_feeAddress, fee);
-        s_paymentToken.transferFrom(msg.sender, s_royaltyAddress, royalty);
+        s_paymentToken.transferFrom(msg.sender, s_secondarySales, royalty);
+        s_paymentToken.transferFrom(msg.sender, s_secondarySales, transaction_fee);
         s_paymentToken.transferFrom(msg.sender, listing.seller, sellerAmount);
 
         IERC721(listing.nftContract).safeTransferFrom(
@@ -260,7 +276,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @inheritdoc IMarketplace
      */
     function royaltyAddress() external view returns (address) {
-        return s_royaltyAddress;
+        return s_secondarySales;
     }
 
     function isAllowedContract(address _nftContract) external view returns (bool) {

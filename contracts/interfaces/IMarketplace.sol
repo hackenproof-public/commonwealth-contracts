@@ -54,6 +54,13 @@ interface IMarketplace {
     event Canceled(uint256 indexed listingId, address indexed seller);
 
     /**
+     * @notice Emitted when listing is cancelled
+     * @param listingId Id of the listing
+     * @param price New price of the sale
+     */
+    event PriceUpdated(uint256 indexed listingId, uint256 indexed price);
+
+    /**
      * @notice Emitted when nft is added
      * @param __nftContract address of nft
      */
@@ -104,6 +111,19 @@ interface IMarketplace {
      * @param _listingId listing id to be cancelled
      */
     function cancelListing(uint256 _listingId) external;
+
+    /**
+     * @notice Updates the price of the listing in the marketplace
+     *
+     * Requirements:
+     * - Msg sender needs to be seller
+     *
+     * Emits PriceUpdated event
+     *
+     * @param _listingId listing id to be updated
+     * @param _price updated price of the listing
+     */
+    function updateListingPrice(uint256 _listingId, uint256 _price) external;
 
     /**
      * @notice Lists the nft in the marketplace
