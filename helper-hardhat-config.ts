@@ -210,7 +210,7 @@ const baseConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xE73e27BB167997e886060D5C6eE0ddd7B4736aC6',
-  uniswapWlthUsdcPoolAddress: '', //TODO
+  uniswapWlthUsdcPoolAddress: '0x1536EE1506e24e5A36Be99C73136cD82907A902E',
   poolObservationTime: 1,
   uniswapSwapRouterV3Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
   feeTier: '', //TODO
