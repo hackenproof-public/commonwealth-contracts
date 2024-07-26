@@ -41,38 +41,48 @@ contract WlthFund is OwnablePausable, IWlthFund {
     }
 
     /**
-      * @notice Initializes contract
-      * @param _owner he address of the Timelock
-      * @param _wlth The initial voting period
-      * @param _usdc The initial voting period
-      * @param _secondarySalesWallet The initial voting period
-      */
-    function initialize(address _owner, address _wlth, address _usdc, address _secondarySalesWallet) public initializer{
+     * @notice Initializes contract
+     * @param _owner he address of the Timelock
+     * @param _wlth The initial voting period
+     * @param _usdc The initial voting period
+     * @param _secondarySalesWallet The initial voting period
+     */
+    function initialize(
+        address _owner,
+        address _wlth,
+        address _usdc,
+        address _secondarySalesWallet
+    ) public initializer {
         if (_owner == address(0)) revert WlthFund__OwnerZeroAddress();
         if (_wlth == address(0)) revert WlthFund__WlthZeroAddress();
         if (_usdc == address(0)) revert WlthFund__UsdcZeroAddress();
         if (_secondarySalesWallet == address(0)) revert WlthFund__SecondarySalesWalletZeroAddress();
 
-         s_wlth = _wlth;
-         s_usdc = _usdc;
-         s_secondarySalesWallet = _secondarySalesWallet;
+        s_wlth = _wlth;
+        s_usdc = _usdc;
+        s_secondarySalesWallet = _secondarySalesWallet;
 
-         __OwnablePausable_init(_owner);
+        __OwnablePausable_init(_owner);
     }
 
     /**
      * @inheritdoc IWlthFund
      */
-    function fundInvestee(uint256 _proposalId, address _investee, uint256 _fundAmount, uint256 _burnAmount) external onlyOwner {
-        if(s_proposalsFunded[_proposalId]) revert WlthFund__InvesteeAlreadyFunded();
-        if(s_proposals[_proposalId] == bytes32(0)) revert WlthFund__InvalidProposal();
+    function fundInvestee(
+        uint256 _proposalId,
+        address _investee,
+        uint256 _fundAmount,
+        uint256 _burnAmount
+    ) external onlyOwner {
+        if (s_proposalsFunded[_proposalId]) revert WlthFund__InvesteeAlreadyFunded();
+        if (s_proposals[_proposalId] == bytes32(0)) revert WlthFund__InvalidProposal();
 
         s_proposalsFunded[_proposalId] = true;
 
         emit InvesteeFunded(_proposalId, _investee, _fundAmount, _burnAmount);
 
-        _transferFrom(s_wlth, s_secondarySalesWallet, address(this), _burnAmount*99/100);
-        IWlth(s_wlth).burn(_burnAmount*99/100);
+        _transferFrom(s_wlth, s_secondarySalesWallet, address(this), (_burnAmount * 99) / 100);
+        IWlth(s_wlth).burn((_burnAmount * 99) / 100);
         _transferFrom(s_usdc, s_secondarySalesWallet, _investee, _fundAmount);
     }
 
@@ -80,7 +90,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
      * @inheritdoc IWlthFund
      */
     function putTop50Stakers(uint256 _id, bytes32[50] calldata _stakers) external onlyOwner {
-        if(s_top50stakers[_id][0] != 0) revert WlthFund__Top50StakersEntityAlreadyExist();
+        if (s_top50stakers[_id][0] != 0) revert WlthFund__Top50StakersEntityAlreadyExist();
         s_top50stakers[_id] = _stakers;
 
         emit Top50StakersStored(_id, _stakers);
@@ -90,7 +100,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
      * @inheritdoc IWlthFund
      */
     function putProposalHash(uint256 _proposalId, bytes32 _keccakHash) external onlyOwner {
-        if(s_proposals[_proposalId] != bytes32(0)) revert WlthFund__ProposalAlreadyExist();
+        if (s_proposals[_proposalId] != bytes32(0)) revert WlthFund__ProposalAlreadyExist();
         s_proposals[_proposalId] = _keccakHash;
 
         emit ProposalHashStored(_proposalId, _keccakHash);
@@ -100,7 +110,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
      * @inheritdoc IWlthFund
      */
     function getTop50Stakers(uint256 _id) external view returns (bytes32[50] memory) {
-        bytes32[50] memory stakers =  s_top50stakers[_id];
+        bytes32[50] memory stakers = s_top50stakers[_id];
         return stakers;
     }
 
@@ -114,21 +124,21 @@ contract WlthFund is OwnablePausable, IWlthFund {
     /**
      * @inheritdoc IWlthFund
      */
-     function wlth() external view returns (address) {
+    function wlth() external view returns (address) {
         return s_wlth;
-     }
+    }
 
     /**
      * @inheritdoc IWlthFund
      */
-     function usdc() external view returns (address) {
+    function usdc() external view returns (address) {
         return s_usdc;
-     }
+    }
 
     /**
      * @inheritdoc IWlthFund
      */
-     function secondarySalesWallet() external view returns (address) {
+    function secondarySalesWallet() external view returns (address) {
         return s_secondarySalesWallet;
-     }
+    }
 }

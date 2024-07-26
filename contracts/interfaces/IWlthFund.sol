@@ -9,7 +9,12 @@ interface IWlthFund {
      * @param fundAmount Address of new minter
      * @param burnAmount Address of new minter
      */
-    event InvesteeFunded(uint256 indexed proposalId, address investee, uint256 indexed fundAmount, uint256 indexed burnAmount);
+    event InvesteeFunded(
+        uint256 indexed proposalId,
+        address investee,
+        uint256 indexed fundAmount,
+        uint256 indexed burnAmount
+    );
 
     /**
      * @notice Emitted when new minter account is added to contract
