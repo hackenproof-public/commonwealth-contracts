@@ -75,11 +75,11 @@ export const getStakeWithFee = (amount: number, fee: number = DEFAULT_TRANSACTIO
   return Math.floor((amount * BP_MAX) / (BP_MAX - fee));
 };
 
-export const generateRandomBytes32Array = (amount: number): utils.BytesLike[] => {;
+export const generateRandomBytes32Array = (amount: number): utils.BytesLike[] => {
   const randomBytes32Array: utils.BytesLike[] = [];
   for (let i = 0; i < amount; i++) {
     const randomBytes = ethers.utils.hexlify(ethers.utils.randomBytes(32));
     randomBytes32Array.push(randomBytes);
   }
   return randomBytes32Array;
-}
+};
