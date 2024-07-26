@@ -2,21 +2,21 @@
 pragma solidity ^0.8.18;
 pragma experimental ABIEncoderV2;
 
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {IWlth} from "./interfaces/IWlth.sol";
 import {IWlthFund} from "./interfaces/IWlthFund.sol";
-import {_transfer} from "./libraries/Utils.sol";
+import {_transferFrom} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 
 error WlthFund__InvalidProposal();
 error WlthFund__ProposalAlreadyExist();
-error WlthFund__Top0StakersEntityAlreadyExist();
+error WlthFund__Top50StakersEntityAlreadyExist();
 error WlthFund__WlthZeroAddress();
 error WlthFund__OwnerZeroAddress();
 error WlthFund__UsdcZeroAddress();
 error WlthFund__SecondarySalesWalletZeroAddress();
+error WlthFund__InvesteeAlreadyFunded();
 
-contract WlthFundLedger is ReentrancyGuardUpgradeable, OwnablePausable, IWlthFund {
+contract WlthFund is OwnablePausable, IWlthFund {
     /// @notice WLTH ERC-20 contract address
     address private s_wlth;
 
@@ -28,6 +28,9 @@ contract WlthFundLedger is ReentrancyGuardUpgradeable, OwnablePausable, IWlthFun
 
     /// @notice proposal data hash
     mapping(uint256 => bytes32) private s_proposals;
+
+    /// @notice proposal data hash
+    mapping(uint256 => bool) private s_proposalsFunded;
 
     /// @notice Address of Investee.
     mapping(uint256 => bytes32[50]) private s_top50stakers;
@@ -60,22 +63,27 @@ contract WlthFundLedger is ReentrancyGuardUpgradeable, OwnablePausable, IWlthFun
     /**
      * @inheritdoc IWlthFund
      */
-    function executeProposal(uint256 _proposalId, address _investee, uint256 _fundAmount, uint256 _burnAmount) external nonReentrant onlyOwner {
+    function fundInvestee(uint256 _proposalId, address _investee, uint256 _fundAmount, uint256 _burnAmount) external onlyOwner {
+        if(s_proposalsFunded[_proposalId]) revert WlthFund__InvesteeAlreadyFunded();
         if(s_proposals[_proposalId] == bytes32(0)) revert WlthFund__InvalidProposal();
 
-        emit ProposalExecuted(_proposalId, _investee, _fundAmount, _burnAmount);
+        s_proposalsFunded[_proposalId] = true;
 
+        emit InvesteeFunded(_proposalId, _investee, _fundAmount, _burnAmount);
+
+        _transferFrom(s_wlth, s_secondarySalesWallet, address(this), _burnAmount*99/100);
         IWlth(s_wlth).burn(_burnAmount*99/100);
-        _transfer(s_wlth, s_secondarySalesWallet, _burnAmount/100);
-        _transfer(s_usdc, _investee, _fundAmount);
+        _transferFrom(s_usdc, s_secondarySalesWallet, _investee, _fundAmount);
     }
 
     /**
      * @inheritdoc IWlthFund
      */
     function putTop50Stakers(uint256 _id, bytes32[50] calldata _stakers) external onlyOwner {
-        if(s_top50stakers[_id].length != 0) revert WlthFund__Top0StakersEntityAlreadyExist();
+        if(s_top50stakers[_id][0] != 0) revert WlthFund__Top50StakersEntityAlreadyExist();
         s_top50stakers[_id] = _stakers;
+
+        emit Top50StakersStored(_id, _stakers);
     }
 
     /**
@@ -84,6 +92,8 @@ contract WlthFundLedger is ReentrancyGuardUpgradeable, OwnablePausable, IWlthFun
     function putProposalHash(uint256 _proposalId, bytes32 _keccakHash) external onlyOwner {
         if(s_proposals[_proposalId] != bytes32(0)) revert WlthFund__ProposalAlreadyExist();
         s_proposals[_proposalId] = _keccakHash;
+
+        emit ProposalHashStored(_proposalId, _keccakHash);
     }
 
     /**
@@ -100,4 +110,25 @@ contract WlthFundLedger is ReentrancyGuardUpgradeable, OwnablePausable, IWlthFun
     function getProposalHash(uint256 _proposalId) external view returns (bytes32) {
         return s_proposals[_proposalId];
     }
+
+    /**
+     * @inheritdoc IWlthFund
+     */
+     function wlth() external view returns (address) {
+        return s_wlth;
+     }
+
+    /**
+     * @inheritdoc IWlthFund
+     */
+     function usdc() external view returns (address) {
+        return s_usdc;
+     }
+
+    /**
+     * @inheritdoc IWlthFund
+     */
+     function secondarySalesWallet() external view returns (address) {
+        return s_secondarySalesWallet;
+     }
 }

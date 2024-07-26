@@ -7,7 +7,7 @@ import { deployProxy } from '../../scripts/utils';
 import { WhitelistedVesting, Wlth } from '../../typechain-types';
 import { toWlth } from '../utils';
 
-describe.only('Whitelisted vesting unit tests', () => {
+describe('Whitelisted vesting unit tests', () => {
   const TWELVE_BILIONS = '12000000';
   const SECONDS_IN_YEAR = 31536000;
   const ONE_YEAR = SECONDS_IN_YEAR;

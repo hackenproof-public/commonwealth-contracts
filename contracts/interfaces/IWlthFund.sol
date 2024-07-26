@@ -9,7 +9,21 @@ interface IWlthFund {
      * @param fundAmount Address of new minter
      * @param burnAmount Address of new minter
      */
-    event ProposalExecuted(uint256 indexed proposalId, address investee, uint256 indexed fundAmount, uint256 indexed burnAmount);
+    event InvesteeFunded(uint256 indexed proposalId, address investee, uint256 indexed fundAmount, uint256 indexed burnAmount);
+
+    /**
+     * @notice Emitted when new minter account is added to contract
+     * @param id Address of new minter
+     * @param stakers asd
+     */
+    event Top50StakersStored(uint256 indexed id, bytes32[50] indexed stakers);
+
+    /**
+     * @notice Emitted when new minter account is added to contract
+     * @param proposalId Address of new minter
+     * @param keccakHash asd
+     */
+    event ProposalHashStored(uint256 indexed proposalId, bytes32 indexed keccakHash);
 
     /**
      * @notice Burns the amount of tokens
@@ -32,7 +46,7 @@ interface IWlthFund {
      * @param fundAmount to be burned
      * @param burnAmount top 50 stakers list
      */
-    function executeProposal(uint256 proposalId, address investee, uint256 fundAmount, uint256 burnAmount) external;
+    function fundInvestee(uint256 proposalId, address investee, uint256 fundAmount, uint256 burnAmount) external;
 
     /**
      * @notice Burns the amount of tokens
@@ -45,4 +59,19 @@ interface IWlthFund {
      * @param proposalId to be burned
      */
     function getProposalHash(uint256 proposalId) external view returns (bytes32);
+
+    /**
+     * @notice Returns WLTH contract address
+     */
+    function wlth() external view returns (address);
+
+    /**
+     * @notice Returns USDC contract address
+     */
+    function usdc() external view returns (address);
+
+    /**
+     * @notice Returns secondary sales wallet address;
+     */
+    function secondarySalesWallet() external view returns (address);
 }
