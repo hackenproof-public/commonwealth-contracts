@@ -186,6 +186,11 @@ interface IInvestmentFund {
     event FunctionsAllowed();
 
     /**
+     * @notice Emitted when invested funds are withdrawn
+     */
+    event InvestedFundsWithdrawn(address indexed wallet, uint256 indexed amount);
+
+    /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
      *
      * Requirements:
@@ -450,4 +455,9 @@ interface IInvestmentFund {
      * @notice Returns profit provider
      */
     function profitProvider() external view returns (address);
+
+    /**
+     * @notice Returns investment withdrawn amount
+     */
+    function investmentWithdrawn() external view returns (uint256);
 }
