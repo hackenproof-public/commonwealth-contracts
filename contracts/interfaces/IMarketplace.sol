@@ -167,9 +167,9 @@ interface IMarketplace {
      function getListingCount() external view returns (uint256);
 
      /**
-     * @notice Returns payment token
+     * @notice Returns payment token contract address
      */
-    function paymentToken() external view returns (address);
+     function paymentToken() external view returns (address);
 
     /**
      * @notice Returns fee address

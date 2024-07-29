@@ -5,6 +5,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
+import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -27,11 +28,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @notice Count of s_listings
      */
     uint256 private s_listingCount;
-
-    /**
-     * @notice Token used for buy sell
-     */
-    address private s_paymentAddress;
 
     /**
      * @notice The address fees are transferred to
@@ -93,7 +89,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         __OwnablePausable_init(_owner);
         }
         __ReentrancyGuard_init();
-        s_paymentAddress = _paymentToken; 
         s_paymentToken = IERC20(_paymentToken);
         s_feeAddress = _feeAddress;
         s_secondarySales = _royaltyAddress;
@@ -133,14 +128,13 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @inheritdoc IMarketplace
      */
     function cancelListing(uint256 _listingId) external nonReentrant{
-        Listing memory listing = s_listings[_listingId];
-        if (msg.sender != listing.seller && msg.sender != owner()) {
+        if (msg.sender != s_listings[_listingId].seller && msg.sender != owner()) {
             revert Marketplace__NotOwnerOrSeller();
         }
 
         delete s_listings[_listingId];
         s_listingCount--;
-
+ 
         emit Canceled(_listingId, msg.sender);
     }
 
@@ -208,10 +202,10 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         uint256 transaction_fee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
         uint256 sellerAmount = listing.price - fee - royalty;
 
-        s_paymentToken.transferFrom(msg.sender, s_feeAddress, fee);
-        s_paymentToken.transferFrom(msg.sender, s_secondarySales, royalty);
-        s_paymentToken.transferFrom(msg.sender, s_secondarySales, transaction_fee);
-        s_paymentToken.transferFrom(msg.sender, listing.seller, sellerAmount);
+        _transferFrom(address(s_paymentToken),_msgSender(), s_feeAddress, fee);
+        _transferFrom(address(s_paymentToken),_msgSender(), s_secondarySales, royalty);
+        _transferFrom(address(s_paymentToken),_msgSender(), s_secondarySales, transaction_fee);
+        _transferFrom(address(s_paymentToken),_msgSender(), listing.seller, sellerAmount);
 
         IERC721(listing.nftContract).safeTransferFrom(
             listing.seller,
@@ -261,15 +255,15 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function paymentToken() external view returns (address) {
-        return s_paymentAddress;
+    function feeAddress() external view returns (address) {
+        return s_feeAddress;
     }
 
     /**
      * @inheritdoc IMarketplace
      */
-    function feeAddress() external view returns (address) {
-        return s_feeAddress;
+    function paymentToken() external view returns (address) {
+        return address(s_paymentToken);
     }
 
     /**
