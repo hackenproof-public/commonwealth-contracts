@@ -241,10 +241,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         return s_listings[_listingId];
     }
 
-    function getAllowedContract(address _nftContract) external view returns (bool) {
-        return s_allowedContracts[_nftContract];
-    }
-
     /**
      * @inheritdoc IMarketplace
      */
