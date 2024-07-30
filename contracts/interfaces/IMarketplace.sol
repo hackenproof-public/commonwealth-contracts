@@ -180,4 +180,9 @@ interface IMarketplace {
      * @notice Returns royalty address
      */
     function royaltyAddress() external view returns (address);
+
+    /**
+     * @notice Returns if contract is allowed to perform specific actions
+     */
+    function isAllowedContract(address _nftContract) external view returns (bool);
 }

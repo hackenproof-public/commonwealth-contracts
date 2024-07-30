@@ -19,7 +19,7 @@ error Marketplace__ERC721AddressNotAdded();
 error Marketplace__ERC721AddressNotAllowed();
 error Marketplace__NFTNotOwnedByMsgSender();
 error Marketplace__ListingNotActive();
-error Marketplace__NotOwnerOrSeller();
+error Marketplace__NotOwnerSellerAllowedContracts();
 error Marketplace__NotSeller();
 error Marketplace__ZeroPrice();
 
@@ -128,21 +128,21 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @inheritdoc IMarketplace
      */
     function cancelListing(uint256 _listingId) external nonReentrant{
-        if (msg.sender != s_listings[_listingId].seller && msg.sender != owner()) {
-            revert Marketplace__NotOwnerOrSeller();
+        if (_msgSender() != s_listings[_listingId].seller || _msgSender() != owner() || s_allowedContracts[_msgSender()]) {
+            revert Marketplace__NotOwnerSellerAllowedContracts();
         }
 
         delete s_listings[_listingId];
         s_listingCount--;
  
-        emit Canceled(_listingId, msg.sender);
+        emit Canceled(_listingId, _msgSender());
     }
 
     /**
      * @inheritdoc IMarketplace
      */
     function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant{
-        if (msg.sender != s_listings[_listingId].seller) {
+        if (_msgSender() != s_listings[_listingId].seller) {
             revert Marketplace__NotSeller();
         }
 
@@ -162,7 +162,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         if (!s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressNotAllowed();
         }
-        if (IERC721(_nftContract).ownerOf(_tokenId) != msg.sender) {
+        if (IERC721(_nftContract).ownerOf(_tokenId) != _msgSender()) {
             revert Marketplace__NFTNotOwnedByMsgSender();
         }
         if (_price <= 0) {
@@ -170,7 +170,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         }
 
         s_listings[s_listingCount] = Listing({
-            seller: msg.sender,
+            seller: _msgSender(),
             nftContract: _nftContract,
             tokenId: _tokenId,
             price: _price
@@ -180,7 +180,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
 
         emit Listed(
             s_listingCount-1,
-            msg.sender,
+            _msgSender(),
             _nftContract,
             _tokenId,
             _price
@@ -209,11 +209,11 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
 
         IERC721(listing.nftContract).safeTransferFrom(
             listing.seller,
-            msg.sender,
+            _msgSender(),
             listing.tokenId
         );
 
-        emit Sale(_listingId, msg.sender, listing.seller, listing.price);
+        emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
 
         delete s_listings[_listingId];
         s_listingCount--;
@@ -273,6 +273,9 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         return s_secondarySales;
     }
 
+    /**
+     * @inheritdoc IMarketplace
+     */
     function isAllowedContract(address _nftContract) external view returns (bool) {
         return s_allowedContracts[_nftContract];
     }

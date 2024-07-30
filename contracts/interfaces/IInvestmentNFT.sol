@@ -127,6 +127,19 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     function setMinimumValue(uint256 _minimumValue) external;
 
     /**
+     * @notice Set if token is listed or not on the NFT marketplace
+     * @param _tokenId New minimum value
+     * @param _flag New minimum value
+     */
+    function setTokenListed(uint256 _tokenId, bool _flag) external;
+    
+    /**
+     * @notice Set NFT marketplace address
+     * @param _address New marketplace address
+     */
+    function setMarketplaceAddress(address _address) external;
+
+    /**
      * @notice Returns summarized investment value from tokens holded by `account`
      * @param account Account for which to retrieve investment value
      * @return Account's investment value

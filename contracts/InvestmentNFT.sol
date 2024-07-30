@@ -9,6 +9,7 @@ import {CheckpointsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/
 import {CountersUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
+import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
@@ -20,8 +21,10 @@ error InvestmentNft__NotTokenOwner();
 error InvestmentNft__SplitLimitExceeded();
 error InvestmentNft__TokenValuesBeforeAfterSplitMismatch();
 error InvestmentNft__InvestmentTooLow();
-error InvestmentNft__TokenNotExists(uint256 tokenId);
-
+error InvestmentNft__TokenNotExists(uint256 _tokenId);
+error InvestmentNft__TokenListed();
+error InvestmentNft__InvalidMarketplaceAddress();
+error InvestmentNft__NotCalledByMarketplace();
 /**
  * @title Investment NFT contract
  */
@@ -59,6 +62,8 @@ contract InvestmentNFT is
     CheckpointsUpgradeable.History private _totalValueHistory;
 
     Metadata public metadata;
+    IMarketplace private s_marketplace;
+    mapping(uint256 => bool) private s_isListed;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -146,6 +151,7 @@ contract InvestmentNFT is
      * @inheritdoc IInvestmentNFT
      */
     function split(uint256 tokenId, uint256[] calldata values) external whenNotPaused {
+        if(s_isListed[tokenId]) revert InvestmentNft__TokenListed();
         _validateSplit(tokenId, values);
 
         _burn(tokenId);
@@ -211,6 +217,21 @@ contract InvestmentNFT is
         metadata.externalUrl = _metadata.externalUrl;
 
         emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function setTokenListed(uint256 _tokenId, bool _flag) external {
+        s_isListed[_tokenId] = _flag;
+    }
+    
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function setMarketplaceAddress(address _address) external onlyOwner {
+        if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
+        s_marketplace= IMarketplace(_address);
     }
 
     /**
@@ -423,6 +444,7 @@ contract InvestmentNFT is
         uint256 value = tokenValue[tokenId];
         _subtractAccountValue(from, value);
         _addAccountValue(to, value);
+        if (s_isListed[tokenId]) _delistFromMarketplace(tokenId);
     }
 
     function _addAccountValue(address account, uint256 value) internal virtual {
@@ -435,6 +457,11 @@ contract InvestmentNFT is
         if (balanceOf(account) == 0) {
             _investors.remove(account);
         }
+    }
+
+    function _delistFromMarketplace(uint256 tokenId) internal {
+        s_marketplace.cancelListing(tokenId);
+        s_isListed[tokenId] = false;
     }
 
     // Function to convert uint to string
@@ -457,5 +484,5 @@ contract InvestmentNFT is
         return string(buffer);
     }
 
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 }
