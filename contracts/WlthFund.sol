@@ -13,6 +13,7 @@ error WlthFund__Top50StakersEntityAlreadyExist();
 error WlthFund__WlthZeroAddress();
 error WlthFund__OwnerZeroAddress();
 error WlthFund__UsdcZeroAddress();
+error WlthFund__InvesteeZeroAddress();
 error WlthFund__SecondarySalesWalletZeroAddress();
 error WlthFund__InvesteeAlreadyFunded();
 
@@ -74,6 +75,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
         uint256 _fundAmount,
         uint256 _burnAmount
     ) external onlyOwner {
+        if (_investee == address(0)) revert WlthFund__InvesteeZeroAddress();
         if (s_proposalsFunded[_proposalId]) revert WlthFund__InvesteeAlreadyFunded();
         if (s_proposals[_proposalId] == bytes32(0)) revert WlthFund__InvalidProposal();
 
