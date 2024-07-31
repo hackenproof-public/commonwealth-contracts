@@ -218,6 +218,27 @@ describe('WlthFund', () => {
           .withArgs(proposalId, investee.address, fundAmount, burnAmount);
       });
       describe('Reverts', () => {
+        it('Should revert when investee is zero address', async () => {
+          const { wlthFund, owner, deployer, secondarySalesWallet, wlth, usdc } = await loadFixture(deployWlthFund);
+
+          const proposalHash = utils.formatBytes32String('proposalHash');
+          const proposalId = 1;
+          const [investee] = await ethers.getSigners();
+          const fundAmount = toUsdc('1000');
+          const burnAmount = toWlth('1000');
+
+          wlth.approve.returns(true);
+          wlth.transferFrom.returns(true);
+          usdc.approve.returns(true);
+          usdc.transferFrom.returns(true);
+
+          await wlthFund.connect(owner).putProposalHash(proposalId, proposalHash);
+
+          await expect(
+            wlthFund.connect(owner).fundInvestee(proposalId, constants.AddressZero, fundAmount, burnAmount)
+          ).to.be.revertedWithCustomError(wlthFund, 'WlthFund__InvesteeZeroAddress');
+        });
+        
         it('Should revert when investee already funded', async () => {
           const { wlthFund, owner, deployer, secondarySalesWallet, wlth, usdc } = await loadFixture(deployWlthFund);
 
