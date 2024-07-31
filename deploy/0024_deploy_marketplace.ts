@@ -17,7 +17,7 @@ const deployMarketplace: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     { name: '_royaltyAddress', value: deploymentCofing.genesisNftRoyaltyAccount },
   ];
 
-  await deploy(hre, 'Marketplace', parameters);
+  await deploy(hre, 'Marketplace', parameters, true, true);
 };
 
 export default deployMarketplace;
