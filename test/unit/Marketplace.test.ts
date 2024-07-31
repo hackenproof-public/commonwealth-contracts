@@ -127,7 +127,7 @@ describe.only('Marketplace', () => {
             // Add allowed contract
             await marketplace.connect(owner).addAllowedContract(genNft.address);
 
-            expect(await marketplace.getAllowedContract(genNft.address)).to.be.true;
+            expect(await marketplace.isAllowedContract(genNft.address)).to.be.true;
         });
     });
 
@@ -172,7 +172,7 @@ describe.only('Marketplace', () => {
             await marketplace.connect(owner).addAllowedContract(genNft.address);
             await marketplace.connect(owner).removeAllowedContract(genNft.address);
 
-            expect(await marketplace.getAllowedContract(genNft.address)).to.be.false;
+            expect(await marketplace.isAllowedContract(genNft.address)).to.be.false;
         });
     });
 
@@ -219,7 +219,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await expect(marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1')))
+            await expect(marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false))
               .to.emit(marketplace, 'Listed')
               .withArgs(0, owner.address, genNft.address, 1, ethers.utils.parseEther('1'));
       
@@ -236,7 +236,7 @@ describe.only('Marketplace', () => {
             const { marketplace, genNft, deployer, owner, wlth, communityFund, genesisNftRoyaltyAccount } =
             await loadFixture(deployMarketplace);
             await expect(
-              marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+              marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             ).to.be.revertedWithCustomError(marketplace, 'Marketplace__ERC721AddressNotAllowed');
           });
       
@@ -250,7 +250,7 @@ describe.only('Marketplace', () => {
             genNft.ownerOf.whenCalledWith(1).returns(user1.address);
       
             await expect(
-              marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+              marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             ).to.be.revertedWithCustomError(marketplace, 'Marketplace__NFTNotOwnedByMsgSender');
           });
 
@@ -264,7 +264,7 @@ describe.only('Marketplace', () => {
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
             await expect(
-              marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('0'))
+              marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('0'), false)
             ).to.be.revertedWithCustomError(marketplace, 'Marketplace__ZeroPrice');
           });
     });
@@ -281,7 +281,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
       
             await expect(marketplace.connect(owner).cancelListing(0))
               .to.emit(marketplace, 'Canceled')
@@ -300,7 +300,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(user1.address);
       
-            await marketplace.connect(user1).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+            await marketplace.connect(user1).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
       
             await expect(marketplace.connect(owner).cancelListing(0))
               .to.emit(marketplace, 'Canceled')
@@ -321,11 +321,11 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
             await expect(
               marketplace.connect(user1).cancelListing(0)
-            ).to.be.revertedWithCustomError(marketplace, 'Marketplace__NotOwnerOrSeller');
+            ).to.be.revertedWithCustomError(marketplace, 'Marketplace__NotOwnerSellerAllowedContracts');
           });
       
           it('should decrease the listing count by 1 after cancellation', async function () {
@@ -337,7 +337,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
             const initialListingCount = await marketplace.getListingCount();
       
@@ -368,7 +368,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice)
+            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
             await wlth.transferFrom
                 .whenCalledWith(user1.address, communityFund.address, fee)
@@ -407,7 +407,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice)
+            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
             await wlth.transferFrom
                 .whenCalledWith(user1.address, communityFund.address, fee)
@@ -445,7 +445,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice)
+            await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
             await wlth.transferFrom
                 .whenCalledWith(user1.address, communityFund.address, fee)
@@ -489,8 +489,8 @@ describe.only('Marketplace', () => {
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
             genNft.ownerOf.whenCalledWith(2).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
-            await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
+            await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'), false)
     
             // Call getAllListings
             const allListings = await marketplace.getAllListings();
@@ -525,7 +525,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
             const listing = await marketplace.getOneListing(0);
         
@@ -545,7 +545,7 @@ describe.only('Marketplace', () => {
 
         await marketplace.connect(owner).addAllowedContract(genNft.address);
 
-        const isAllowed = await marketplace.getAllowedContract(genNft.address);
+        const isAllowed = await marketplace.isAllowedContract(genNft.address);
 
         expect(isAllowed).to.be.true;
         });
@@ -554,7 +554,7 @@ describe.only('Marketplace', () => {
             const { marketplace, genNft, deployer, owner, wlth, communityFund, genesisNftRoyaltyAccount } =
             await loadFixture(deployMarketplace);
 
-            const isAllowed = await marketplace.getAllowedContract(genNft.address);
+            const isAllowed = await marketplace.isAllowedContract(genNft.address);
 
             expect(isAllowed).to.be.false;
         });
@@ -572,8 +572,8 @@ describe.only('Marketplace', () => {
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
             genNft.ownerOf.whenCalledWith(2).returns(owner.address);
       
-            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'))
-            await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'))
+            await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
+            await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'), false)
     
             const count = await marketplace.getListingCount();
     

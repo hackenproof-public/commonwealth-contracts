@@ -1,11 +1,12 @@
 import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { IERC721EnumerableUpgradeable__factory, IInvestmentNFT__factory, InvestmentNFT } from '../../typechain-types';
-import { getInterfaceIdWithBase, toUsdc } from '../utils';
+import { IERC721EnumerableUpgradeable__factory, IInvestmentNFT__factory, InvestmentNFT, Wlth, Marketplace, GenesisNFT } from '../../typechain-types';
+import { getInterfaceIdWithBase, toUsdc, toWlth } from '../utils';
 
 describe('Investment NFT unit tests', () => {
   const IInvestmentNFTId = utils.arrayify(
@@ -591,6 +592,40 @@ describe('Investment NFT unit tests', () => {
       expect(await investmentNft.tokenURI(0)).to.equal(
         'data:application/json;base64,eyJuYW1lIjogIk5ldyBOYW1lIiwiZGVzY3JpcHRpb24iOiAiTmV3IERlc2NyaXB0aW9uIiwiaW1hZ2UiOiAiTmV3IEltYWdlIiwiZXh0ZXJuYWxfdXJsIjogIk5ldyBVcmwiLCJhdHRyaWJ1dGVzIjogW3sidHJhaXRfdHlwZSI6InZhbHVlIiwidmFsdWUiOiIxMDAuMDAwMCUifV19'
       );
+    });
+  });
+
+  describe('#NftMarketplaceInteractions', () => {
+    it('should automatically delist NFT from marketplace when transferred to another owner', async function () {
+      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await investmentNft.connect(minter).mint(user.address, tokenValue);
+
+      await marketplace.connect(owner).addAllowedContract(investmentNft.address);
+      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'), true);
+
+      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
+      await investmentNft.connect(user).transferFrom(user.address, deployer.address, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
     });
   });
 });

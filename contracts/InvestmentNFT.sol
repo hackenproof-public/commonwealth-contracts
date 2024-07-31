@@ -224,6 +224,8 @@ contract InvestmentNFT is
      */
     function setTokenListed(uint256 _tokenId, bool _flag) external {
         s_isListed[_tokenId] = _flag;
+
+        emit TokenListed(_tokenId, _flag);
     }
     
     /**

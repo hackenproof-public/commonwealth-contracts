@@ -5,6 +5,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
+import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -128,7 +129,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @inheritdoc IMarketplace
      */
     function cancelListing(uint256 _listingId) external nonReentrant{
-        if (_msgSender() != s_listings[_listingId].seller || _msgSender() != owner() || s_allowedContracts[_msgSender()]) {
+        if (_msgSender() != s_listings[_listingId].seller && _msgSender() != owner() && !s_allowedContracts[_msgSender()]) {
             revert Marketplace__NotOwnerSellerAllowedContracts();
         }
 
@@ -157,7 +158,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     function listNFT(
         address _nftContract,
         uint256 _tokenId,
-        uint256 _price
+        uint256 _price,
+        bool _isInvestmentNft
     ) external nonReentrant{
         if (!s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressNotAllowed();
@@ -177,6 +179,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         });
 
         s_listingCount++;
+
+        if(_isInvestmentNft) IInvestmentNFT(_nftContract).setTokenListed(_tokenId, true);
 
         emit Listed(
             s_listingCount-1,
