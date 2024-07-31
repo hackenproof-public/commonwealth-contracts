@@ -218,7 +218,8 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
-      
+            genNft.getApproved.returns(marketplace.address);
+
             await expect(marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false))
               .to.emit(marketplace, 'Listed')
               .withArgs(0, owner.address, genNft.address, 1, ethers.utils.parseEther('1'));
@@ -235,6 +236,8 @@ describe.only('Marketplace', () => {
         it('should revert if the contract is not allowed', async function () {
             const { marketplace, genNft, deployer, owner, wlth, communityFund, genesisNftRoyaltyAccount } =
             await loadFixture(deployMarketplace);
+
+            genNft.getApproved.returns(marketplace.address);
             await expect(
               marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             ).to.be.revertedWithCustomError(marketplace, 'Marketplace__ERC721AddressNotAllowed');
@@ -248,7 +251,8 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return a different address
             genNft.ownerOf.whenCalledWith(1).returns(user1.address);
-      
+            genNft.getApproved.returns(marketplace.address);
+
             await expect(
               marketplace.listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             ).to.be.revertedWithCustomError(marketplace, 'Marketplace__NFTNotOwnedByMsgSender');
@@ -262,6 +266,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await expect(
               marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('0'), false)
@@ -280,6 +285,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
       
@@ -299,6 +305,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(user1.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(user1).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
       
@@ -320,6 +327,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
@@ -336,6 +344,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
@@ -367,6 +376,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
@@ -406,6 +416,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
@@ -444,6 +455,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice, false)
 
@@ -488,6 +500,7 @@ describe.only('Marketplace', () => {
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
             genNft.ownerOf.whenCalledWith(2).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'), false)
@@ -524,6 +537,7 @@ describe.only('Marketplace', () => {
       
             // Fake the ownerOf function to return the correct address
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
 
@@ -571,6 +585,7 @@ describe.only('Marketplace', () => {
 
             genNft.ownerOf.whenCalledWith(1).returns(owner.address);
             genNft.ownerOf.whenCalledWith(2).returns(owner.address);
+            genNft.getApproved.returns(marketplace.address);
       
             await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'), false)
             await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'), false)

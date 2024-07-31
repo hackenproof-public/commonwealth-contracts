@@ -21,6 +21,7 @@ error Marketplace__ERC721AddressNotAllowed();
 error Marketplace__NFTNotOwnedByMsgSender();
 error Marketplace__ListingNotActive();
 error Marketplace__NotOwnerSellerAllowedContracts();
+error Marketplace__NFTNotApprovedForMarketplaceContract();
 error Marketplace__NotSeller();
 error Marketplace__ZeroPrice();
 
@@ -160,12 +161,15 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         uint256 _tokenId,
         uint256 _price,
         bool _isInvestmentNft
-    ) external nonReentrant{
+    ) external nonReentrant returns (uint256) {
         if (!s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressNotAllowed();
         }
         if (IERC721(_nftContract).ownerOf(_tokenId) != _msgSender()) {
             revert Marketplace__NFTNotOwnedByMsgSender();
+        }
+        if (IERC721(_nftContract).getApproved(_tokenId) != address(this)) {
+            revert Marketplace__NFTNotApprovedForMarketplaceContract();
         }
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
@@ -189,6 +193,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
             _tokenId,
             _price
         );
+
+        return s_listingCount-1;
     }
 
     /**
