@@ -89,6 +89,7 @@ export interface networkConfigItem {
   bonusStakingStartTimestamp: number;
   bonusStakingDuration: number;
   bonusStakingTotalReward: BigNumber;
+  minimumBuyback: BigNumber;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -145,7 +146,8 @@ const localConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('50'),
   bonusStakingStartTimestamp: 1699971572,
   bonusStakingDuration: 86400,
-  bonusStakingTotalReward: parseEther('1000')
+  bonusStakingTotalReward: parseEther('1000'),
+  minimumBuyback: toUsdc('100')
 };
 
 const baseSepoliaConfig: networkConfigItem = {
@@ -192,7 +194,8 @@ const baseSepoliaConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('20'),
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 259200,
-  bonusStakingTotalReward: parseEther('63998117')
+  bonusStakingTotalReward: parseEther('63998117'),
+  minimumBuyback: toUsdc('100')
 };
 
 const baseConfig: networkConfigItem = {
@@ -239,7 +242,8 @@ const baseConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('20'),
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 2678400,
-  bonusStakingTotalReward: parseEther('63998117')
+  bonusStakingTotalReward: parseEther('63998117'),
+  minimumBuyback: toUsdc('0')
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig,

@@ -238,6 +238,7 @@ describe('WlthFund', () => {
             wlthFund.connect(owner).fundInvestee(proposalId, constants.AddressZero, fundAmount, burnAmount)
           ).to.be.revertedWithCustomError(wlthFund, 'WlthFund__InvesteeZeroAddress');
         });
+        
         it('Should revert when investee already funded', async () => {
           const { wlthFund, owner, deployer, secondarySalesWallet, wlth, usdc } = await loadFixture(deployWlthFund);
 

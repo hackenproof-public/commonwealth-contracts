@@ -11,7 +11,7 @@ const deployUniswapWlthSwapper: DeployFunction = async (hre: HardhatRuntimeEnvir
     { name: 'swapRouter', value: deploymentConfig.uniswapSwapRouterV3Address } // SwapRouter02
   ];
 
-  await deploy(hre, 'UniswapSwapper', parameters, true, false);
+  await deploy(hre, 'UniswapSwapper', parameters, true);
 };
 
 export default deployUniswapWlthSwapper;

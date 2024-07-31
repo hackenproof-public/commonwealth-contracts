@@ -175,9 +175,20 @@ interface IInvestmentFund {
     event ProfitProviderSet(address indexed profitProvider);
 
     /**
+     * @notice Emitted when buyback and burn address  is set
+     * @param buybackAndBurn Address of buyback and burn
+     */
+    event BuybackAndBurnAddressSet(address indexed buybackAndBurn);
+
+    /**
      * @notice Emitted when functions are allowed in states
      */
     event FunctionsAllowed();
+
+    /**
+     * @notice Emitted when invested funds are withdrawn
+     */
+    event InvestedFundsWithdrawn(address indexed wallet, uint256 indexed amount);
 
     /**
      * @notice Invests 'amount' number of USD Coin tokens to investment fund.
@@ -292,7 +303,17 @@ interface IInvestmentFund {
      */
     function increaseCapTo(uint256 _cap) external;
 
+    /**
+     * @notice Sets profit provider address
+     * @param _profitProvider Address of profit provider
+     */
     function setProfitProvider(address _profitProvider) external;
+
+    /**
+     * @notice Sets buyback and burn address
+     * @param _buybackAndBurn Address of buyback and burn contract
+     */
+    function setBuybackAndBurnAddress(address _buybackAndBurn) external;
 
     /**
      * @notice Returns amount of profit payouts made within a fund.
@@ -434,4 +455,9 @@ interface IInvestmentFund {
      * @notice Returns profit provider
      */
     function profitProvider() external view returns (address);
+
+    /**
+     * @notice Returns investment withdrawn amount
+     */
+    function investmentWithdrawn() external view returns (uint256);
 }

@@ -1952,7 +1952,7 @@ describe('InvestmentFund', () => {
 
   describe('Set the profit provider', () => {
     describe('Success', () => {
-      it('Should set the minimum investment amount', async () => {
+      it('Should set the profit provider', async () => {
         const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
 
         const newProfitProvider = ethers.Wallet.createRandom();
@@ -1979,6 +1979,78 @@ describe('InvestmentFund', () => {
         await expect(
           investmentFund.connect(owner).setProfitProvider(ethers.constants.AddressZero)
         ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__ProfitProviderZeroAddress');
+      });
+    });
+  });
+
+  describe('Set the buyback and burn address', () => {
+    describe('Success', () => {
+      it('Should set the buyback and burn address', async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        const newBuybackAndBurnAddress = ethers.Wallet.createRandom();
+
+        expect(await investmentFund.connect(owner).setBuybackAndBurnAddress(newBuybackAndBurnAddress.address))
+          .to.emit(investmentFund, 'BuybackAndBurnAddressSet')
+          .withArgs(newBuybackAndBurnAddress.address);
+        expect(await investmentFund.burnAddress()).to.be.equal(newBuybackAndBurnAddress.address);
+      });
+    });
+    describe('Reverts', () => {
+      it('Should revert when not called by the owner', async () => {
+        const { user1, investmentFund } = await loadFixture(deployInvestmentFund);
+        const newBuybackAndBurnAddress = ethers.Wallet.createRandom();
+
+        await expect(
+          investmentFund.connect(user1).setBuybackAndBurnAddress(newBuybackAndBurnAddress.address)
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+
+      it("Should revert when zero address is passed as the profit provider's address", async () => {
+        const { owner, investmentFund } = await loadFixture(deployInvestmentFund);
+
+        await expect(
+          investmentFund.connect(owner).setBuybackAndBurnAddress(ethers.constants.AddressZero)
+        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__BurnZeroAddress');
+      });
+    });
+  });
+
+  describe('Investment withdrawn', async () => {
+    describe('Success', async () => {
+      it('Should withdraw investment', async () => {
+        const { owner, investmentFund, usdc, cap, project, user1, investmentNft } = await loadFixture(
+          deployInvestmentFund
+        );
+
+        usdc.transfer.returns(true);
+        const amount = toUsdc('100000');
+
+        expect(await investmentFund.connect(owner).withdrawInvestedFunds(user1.address, amount))
+          .to.emit(investmentFund, 'InvestmentWithdrawn')
+          .withArgs(user1.address, amount);
+        expect(await investmentFund.investmentWithdrawn()).to.be.equal(amount);
+      });
+    });
+    describe('Reverts', async () => {
+      it('Should return if not the owner', async () => {
+        const { user1, investmentFund } = await loadFixture(deployInvestmentFund);
+        await expect(
+          investmentFund.connect(user1).withdrawInvestedFunds(user1.address, toUsdc('100'))
+        ).to.be.revertedWith('Ownable: caller is not the owner');
+      });
+
+      it('Should revert when more than cap', async () => {
+        const { owner, usdc, investmentFund, cap, project, user1 } = await loadFixture(deployInvestmentFund);
+        usdc.transfer.returns(true);
+        usdc.transferFrom.returns(true);
+
+        await investmentFund.connect(owner).setMaxPercentageWalletInvestmentLimit(10000);
+
+        await investmentFund.connect(owner).withdrawInvestedFunds(user1.address, cap);
+        await expect(
+          investmentFund.connect(owner).withdrawInvestedFunds(user1.address, 1)
+        ).to.be.revertedWithCustomError(investmentFund, 'InvestmentFund__WithdrawMoreThanInvested');
       });
     });
   });

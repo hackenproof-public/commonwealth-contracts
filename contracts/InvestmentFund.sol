@@ -45,6 +45,7 @@ error InvestmentFund__InvestmentNftInterfaceNotSupported();
 error InvestmmentFund__MaxPercentageWalletInvestmentLimitReached();
 error InvestmentFund__ProfitProviderZeroAddress();
 error InvestmentFund__OperationNotAllowed(address account);
+error InvestmentFund__WithdrawMoreThanInvested();
 
 /**
  * @title Investment Fund contract
@@ -163,6 +164,11 @@ contract InvestmentFund is
      * @notice Address of profit provider
      */
     address public s_profitProvider;
+
+    /**
+     * @notice Total investment withdrawn
+     */
+    uint256 private s_investmentWithdrawn;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -467,6 +473,12 @@ contract InvestmentFund is
         emit ProfitProviderSet(_profitProvider);
     }
 
+    function setBuybackAndBurnAddress(address _burnAddress) external override onlyOwner {
+        if (_burnAddress == address(0)) revert InvestmentFund__BurnZeroAddress();
+        s_burnAddress = _burnAddress;
+        emit BuybackAndBurnAddressSet(_burnAddress);
+    }
+
     /**
      * @inheritdoc IInvestmentFund
      */
@@ -487,6 +499,17 @@ contract InvestmentFund is
         allowFunction(LibFund.STATE_FUNDS_DEPLOYED, this.provideProfit.selector);
 
         emit FunctionsAllowed();
+    }
+
+    function withdrawInvestedFunds(address _wallet, uint256 _amount) external onlyOwner {
+        uint256 _investmentWithdrawn = s_investmentWithdrawn;
+        if (_amount + _investmentWithdrawn > s_cap) {
+            revert InvestmentFund__WithdrawMoreThanInvested();
+        }
+
+        s_investmentWithdrawn = _amount + _investmentWithdrawn;
+        emit InvestedFundsWithdrawn(_wallet, _amount);
+        _transfer(s_currency, _wallet, _amount);
     }
 
     /**
@@ -699,6 +722,13 @@ contract InvestmentFund is
     /**
      * @inheritdoc IInvestmentFund
      */
+    function investmentWithdrawn() external view override returns (uint256) {
+        return s_investmentWithdrawn;
+    }
+
+    /**
+     * @inheritdoc IInvestmentFund
+     */
     function getAvailableFundsDetails(
         address _account
     ) public view returns (uint256 _amount, uint256 _carryFee, uint256 _nextUserPayoutIndex) {
@@ -840,5 +870,5 @@ contract InvestmentFund is
         }
     }
 
-    uint256[47] private __gap;
+    uint256[46] private __gap;
 }
