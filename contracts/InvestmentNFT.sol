@@ -25,6 +25,7 @@ error InvestmentNft__TokenNotExists(uint256 _tokenId);
 error InvestmentNft__TokenListed();
 error InvestmentNft__InvalidMarketplaceAddress();
 error InvestmentNft__NotCalledByMarketplace();
+
 /**
  * @title Investment NFT contract
  */
@@ -151,7 +152,7 @@ contract InvestmentNFT is
      * @inheritdoc IInvestmentNFT
      */
     function split(uint256 tokenId, uint256[] calldata values) external whenNotPaused {
-        if(s_isListed[tokenId]) revert InvestmentNft__TokenListed();
+        if (s_isListed[tokenId]) revert InvestmentNft__TokenListed();
         _validateSplit(tokenId, values);
 
         _burn(tokenId);
@@ -227,13 +228,13 @@ contract InvestmentNFT is
 
         emit TokenListed(_tokenId, _flag);
     }
-    
+
     /**
      * @inheritdoc IInvestmentNFT
      */
     function setMarketplaceAddress(address _address) external onlyOwner {
         if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
-        s_marketplace= IMarketplace(_address);
+        s_marketplace = IMarketplace(_address);
     }
 
     /**

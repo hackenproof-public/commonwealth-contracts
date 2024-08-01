@@ -1,11 +1,17 @@
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture, SnapshotRestorer, takeSnapshot } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { FakeContract, smock } from '@defi-wonderland/smock';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { IERC721EnumerableUpgradeable__factory, IInvestmentNFT__factory, InvestmentNFT, Wlth, Marketplace, GenesisNFT } from '../../typechain-types';
+import {
+  IERC721EnumerableUpgradeable__factory,
+  IInvestmentNFT__factory,
+  InvestmentNFT,
+  Marketplace,
+  Wlth
+} from '../../typechain-types';
 import { getInterfaceIdWithBase, toUsdc, toWlth } from '../utils';
 
 describe('Investment NFT unit tests', () => {
@@ -262,7 +268,7 @@ describe('Investment NFT unit tests', () => {
           [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
           deployer
         )) as Marketplace;
-  
+
         await investmentNft.connect(minter).mint(user.address, tokenValue);
         await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
         await marketplace.connect(owner).addAllowedContract(investmentNft.address);
@@ -270,8 +276,9 @@ describe('Investment NFT unit tests', () => {
         await investmentNft.connect(user).approve(marketplace.address, 0);
         await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'), true);
 
-        await expect(investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')]))
-        .to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__TokenListed');
+        await expect(
+          investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')])
+        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__TokenListed');
       });
     });
   });

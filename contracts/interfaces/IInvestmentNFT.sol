@@ -139,7 +139,7 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @param _flag New minimum value
      */
     function setTokenListed(uint256 _tokenId, bool _flag) external;
-    
+
     /**
      * @notice Set NFT marketplace address
      * @param _address New marketplace address

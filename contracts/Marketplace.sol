@@ -25,7 +25,7 @@ error Marketplace__NFTNotApprovedForMarketplaceContract();
 error Marketplace__NotSeller();
 error Marketplace__ZeroPrice();
 
-contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace{
+contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace {
     /**
      * @notice The address fees are transferred to
      */
@@ -93,7 +93,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         }
         __Context_init();
         {
-        __OwnablePausable_init(_owner);
+            __OwnablePausable_init(_owner);
         }
         __ReentrancyGuard_init();
         s_paymentToken = IERC20(_paymentToken);
@@ -134,21 +134,25 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function cancelListing(uint256 _listingId) external nonReentrant{
-        if (_msgSender() != s_listings[_listingId].seller && _msgSender() != owner() && !s_allowedContracts[_msgSender()]) {
+    function cancelListing(uint256 _listingId) external nonReentrant {
+        if (
+            _msgSender() != s_listings[_listingId].seller &&
+            _msgSender() != owner() &&
+            !s_allowedContracts[_msgSender()]
+        ) {
             revert Marketplace__NotOwnerSellerAllowedContracts();
         }
 
         delete s_listings[_listingId];
         s_listingCount--;
- 
+
         emit Canceled(_listingId, _msgSender());
     }
 
     /**
      * @inheritdoc IMarketplace
      */
-    function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant{
+    function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant {
         if (_msgSender() != s_listings[_listingId].seller) {
             revert Marketplace__NotSeller();
         }
@@ -191,15 +195,9 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         s_listingIdCounter++;
         s_listingCount++;
 
-        if(_isInvestmentNft) IInvestmentNFT(_nftContract).setTokenListed(_tokenId, true);
+        if (_isInvestmentNft) IInvestmentNFT(_nftContract).setTokenListed(_tokenId, true);
 
-        emit Listed(
-            listingId,
-            _msgSender(),
-            _nftContract,
-            _tokenId,
-            _price
-        );
+        emit Listed(listingId, _msgSender(), _nftContract, _tokenId, _price);
 
         return listingId;
     }
@@ -207,7 +205,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function buyNFT(uint256 _listingId) external nonReentrant{
+    function buyNFT(uint256 _listingId) external nonReentrant {
         Listing memory listing = s_listings[_listingId];
 
         if (listing.seller == address(0)) {
@@ -219,16 +217,12 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         uint256 transaction_fee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
         uint256 sellerAmount = listing.price - fee - royalty;
 
-        _transferFrom(address(s_paymentToken),_msgSender(), s_feeAddress, fee);
-        _transferFrom(address(s_paymentToken),_msgSender(), s_secondarySales, royalty);
-        _transferFrom(address(s_paymentToken),_msgSender(), s_secondarySales, transaction_fee);
-        _transferFrom(address(s_paymentToken),_msgSender(), listing.seller, sellerAmount);
+        _transferFrom(address(s_paymentToken), _msgSender(), s_feeAddress, fee);
+        _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, royalty);
+        _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, transaction_fee);
+        _transferFrom(address(s_paymentToken), _msgSender(), listing.seller, sellerAmount);
 
-        IERC721(listing.nftContract).safeTransferFrom(
-            listing.seller,
-            _msgSender(),
-            listing.tokenId
-        );
+        IERC721(listing.nftContract).safeTransferFrom(listing.seller, _msgSender(), listing.tokenId);
 
         emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
 
@@ -243,10 +237,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         Listing[] memory allListings = new Listing[](s_listingCount);
         uint256 index = 0;
         for (uint256 i = 0; i < s_listingCount; i++) {
-            if (s_listings[i].price > 0) {
                 allListings[index] = s_listings[i];
                 index++;
-            }
         }
         return allListings;
     }

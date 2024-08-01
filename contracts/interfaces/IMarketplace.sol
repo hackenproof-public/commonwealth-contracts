@@ -15,7 +15,6 @@ interface IMarketplace {
         uint256 price;
     }
 
-
     /**
      * @notice Emitted when listing is created and state changed
      * @param listingId Id of the listing
@@ -39,12 +38,7 @@ interface IMarketplace {
      * @param seller Seller of the nft
      * @param price Price of the nft for sale, including fees
      */
-    event Sale(
-        uint256 listingId,
-        address indexed buyer,
-        address indexed seller,
-        uint256 indexed price
-    );
+    event Sale(uint256 listingId, address indexed buyer, address indexed seller, uint256 indexed price);
 
     /**
      * @notice Emitted when listing is cancelled
@@ -139,7 +133,12 @@ interface IMarketplace {
      * @param _price price for buyers
      * @param _isInvestedNft flag if NFT is InvestedNFT contract
      */
-    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price, bool _isInvestedNft) external returns (uint256);
+    function listNFT(
+        address _nftContract,
+        uint256 _tokenId,
+        uint256 _price,
+        bool _isInvestedNft
+    ) external returns (uint256);
 
     /**
      * @notice Buying the listed nft
@@ -153,24 +152,24 @@ interface IMarketplace {
     /**
      * @notice Returns all listings
      */
-     function getAllListings() external view returns (Listing[] memory);
+    function getAllListings() external view returns (Listing[] memory);
 
-     /**
+    /**
      * @notice Returns a listing with specific listing id
      *
      * @param _listingId id of the listing to be returned
      */
-     function getOneListing(uint256 _listingId) external view returns (Listing memory);
+    function getOneListing(uint256 _listingId) external view returns (Listing memory);
 
-     /**
+    /**
      * @notice Returns count of listings
      */
-     function getListingCount() external view returns (uint256);
+    function getListingCount() external view returns (uint256);
 
-     /**
+    /**
      * @notice Returns payment token contract address
      */
-     function paymentToken() external view returns (address);
+    function paymentToken() external view returns (address);
 
     /**
      * @notice Returns fee address
