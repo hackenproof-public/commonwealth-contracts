@@ -27,11 +27,6 @@ error Marketplace__ZeroPrice();
 
 contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace{
     /**
-     * @notice Count of s_listings
-     */
-    uint256 private s_listingCount;
-
-    /**
      * @notice The address fees are transferred to
      */
     address private s_feeAddress;
@@ -45,6 +40,16 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @notice Token used for buy sell
      */
     IERC20 private s_paymentToken;
+
+    /**
+     * @notice keeps actual amount of NFTs listed
+     */
+    uint256 private s_listingCount;
+
+    /**
+     * @notice Assigns a unique id to each listing
+     */
+    uint256 private s_listingIdCounter;
 
     /**
      * @notice Addresses of allowed contracts
@@ -162,6 +167,9 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         uint256 _price,
         bool _isInvestmentNft
     ) external nonReentrant returns (uint256) {
+        if (_price <= 0) {
+            revert Marketplace__ZeroPrice();
+        }
         if (!s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressNotAllowed();
         }
@@ -171,30 +179,29 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         if (IERC721(_nftContract).getApproved(_tokenId) != address(this)) {
             revert Marketplace__NFTNotApprovedForMarketplaceContract();
         }
-        if (_price <= 0) {
-            revert Marketplace__ZeroPrice();
-        }
 
-        s_listings[s_listingCount] = Listing({
+        uint256 listingId = s_listingIdCounter;
+        s_listings[listingId] = Listing({
             seller: _msgSender(),
             nftContract: _nftContract,
             tokenId: _tokenId,
             price: _price
         });
 
+        s_listingIdCounter++;
         s_listingCount++;
 
         if(_isInvestmentNft) IInvestmentNFT(_nftContract).setTokenListed(_tokenId, true);
 
         emit Listed(
-            s_listingCount-1,
+            listingId,
             _msgSender(),
             _nftContract,
             _tokenId,
             _price
         );
 
-        return s_listingCount-1;
+        return listingId;
     }
 
     /**
