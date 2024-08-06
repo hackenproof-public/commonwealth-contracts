@@ -14,7 +14,7 @@ import {
 } from '../../typechain-types';
 import { getInterfaceIdWithBase, toUsdc, toWlth } from '../utils';
 
-describe.only('Investment NFT unit tests', () => {
+describe('Investment NFT unit tests', () => {
   const IInvestmentNFTId = utils.arrayify(
     getInterfaceIdWithBase([
       IInvestmentNFT__factory.createInterface(),

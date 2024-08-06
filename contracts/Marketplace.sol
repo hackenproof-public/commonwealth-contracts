@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {MARKETPLACE_FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
@@ -27,7 +26,7 @@ error Marketplace__ZeroPrice();
 error Marketplace__NotEnoughWlthApproved();
 error Marketplace__InvalidListingId();
 
-contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace {
+contract Marketplace is OwnablePausable, IMarketplace {
     /**
      * @notice The address off the Revenue Wallet
      */
@@ -102,7 +101,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         {
             __OwnablePausable_init(_owner);
         }
-        __ReentrancyGuard_init();
         s_paymentToken = IERC20(_paymentToken);
         s_revenueWallet = _revenueWallet;
         s_secondarySales = _royaltyAddress;
@@ -153,7 +151,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         _cancelListing(s_tokenIdToListingId[_nftContract][_tokenId]);
     }
 
-    function _cancelListing(uint256 _listingId) private nonReentrant {
+    function _cancelListing(uint256 _listingId) private {
         if (
             _msgSender() != s_listings[_listingId].seller &&
             _msgSender() != owner() &&
@@ -171,7 +169,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant {
+    function updateListingPrice(uint256 _listingId, uint256 _price) external {
         if (!s_listings[_listingId].listed) {
             revert Marketplace__InvalidListingId();
         }
@@ -188,7 +186,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external nonReentrant returns (uint256) {
+    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external returns (uint256) {
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
         }
@@ -224,7 +222,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function buyNFT(uint256 _listingId) external nonReentrant {
+    function buyNFT(uint256 _listingId) external {
         Listing memory listing = s_listings[_listingId];
         if (!listing.listed) {
             revert Marketplace__ListingNotActive();
