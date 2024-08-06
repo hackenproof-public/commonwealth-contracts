@@ -545,47 +545,6 @@ describe.only('Marketplace', () => {
     });
   });
 
-  describe('#getAllListings', () => {
-    describe('Success', () => {
-      it('should return all listings with price greater than 0', async function () {
-        const { marketplace, genNft, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
-          await loadFixture(deployMarketplace);
-
-        await marketplace.connect(owner).addAllowedContract(genNft.address);
-
-        // Fake the ownerOf function to return the correct address
-        genNft.ownerOf.whenCalledWith(1).returns(owner.address);
-        genNft.ownerOf.whenCalledWith(2).returns(owner.address);
-        genNft.ownerOf.whenCalledWith(3).returns(owner.address);
-        genNft.getApproved.returns(marketplace.address);
-
-        await marketplace.connect(owner).listNFT(genNft.address, 1, ethers.utils.parseEther('1'));
-        await marketplace.connect(owner).listNFT(genNft.address, 2, ethers.utils.parseEther('1'));
-        await marketplace.connect(owner).listNFT(genNft.address, 3, ethers.utils.parseEther('1'));
-        await marketplace.connect(owner)['cancelListing(uint256)'](3);
-
-        // Call getAllListings
-        const allListings = await marketplace.getAllListings();
-
-        // Assertions
-        expect(allListings.length).to.equal(2);
-        expect(allListings[1].seller).to.equal(owner.address);
-        expect(allListings[1].nftContract).to.equal(genNft.address);
-        expect(allListings[1].tokenId).to.equal(1);
-        expect(allListings[1].price).to.equal(ethers.utils.parseEther('1'));
-      });
-      it('should return empty array when no listings are present', async function () {
-        const { marketplace, genNft, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
-          await loadFixture(deployMarketplace);
-
-        // Call getAllListings
-        const allListings = await marketplace.getAllListings();
-
-        // Assertions
-        expect(allListings.length).to.equal(0);
-      });
-    });
-  });
   describe('#getOneListing', () => {
     describe('Success', () => {
       it('should return empty array when no listings are present', async function () {

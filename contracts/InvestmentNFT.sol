@@ -225,6 +225,8 @@ contract InvestmentNFT is
     function setMarketplaceAddress(address _address) external onlyOwner {
         if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
         s_marketplace = IMarketplace(_address);
+
+        emit MarketplaceAddressChanged(_address);
     }
 
     /**
@@ -494,5 +496,5 @@ contract InvestmentNFT is
         return string(buffer);
     }
 
-    uint256[38] private __gap;
+    uint256[39] private __gap;
 }

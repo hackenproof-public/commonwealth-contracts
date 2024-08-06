@@ -259,19 +259,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function getAllListings() external view returns (Listing[] memory) {
-        Listing[] memory allListings = new Listing[](s_listingCount);
-        uint256 index = 0;
-        for (uint256 i = 0; i < s_listingCount; i++) {
-                allListings[index] = s_listings[i];
-                index++;
-        }
-        return allListings;
-    }
-
-    /**
-     * @inheritdoc IMarketplace
-     */
     function getListingByListingId(uint256 _listingId) external view returns (Listing memory) {
         return s_listings[_listingId];
     }

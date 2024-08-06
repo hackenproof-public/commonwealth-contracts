@@ -163,11 +163,6 @@ interface IMarketplace {
     function buyNFT(uint256 _listingId) external;
 
     /**
-     * @notice Returns all listings
-     */
-    function getAllListings() external view returns (Listing[] memory);
-
-    /**
      * @notice Returns a listing with specific listing id
      *
      * @param _listingId id of the listing to be returned

@@ -183,6 +183,8 @@ contract GenesisNFT is
     function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_address == address(0)) revert GenesisNFT__ZeroAddress();
         s_marketplace = IMarketplace(_address);
+
+        emit MarketplaceAddressChanged(_address);
     }
 
     /**
@@ -490,5 +492,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
