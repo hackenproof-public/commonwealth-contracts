@@ -6,7 +6,7 @@ import { deployProxy } from '../../scripts/utils';
 import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory } from '../../typechain-types';
 import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
 
-describe.only('Genesis NFT unit tests', () => {
+describe('Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
   const MINTER_ROLE = keccak256('MINTER_ROLE');
   const PAUSER_ROLE = keccak256('PAUSER_ROLE');
@@ -21,11 +21,9 @@ describe.only('Genesis NFT unit tests', () => {
   const description = 'Description';
   const externalUrl = 'External Url';
   const id = '1';
-  const token_allocation = toWlth("44000");
+  const token_allocation = toWlth('44000');
   const series1 = true;
-  const percentage = "12%";
- 
-
+  const percentage = '12%';
 
   const metadata = {
     name: mName,
@@ -35,14 +33,26 @@ describe.only('Genesis NFT unit tests', () => {
     percentage: percentage
   };
 
-  const images = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+  const images = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
   const deployGenesisNft = async () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
     const genesisNft: GenesisNFT = await deployProxy(
       'GenesisNFT',
-      [name, symbol, series, owner.address, royaltyWallet.address, royalty, defaultTokenURI, metadata, token_allocation, series1, images],
+      [
+        name,
+        symbol,
+        series,
+        owner.address,
+        royaltyWallet.address,
+        royalty,
+        defaultTokenURI,
+        metadata,
+        token_allocation,
+        series1,
+        images
+      ],
       deployer
     );
     await genesisNft.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, admin.address);
@@ -83,7 +93,19 @@ describe.only('Genesis NFT unit tests', () => {
       const { genesisNft, deployer, owner, admin, minter, pauser } = await loadFixture(deployGenesisNft);
 
       await expect(
-        genesisNft.initialize(name, symbol, series, owner.address, owner.address, royalty, defaultTokenURI, metadata, token_allocation, series1, images)
+        genesisNft.initialize(
+          name,
+          symbol,
+          series,
+          owner.address,
+          owner.address,
+          royalty,
+          defaultTokenURI,
+          metadata,
+          token_allocation,
+          series1,
+          images
+        )
       ).to.be.revertedWith('Initializable: contract is already initialized');
     });
 
@@ -94,7 +116,19 @@ describe.only('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, constants.AddressZero, royaltyAccount.address, royalty, defaultTokenURI, metadata, token_allocation, series1, images],
+          [
+            name,
+            symbol,
+            series,
+            constants.AddressZero,
+            royaltyAccount.address,
+            royalty,
+            defaultTokenURI,
+            metadata,
+            token_allocation,
+            series1,
+            images
+          ],
           deployer
         )
       ).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
@@ -106,7 +140,19 @@ describe.only('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, owner.address, constants.AddressZero, royalty, defaultTokenURI, metadata, token_allocation, series1, images],
+          [
+            name,
+            symbol,
+            series,
+            owner.address,
+            constants.AddressZero,
+            royalty,
+            defaultTokenURI,
+            metadata,
+            token_allocation,
+            series1,
+            images
+          ],
           deployer
         )
       ).to.be.revertedWith('ERC2981: invalid receiver');
@@ -114,7 +160,19 @@ describe.only('Genesis NFT unit tests', () => {
       await expect(
         deployProxy(
           'GenesisNFT',
-          [name, symbol, series, owner.address, royaltyAccount.address, 10001, defaultTokenURI, metadata, token_allocation, series1, images],
+          [
+            name,
+            symbol,
+            series,
+            owner.address,
+            royaltyAccount.address,
+            10001,
+            defaultTokenURI,
+            metadata,
+            token_allocation,
+            series1,
+            images
+          ],
           deployer
         )
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
@@ -542,10 +600,10 @@ describe.only('Genesis NFT unit tests', () => {
     });
   });
 
-  describe("setMetadataName", function () {
-    it("Should set the metadata name", async function () {
+  describe('setMetadataName', function () {
+    it('Should set the metadata name', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "new";
+      const newName = 'new';
       await expect(genesisNft.connect(admin).setMetadataName(newName))
         .to.emit(genesisNft, 'MetadataNameChanged')
         .withArgs(newName);
@@ -554,22 +612,26 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.name).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataName("")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataName('')).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the name is empty", async function () {
+    it('Should revert if the name is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(admin).setMetadataName("")).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__EmptyString');
+      await expect(genesisNft.connect(admin).setMetadataName('')).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
 
-  describe("setMetadataDescription", function () {
-    it("Should set the metadata description", async function () {
+  describe('setMetadataDescription', function () {
+    it('Should set the metadata description', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "new";
+      const newName = 'new';
       await expect(genesisNft.connect(admin).setMetadataDescription(newName))
         .to.emit(genesisNft, 'MetadataDescriptionChanged')
         .withArgs(newName);
@@ -578,22 +640,26 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.description).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataDescription("")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataDescription('')).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the description is empty", async function () {
+    it('Should revert if the description is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(admin).setMetadataDescription("")).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__EmptyString');
+      await expect(genesisNft.connect(admin).setMetadataDescription('')).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
 
-  describe("setMetadataExternalUrl", function () {
-    it("Should set the metadata externalUrl", async function () {
+  describe('setMetadataExternalUrl', function () {
+    it('Should set the metadata externalUrl', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "new";
+      const newName = 'new';
       await expect(genesisNft.connect(admin).setMetadataExternalUrl(newName))
         .to.emit(genesisNft, 'MetadataExternalUrlChanged')
         .withArgs(newName);
@@ -602,22 +668,26 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.externalUrl).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataExternalUrl("")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataExternalUrl('')).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the externalUrl is empty", async function () {
+    it('Should revert if the externalUrl is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(admin).setMetadataExternalUrl("")).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__EmptyString');
+      await expect(genesisNft.connect(admin).setMetadataExternalUrl('')).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
 
-  describe("setMetadataId", function () {
-    it("Should set the metadata id", async function () {
+  describe('setMetadataId', function () {
+    it('Should set the metadata id', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "new";
+      const newName = 'new';
       await expect(genesisNft.connect(admin).setMetadataId(newName))
         .to.emit(genesisNft, 'MetadataIdChanged')
         .withArgs(newName);
@@ -626,22 +696,26 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.id).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataId("")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataId('')).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the id is empty", async function () {
+    it('Should revert if the id is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(admin).setMetadataId("")).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__EmptyString');
+      await expect(genesisNft.connect(admin).setMetadataId('')).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
 
-  describe("setMetadataPercentage", function () {
-    it("Should set the metadata percentage", async function () {
+  describe('setMetadataPercentage', function () {
+    it('Should set the metadata percentage', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "new";
+      const newName = 'new';
       await expect(genesisNft.connect(admin).setMetadataPercentage(newName))
         .to.emit(genesisNft, 'MetadataPercentageChanged')
         .withArgs(newName);
@@ -650,48 +724,65 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.percentage).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataPercentage("")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataPercentage('')).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the percentage is empty", async function () {
+    it('Should revert if the percentage is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(admin).setMetadataPercentage("")).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__EmptyString');
+      await expect(genesisNft.connect(admin).setMetadataPercentage('')).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
 
-  describe("setVestingAddress", function () {
-    it("Should set the vesting contract address correctly", async function () {
+  describe('setVestingAddress', function () {
+    it('Should set the vesting contract address correctly', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = "0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587";
+      const newName = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
       await genesisNft.connect(admin).setVestingAddress(newName);
       const setAddress = await genesisNft.genesisNFTVesting();
       expect(setAddress).to.equal(newName);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setVestingAddress("0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587")).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
-      );
+      await expect(
+        genesisNft.connect(minter).setVestingAddress('0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587')
+      ).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE));
     });
 
-    it("Should revert when setting the zero address", async function () {
+    it('Should revert when setting the zero address', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
 
-      await expect(genesisNft.connect(admin).setVestingAddress(ethers.constants.AddressZero))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__ZeroAddress");
+      await expect(
+        genesisNft.connect(admin).setVestingAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
     });
   });
 
-  describe("setMetadataImage", function () {
-    it("Should set the metadata image", async function () {
+  describe('setMetadataImage', function () {
+    it('Should set the metadata image', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newImages = ["image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+      const newImages = [
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url'
+      ];
 
-      await expect(genesisNft.connect(admin).setMetadataImage(newImages))
-        .to.emit(genesisNft, 'MetadataImageChanged')
+      await expect(genesisNft.connect(admin).setMetadataImage(newImages)).to.emit(genesisNft, 'MetadataImageChanged');
 
       for (let i = 0; i < newImages.length; i++) {
         const metadataImage = await genesisNft.getMetadataImageAtIndex(i);
@@ -700,21 +791,25 @@ describe.only('Genesis NFT unit tests', () => {
       }
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setMetadataImage([])).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setMetadataImage([])).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if the name is empty", async function () {
+    it('Should revert if the name is empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
-      const newName = Array(5).fill("image_url");
-      await expect(genesisNft.connect(admin).setMetadataImage(newName)).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__LengthMismatch');
+      const newName = Array(5).fill('image_url');
+      await expect(genesisNft.connect(admin).setMetadataImage(newName)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__LengthMismatch'
+      );
     });
   });
 
-  describe("setTokenAllocation", function () {
-    it("Should set the token allocation and emit TokenAllocationChanged event", async function () {
+  describe('setTokenAllocation', function () {
+    it('Should set the token allocation and emit TokenAllocationChanged event', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
       const newTokenAllocation = ethers.BigNumber.from(1000000);
 
@@ -726,15 +821,16 @@ describe.only('Genesis NFT unit tests', () => {
       expect(tokenAllocation).to.equal(newTokenAllocation);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setTokenAllocation(ethers.BigNumber.from(1000000))).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setTokenAllocation(ethers.BigNumber.from(1000000))).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
   });
 
-  describe("setSeries1", function () {
-    it("Should set the series 1 and emit Series1Changed event", async function () {
+  describe('setSeries1', function () {
+    it('Should set the series 1 and emit Series1Changed event', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
       const newSeries1Value = false;
 
@@ -746,29 +842,34 @@ describe.only('Genesis NFT unit tests', () => {
       expect(tokenAllocation).to.equal(newSeries1Value);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
-      await expect(genesisNft.connect(minter).setSeries1(true)).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setSeries1(true)).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
   });
 
-  
-
-  describe("setAllMetadata", function () {
-    it("Should set all metadata fields and emit MetadataChanged event", async function () {
+  describe('setAllMetadata', function () {
+    it('Should set all metadata fields and emit MetadataChanged event', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
       const newMetadata = {
-        name: "Name",
-        description: "Description",
-        externalUrl: "https://example.com",
-        id: "ID123",
-        percentage: "50%"
+        name: 'Name',
+        description: 'Description',
+        externalUrl: 'https://example.com',
+        id: 'ID123',
+        percentage: '50%'
       };
 
       await expect(genesisNft.connect(admin).setAllMetadata(newMetadata))
         .to.emit(genesisNft, 'MetadataChanged')
-        .withArgs(newMetadata.name, newMetadata.description, newMetadata.externalUrl, newMetadata.id, newMetadata.percentage);
+        .withArgs(
+          newMetadata.name,
+          newMetadata.description,
+          newMetadata.externalUrl,
+          newMetadata.id,
+          newMetadata.percentage
+        );
 
       const metadata = await genesisNft.metadata();
       expect(metadata.name).to.equal(newMetadata.name);
@@ -778,52 +879,62 @@ describe.only('Genesis NFT unit tests', () => {
       expect(metadata.percentage).to.equal(newMetadata.percentage);
     });
 
-    it("Should revert if caller is not admin", async function () {
+    it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
       const newMetadata = {
-        name: "Name",
-        description: "Description",
-        externalUrl: "https://example.com",
-        id: "ID123",
-        percentage: "50%"
+        name: 'Name',
+        description: 'Description',
+        externalUrl: 'https://example.com',
+        id: 'ID123',
+        percentage: '50%'
       };
-      await expect(genesisNft.connect(minter).setAllMetadata(newMetadata)).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      await expect(genesisNft.connect(minter).setAllMetadata(newMetadata)).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
       );
     });
 
-    it("Should revert if any of the metadata fields are empty", async function () {
+    it('Should revert if any of the metadata fields are empty', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
 
       const invalidMetadata = {
-        name: "",
-        description: "Description",
-        externalUrl: "https://example.com",
-        id: "ID123",
-        percentage: "50%"
+        name: '',
+        description: 'Description',
+        externalUrl: 'https://example.com',
+        id: 'ID123',
+        percentage: '50%'
       };
-      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__EmptyString");
+      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
 
-      invalidMetadata.name = "Name";
-      invalidMetadata.description = "";
-      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__EmptyString");
+      invalidMetadata.name = 'Name';
+      invalidMetadata.description = '';
+      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
 
-      invalidMetadata.description = "Description";
-      invalidMetadata.externalUrl = "";
-      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__EmptyString");
+      invalidMetadata.description = 'Description';
+      invalidMetadata.externalUrl = '';
+      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
 
-      invalidMetadata.externalUrl = "https://example.com";
-      invalidMetadata.id = "";
-      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__EmptyString");
+      invalidMetadata.externalUrl = 'https://example.com';
+      invalidMetadata.id = '';
+      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
 
-      invalidMetadata.id = "ID123";
-      invalidMetadata.percentage = "";
-      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata))
-        .to.be.revertedWithCustomError(genesisNft, "GenesisNFT__EmptyString");
+      invalidMetadata.id = 'ID123';
+      invalidMetadata.percentage = '';
+      await expect(genesisNft.connect(admin).setAllMetadata(invalidMetadata)).to.be.revertedWithCustomError(
+        genesisNft,
+        'GenesisNFT__EmptyString'
+      );
     });
   });
-
 });

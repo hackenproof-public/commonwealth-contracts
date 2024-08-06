@@ -33,7 +33,13 @@ interface IGenesisNFT {
      * @param description Metadata description
      * @param externalUrl Metadata external URL
      */
-    event MetadataChanged(string indexed name, string indexed description, string externalUrl, string id, string percentage);
+    event MetadataChanged(
+        string indexed name,
+        string indexed description,
+        string externalUrl,
+        string id,
+        string percentage
+    );
 
     /**
      * @notice Emitted when metadata name for NFT is changed

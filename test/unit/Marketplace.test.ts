@@ -5,10 +5,9 @@ import { constants } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, InvestmentNFT, Marketplace, Wlth } from '../../typechain-types';
-import { toUsdc } from '../utils';
+import { GenesisNFT, Marketplace, Wlth } from '../../typechain-types';
 
-describe.only('Marketplace', () => {
+describe('Marketplace', () => {
   const deployMarketplace = async () => {
     const [deployer, owner, secondarySalesWallet, genesisNftRoyaltyAccount, user1, user2] = await ethers.getSigners();
 
@@ -57,9 +56,8 @@ describe.only('Marketplace', () => {
 
     describe('Reverts', () => {
       it("Should revert if the owner's address is the zero address", async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           deployProxy(
@@ -71,9 +69,8 @@ describe.only('Marketplace', () => {
       });
 
       it("Should revert if the wlth's address is the zero address", async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           deployProxy(
@@ -85,9 +82,8 @@ describe.only('Marketplace', () => {
       });
 
       it("Should revert if the secondarySalesWallet's address is the zero address", async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           deployProxy(
@@ -99,9 +95,8 @@ describe.only('Marketplace', () => {
       });
 
       it('Should revert if the royaltyFund address is zero address', async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           deployProxy(
@@ -113,9 +108,8 @@ describe.only('Marketplace', () => {
       });
 
       it("Should revert when reinitializing the contract's params", async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           marketplace.initialize(owner.address, wlth.address, secondarySalesWallet.address, constants.AddressZero)
@@ -139,9 +133,8 @@ describe.only('Marketplace', () => {
 
     describe('Reverts', () => {
       it('Should revert when trying to add zero address', async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           marketplace.connect(owner).addAllowedContract('0x0000000000000000000000000000000000000000')
@@ -186,9 +179,8 @@ describe.only('Marketplace', () => {
 
     describe('Reverts', () => {
       it('Should revert when trying to add zero address', async () => {
-        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } = await loadFixture(
-          deployMarketplace
-        );
+        const { marketplace, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
+          await loadFixture(deployMarketplace);
 
         await expect(
           marketplace.connect(owner).removeAllowedContract('0x0000000000000000000000000000000000000000')
@@ -418,10 +410,9 @@ describe.only('Marketplace', () => {
 
         await marketplace.connect(user1).listNFT(genNft.address, 1, ethers.utils.parseEther('1'));
 
-        await expect(marketplace.connect(owner).updateListingPrice(1, ethers.utils.parseEther('2'))).to.be.revertedWithCustomError(
-          marketplace,
-          'Marketplace__NotSeller'
-        );
+        await expect(
+          marketplace.connect(owner).updateListingPrice(1, ethers.utils.parseEther('2'))
+        ).to.be.revertedWithCustomError(marketplace, 'Marketplace__NotSeller');
       });
     });
   });
@@ -451,7 +442,9 @@ describe.only('Marketplace', () => {
         await marketplace.connect(owner).listNFT(genNft.address, 1, listingPrice);
 
         await wlth.transferFrom.whenCalledWith(user1.address, secondarySalesWallet.address, fee).returns(true);
-        await wlth.transferFrom.whenCalledWith(user1.address, genesisNftRoyaltyAccount.address, royalty.add(transactionFee)).returns(true);
+        await wlth.transferFrom
+          .whenCalledWith(user1.address, genesisNftRoyaltyAccount.address, royalty.add(transactionFee))
+          .returns(true);
         await wlth.transferFrom.whenCalledWith(user1.address, owner.address, sellerAmount).returns(true);
 
         await expect(marketplace.connect(user1).buyNFT(1))
@@ -459,7 +452,11 @@ describe.only('Marketplace', () => {
           .withArgs(1, user1.address, owner.address, listingPrice);
 
         expect(wlth.transferFrom).to.have.been.calledWith(user1.address, secondarySalesWallet.address, fee);
-        expect(wlth.transferFrom).to.have.been.calledWith(user1.address, genesisNftRoyaltyAccount.address,  royalty.add(transactionFee));
+        expect(wlth.transferFrom).to.have.been.calledWith(
+          user1.address,
+          genesisNftRoyaltyAccount.address,
+          royalty.add(transactionFee)
+        );
         expect(wlth.transferFrom).to.have.been.calledWith(user1.address, owner.address, sellerAmount);
         expect(genNft['safeTransferFrom(address,address,uint256)']).to.have.been.calledWith(
           owner.address,

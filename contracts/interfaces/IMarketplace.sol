@@ -147,11 +147,7 @@ interface IMarketplace {
      * @param _tokenId token id of the nft
      * @param _price price for buyers
      */
-    function listNFT(
-        address _nftContract,
-        uint256 _tokenId,
-        uint256 _price
-    ) external returns (uint256);
+    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external returns (uint256);
 
     /**
      * @notice Buying the listed nft

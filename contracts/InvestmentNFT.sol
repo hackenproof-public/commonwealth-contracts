@@ -439,7 +439,8 @@ contract InvestmentNFT is
         uint256 value = tokenValue[tokenId];
         _subtractAccountValue(from, value);
         _addAccountValue(to, value);
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) s_marketplace.cancelListing(address(this), tokenId);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
+            s_marketplace.cancelListing(address(this), tokenId);
     }
 
     function _addAccountValue(address account, uint256 value) internal virtual {
@@ -448,26 +449,28 @@ contract InvestmentNFT is
     }
 
     function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
-        super.approve(to,tokenId);
-        if(s_marketplace.getListingByTokenId(address(this), tokenId).listed && to==address(0)){
+        super.approve(to, tokenId);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
             s_marketplace.cancelListing(address(this), tokenId);
         }
     }
 
-    function setApprovalForAll(address operator, bool approved) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
         uint256 balance = balanceOf(_msgSender());
-        for(uint256 i; i<balance;){
+        for (uint256 i; i < balance; ) {
             uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-            if(s_marketplace.getListingByTokenId(address(this), tokenId).listed){
-            s_marketplace.cancelListing(address(this), tokenId);
-        }
+            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                s_marketplace.cancelListing(address(this), tokenId);
+            }
             unchecked {
                 i++;
             }
         }
     }
-
 
     function _subtractAccountValue(address account, uint256 value) internal virtual {
         _accountValueHistory[account].push(_subtract, value);

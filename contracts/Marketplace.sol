@@ -188,11 +188,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function listNFT(
-        address _nftContract,
-        uint256 _tokenId,
-        uint256 _price
-    ) external nonReentrant returns (uint256) {
+    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external nonReentrant returns (uint256) {
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
         }
@@ -240,6 +236,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         s_listings[_listingId].listed = false;
         s_listings[_listingId].sold = true;
 
+        s_listingCount--;
+
         emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
 
         uint256 fee = (listing.price * FEE_PERCENTAGE) / BASIS_POINT_DIVISOR;
@@ -252,8 +250,6 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         _transferFrom(address(s_paymentToken), _msgSender(), listing.seller, sellerAmount);
 
         IERC721(listing.nftContract).safeTransferFrom(listing.seller, _msgSender(), listing.tokenId);
-
-        s_listingCount--;
     }
 
     /**
