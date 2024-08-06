@@ -90,6 +90,8 @@ export interface networkConfigItem {
   bonusStakingDuration: number;
   bonusStakingTotalReward: BigNumber;
   minimumBuyback: BigNumber;
+  profitDistributor: string;
+  profitGenerator: string;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -147,7 +149,9 @@ const localConfig: networkConfigItem = {
   bonusStakingStartTimestamp: 1699971572,
   bonusStakingDuration: 86400,
   bonusStakingTotalReward: parseEther('1000'),
-  minimumBuyback: toUsdc('100')
+  minimumBuyback: toUsdc('100'),
+  profitDistributor: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  profitGenerator: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const baseSepoliaConfig: networkConfigItem = {
@@ -195,7 +199,9 @@ const baseSepoliaConfig: networkConfigItem = {
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 259200,
   bonusStakingTotalReward: parseEther('63998117'),
-  minimumBuyback: toUsdc('100')
+  minimumBuyback: toUsdc('100'),
+  profitDistributor: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  profitGenerator: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const baseConfig: networkConfigItem = {
@@ -243,7 +249,9 @@ const baseConfig: networkConfigItem = {
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 2678400,
   bonusStakingTotalReward: parseEther('63998117'),
-  minimumBuyback: toUsdc('0')
+  minimumBuyback: toUsdc('0'),
+  profitDistributor: '', // TODO
+  profitGenerator: '' // TODO
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig,
