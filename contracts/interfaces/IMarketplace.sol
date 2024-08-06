@@ -184,9 +184,9 @@ interface IMarketplace {
     function paymentToken() external view returns (address);
 
     /**
-     * @notice Returns fee address
+     * @notice Returns the revenue wallet address
      */
-    function feeAddress() external view returns (address);
+    function revenueWallet() external view returns (address);
 
     /**
      * @notice Returns royalty address

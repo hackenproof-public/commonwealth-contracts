@@ -51,12 +51,15 @@ describe.only('Investment NFT unit tests', () => {
     const [deployer, owner, user, minter, royaltyWallet] = await ethers.getSigners();
     const minimumValue = toUsdc('50');
 
+    const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
+
     const investmentNft: InvestmentNFT = await deployProxy(
       'InvestmentNFT',
       [name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue, metadata],
       deployer
     );
     await investmentNft.connect(owner).addMinter(minter.address);
+    await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
 
     return { investmentNft, deployer, owner, user, minter, royaltyWallet, royalty };
   };
@@ -274,7 +277,7 @@ describe.only('Investment NFT unit tests', () => {
         await marketplace.connect(owner).addAllowedContract(investmentNft.address);
 
         await investmentNft.connect(user).approve(marketplace.address, 0);
-        await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'), true);
+        await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
 
         await expect(
           investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')])
@@ -659,7 +662,8 @@ describe.only('Investment NFT unit tests', () => {
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
       await marketplace.connect(owner).addAllowedContract(investmentNft.address);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'), true);
+      await investmentNft.connect(user).approve(marketplace.address, 0);
+      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
 
       await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
       await investmentNft.connect(user).transferFrom(user.address, deployer.address, 0);

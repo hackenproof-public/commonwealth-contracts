@@ -7,7 +7,7 @@ import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
 import { GenesisNFT, Marketplace, Wlth } from '../../typechain-types';
 
-describe('Marketplace', () => {
+describe.only('Marketplace', () => {
   const deployMarketplace = async () => {
     const [deployer, owner, secondarySalesWallet, genesisNftRoyaltyAccount, user1, user2] = await ethers.getSigners();
 
@@ -48,7 +48,7 @@ describe('Marketplace', () => {
         );
 
         expect(await marketplace.paymentToken()).to.equal(wlth.address);
-        expect(await marketplace.feeAddress()).to.equal(secondarySalesWallet.address);
+        expect(await marketplace.revenueWallet()).to.equal(secondarySalesWallet.address);
         expect(await marketplace.royaltyAddress()).to.equal(genesisNftRoyaltyAccount.address);
         expect(await marketplace.owner()).to.equal(owner.address);
       });
@@ -624,13 +624,13 @@ describe('Marketplace', () => {
     });
   });
 
-  describe('#feeAddress', () => {
+  describe('#revenueWallet', () => {
     describe('Success', () => {
       it('should return the fee address', async function () {
         const { marketplace, genNft, deployer, owner, wlth, secondarySalesWallet, genesisNftRoyaltyAccount } =
           await loadFixture(deployMarketplace);
 
-        const tokenAddress = await marketplace.feeAddress();
+        const tokenAddress = await marketplace.revenueWallet();
         expect(tokenAddress).to.equal(secondarySalesWallet.address);
       });
     });

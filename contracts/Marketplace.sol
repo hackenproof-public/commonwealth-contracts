@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
+import {MARKETPLACE_FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
@@ -29,9 +29,9 @@ error Marketplace__InvalidListingId();
 
 contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace {
     /**
-     * @notice The address fees are transferred to
+     * @notice The address off the Revenue Wallet
      */
-    address private s_feeAddress;
+    address private s_revenueWallet;
 
     /**
      * @notice The address royalties are transferred to
@@ -77,13 +77,13 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @dev Initializes the contract
      * @param _owner Contract owner
      * @param _paymentToken Address of payout unlocker
-     * @param _feeAddress Investment fund name
+     * @param _revenueWallet Revenue wallet address
      * @param _royaltyAddress Address of currency for investments
      */
     function initialize(
         address _owner,
         address _paymentToken,
-        address _feeAddress,
+        address _revenueWallet,
         address _royaltyAddress
     ) public virtual initializer {
         if (_owner == address(0)) {
@@ -92,7 +92,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         if (_paymentToken == address(0)) {
             revert Marketplace__TokenZeroAddress();
         }
-        if (_feeAddress == address(0)) {
+        if (_revenueWallet == address(0)) {
             revert Marketplace__FeeZeroAddress();
         }
         if (_royaltyAddress == address(0)) {
@@ -104,7 +104,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         }
         __ReentrancyGuard_init();
         s_paymentToken = IERC20(_paymentToken);
-        s_feeAddress = _feeAddress;
+        s_revenueWallet = _revenueWallet;
         s_secondarySales = _royaltyAddress;
         s_listingIdCounter = 1;
     }
@@ -240,12 +240,12 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
 
         emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
 
-        uint256 fee = (listing.price * FEE_PERCENTAGE) / BASIS_POINT_DIVISOR;
+        uint256 fee = (listing.price * MARKETPLACE_FEE_PERCENTAGE) / BASIS_POINT_DIVISOR;
         uint256 royalty = (listing.price * ROYALTY_PERCENTAGE) / BASIS_POINT_DIVISOR;
         uint256 transactionFee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
         uint256 sellerAmount = listing.price - fee - royalty - transactionFee;
 
-        _transferFrom(address(s_paymentToken), _msgSender(), s_feeAddress, fee);
+        _transferFrom(address(s_paymentToken), _msgSender(), s_revenueWallet, fee);
         _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, royalty + transactionFee);
         _transferFrom(address(s_paymentToken), _msgSender(), listing.seller, sellerAmount);
 
@@ -276,8 +276,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function feeAddress() external view returns (address) {
-        return s_feeAddress;
+    function revenueWallet() external view returns (address) {
+        return s_revenueWallet;
     }
 
     /**
