@@ -9,6 +9,8 @@ interface IMarketplace {
      * @notice Listing of marketplace
      */
     struct Listing {
+        bool listed;
+        bool sold;
         address seller;
         address nftContract;
         uint256 tokenId;
@@ -102,9 +104,22 @@ interface IMarketplace {
      *
      * Emits Canceled event
      *
-     * @param _listingId listing id to be cancelled
+     * @param _nftContract NFT contract address
+     * @param _tokenId NFT token id
      */
-    function cancelListing(uint256 _listingId) external;
+    function cancelListing(address _nftContract, uint256 _tokenId) external;
+
+    /**
+     * @notice Cancels the listing in the marketplace
+     *
+     * Requirements:
+     * - Msg sender needs to be seller or owner
+     *
+     * Emits Canceled event
+     *
+     * @param listingId listing id
+     */
+    function cancelListing(uint256 listingId) external;
 
     /**
      * @notice Updates the price of the listing in the marketplace
@@ -131,13 +146,11 @@ interface IMarketplace {
      * @param _nftContract contract address of the nft
      * @param _tokenId token id of the nft
      * @param _price price for buyers
-     * @param _isInvestedNft flag if NFT is InvestedNFT contract
      */
     function listNFT(
         address _nftContract,
         uint256 _tokenId,
-        uint256 _price,
-        bool _isInvestedNft
+        uint256 _price
     ) external returns (uint256);
 
     /**
@@ -159,7 +172,15 @@ interface IMarketplace {
      *
      * @param _listingId id of the listing to be returned
      */
-    function getOneListing(uint256 _listingId) external view returns (Listing memory);
+    function getListingByListingId(uint256 _listingId) external view returns (Listing memory);
+
+    /**
+     * @notice Returns a listing with specific listing id
+     *
+     * @param _nftContract NFT contract address
+     * @param _tokenId NFT token id
+     */
+    function getListingByTokenId(address _nftContract, uint256 _tokenId) external view returns (Listing memory);
 
     /**
      * @notice Returns count of listings

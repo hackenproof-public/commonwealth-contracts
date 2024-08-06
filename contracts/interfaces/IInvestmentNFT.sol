@@ -75,13 +75,6 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     event MinimumValueChanged(uint256 indexed value);
 
     /**
-     * @notice Emitted when minimum value for NFT is changed
-     * @param tokenId ID of listed or delisted token
-     * @param flag if true - listed, if false - delisted
-     */
-    event TokenListed(uint256 indexed tokenId, bool indexed flag);
-
-    /**
      * @notice Mints NFT with specified investment value and metadata URI
      * @param to Token recipient
      * @param value Investment value assigned to token
@@ -132,13 +125,6 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @param _minimumValue New minimum value
      */
     function setMinimumValue(uint256 _minimumValue) external;
-
-    /**
-     * @notice Set if token is listed or not on the NFT marketplace
-     * @param _tokenId New minimum value
-     * @param _flag New minimum value
-     */
-    function setTokenListed(uint256 _tokenId, bool _flag) external;
 
     /**
      * @notice Set NFT marketplace address

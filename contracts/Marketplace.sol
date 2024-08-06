@@ -24,6 +24,8 @@ error Marketplace__NotOwnerSellerAllowedContracts();
 error Marketplace__NFTNotApprovedForMarketplaceContract();
 error Marketplace__NotSeller();
 error Marketplace__ZeroPrice();
+error Marketplace__NotEnoughWlthApproved();
+error Marketplace__InvalidListingId();
 
 contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplace {
     /**
@@ -60,6 +62,11 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @notice Listings made
      */
     mapping(uint256 => Listing) private s_listings;
+
+    /**
+     * @notice NFT contract and token Id to Listing Id
+     */
+    mapping(address => mapping(uint256 => uint256)) private s_tokenIdToListingId;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -99,6 +106,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         s_paymentToken = IERC20(_paymentToken);
         s_feeAddress = _feeAddress;
         s_secondarySales = _royaltyAddress;
+        s_listingIdCounter = 1;
     }
 
     /**
@@ -134,7 +142,18 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function cancelListing(uint256 _listingId) external nonReentrant {
+    function cancelListing(uint256 _listingId) external {
+        _cancelListing(_listingId);
+    }
+
+    /**
+     * @inheritdoc IMarketplace
+     */
+    function cancelListing(address _nftContract, uint256 _tokenId) external {
+        _cancelListing(s_tokenIdToListingId[_nftContract][_tokenId]);
+    }
+
+    function _cancelListing(uint256 _listingId) private nonReentrant {
         if (
             _msgSender() != s_listings[_listingId].seller &&
             _msgSender() != owner() &&
@@ -142,8 +161,8 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
         ) {
             revert Marketplace__NotOwnerSellerAllowedContracts();
         }
-
-        delete s_listings[_listingId];
+        s_tokenIdToListingId[s_listings[_listingId].nftContract][s_listings[_listingId].tokenId] = 0;
+        s_listings[_listingId].listed = false;
         s_listingCount--;
 
         emit Canceled(_listingId, _msgSender());
@@ -153,6 +172,10 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      * @inheritdoc IMarketplace
      */
     function updateListingPrice(uint256 _listingId, uint256 _price) external nonReentrant {
+        if (!s_listings[_listingId].listed) {
+            revert Marketplace__InvalidListingId();
+        }
+
         if (_msgSender() != s_listings[_listingId].seller) {
             revert Marketplace__NotSeller();
         }
@@ -168,8 +191,7 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     function listNFT(
         address _nftContract,
         uint256 _tokenId,
-        uint256 _price,
-        bool _isInvestmentNft
+        uint256 _price
     ) external nonReentrant returns (uint256) {
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
@@ -189,13 +211,14 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
             seller: _msgSender(),
             nftContract: _nftContract,
             tokenId: _tokenId,
-            price: _price
+            price: _price,
+            listed: true,
+            sold: false
         });
 
+        s_tokenIdToListingId[_nftContract][_tokenId] = listingId;
         s_listingIdCounter++;
         s_listingCount++;
-
-        if (_isInvestmentNft) IInvestmentNFT(_nftContract).setTokenListed(_tokenId, true);
 
         emit Listed(listingId, _msgSender(), _nftContract, _tokenId, _price);
 
@@ -207,26 +230,29 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
      */
     function buyNFT(uint256 _listingId) external nonReentrant {
         Listing memory listing = s_listings[_listingId];
-
-        if (listing.seller == address(0)) {
+        if (!listing.listed) {
             revert Marketplace__ListingNotActive();
         }
+        if (IERC20(s_paymentToken).allowance(_msgSender(), address(this)) < listing.price) {
+            revert Marketplace__NotEnoughWlthApproved();
+        }
+
+        s_listings[_listingId].listed = false;
+        s_listings[_listingId].sold = true;
+
+        emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
 
         uint256 fee = (listing.price * FEE_PERCENTAGE) / BASIS_POINT_DIVISOR;
         uint256 royalty = (listing.price * ROYALTY_PERCENTAGE) / BASIS_POINT_DIVISOR;
-        uint256 transaction_fee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
-        uint256 sellerAmount = listing.price - fee - royalty;
+        uint256 transactionFee = (listing.price * TRANSACTION_FEE) / BASIS_POINT_DIVISOR;
+        uint256 sellerAmount = listing.price - fee - royalty - transactionFee;
 
         _transferFrom(address(s_paymentToken), _msgSender(), s_feeAddress, fee);
-        _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, royalty);
-        _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, transaction_fee);
+        _transferFrom(address(s_paymentToken), _msgSender(), s_secondarySales, royalty + transactionFee);
         _transferFrom(address(s_paymentToken), _msgSender(), listing.seller, sellerAmount);
 
         IERC721(listing.nftContract).safeTransferFrom(listing.seller, _msgSender(), listing.tokenId);
 
-        emit Sale(_listingId, _msgSender(), listing.seller, listing.price);
-
-        delete s_listings[_listingId];
         s_listingCount--;
     }
 
@@ -246,8 +272,15 @@ contract Marketplace is ReentrancyGuardUpgradeable, OwnablePausable, IMarketplac
     /**
      * @inheritdoc IMarketplace
      */
-    function getOneListing(uint256 _listingId) external view returns (Listing memory) {
+    function getListingByListingId(uint256 _listingId) external view returns (Listing memory) {
         return s_listings[_listingId];
+    }
+
+    /**
+     * @inheritdoc IMarketplace
+     */
+    function getListingByTokenId(address _nftContract, uint256 _tokenId) external view returns (Listing memory) {
+        return s_listings[s_tokenIdToListingId[_nftContract][_tokenId]];
     }
 
     /**
