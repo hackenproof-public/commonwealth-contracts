@@ -32,7 +32,7 @@ error Marketplace__NoERC721InterfaceSupported();
 error Marketplace__ZeroPrice();
 error Marketplace__SellerCannotBuy();
 
-contract Marketplace is OwnablePausable, IMarketplace  {
+contract Marketplace is OwnablePausable, IMarketplace {
     /**
      * @notice The address off the Revenue Wallet
      */
