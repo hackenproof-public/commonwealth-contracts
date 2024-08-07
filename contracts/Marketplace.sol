@@ -8,6 +8,8 @@ import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 error Marketplace__OwnerZeroAddress();
 error Marketplace__FeeZeroAddress();
@@ -19,14 +21,18 @@ error Marketplace__ERC721AddressNotAdded();
 error Marketplace__ERC721AddressNotAllowed();
 error Marketplace__NFTNotOwnedByMsgSender();
 error Marketplace__ListingNotActive();
-error Marketplace__NotOwnerSellerAllowedContracts();
+error Marketplace__NotOwnerOrSellerOrAllowedColletion();
 error Marketplace__NFTNotApprovedForMarketplaceContract();
 error Marketplace__NotSeller();
-error Marketplace__ZeroPrice();
 error Marketplace__NotEnoughWlthApproved();
 error Marketplace__InvalidListingId();
+error Marketplace__NftAlreadyListed();
+error Marketplace__NftContractZeroAddress();
+error Marketplace__NoERC721InterfaceSupported();
+error Marketplace__ZeroPrice();
+error Marketplace__SellerCannotBuy();
 
-contract Marketplace is OwnablePausable, IMarketplace {
+contract Marketplace is OwnablePausable, IMarketplace  {
     /**
      * @notice The address off the Revenue Wallet
      */
@@ -117,6 +123,7 @@ contract Marketplace is OwnablePausable, IMarketplace {
         if (s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressExists();
         }
+
         s_allowedContracts[_nftContract] = true;
 
         emit AddressAdded(_nftContract);
@@ -155,9 +162,9 @@ contract Marketplace is OwnablePausable, IMarketplace {
         if (
             _msgSender() != s_listings[_listingId].seller &&
             _msgSender() != owner() &&
-            !s_allowedContracts[_msgSender()]
+            _msgSender() != s_listings[_listingId].nftContract
         ) {
-            revert Marketplace__NotOwnerSellerAllowedContracts();
+            revert Marketplace__NotOwnerOrSellerOrAllowedColletion();
         }
         s_tokenIdToListingId[s_listings[_listingId].nftContract][s_listings[_listingId].tokenId] = 0;
         s_listings[_listingId].listed = false;
@@ -189,6 +196,9 @@ contract Marketplace is OwnablePausable, IMarketplace {
     function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external returns (uint256) {
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
+        }
+        if (s_listings[s_tokenIdToListingId[_nftContract][_tokenId]].listed) {
+            revert Marketplace__NftAlreadyListed();
         }
         if (!s_allowedContracts[_nftContract]) {
             revert Marketplace__ERC721AddressNotAllowed();
@@ -224,6 +234,9 @@ contract Marketplace is OwnablePausable, IMarketplace {
      */
     function buyNFT(uint256 _listingId) external {
         Listing memory listing = s_listings[_listingId];
+        if (listing.seller == _msgSender()) {
+            revert Marketplace__SellerCannotBuy();
+        }
         if (!listing.listed) {
             revert Marketplace__ListingNotActive();
         }
