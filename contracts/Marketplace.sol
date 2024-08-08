@@ -193,7 +193,7 @@ contract Marketplace is OwnablePausable, IMarketplace {
     /**
      * @inheritdoc IMarketplace
      */
-    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external returns (uint256) {
+    function listNFT(address _nftContract, uint256 _tokenId, uint256 _price) external {
         if (_price <= 0) {
             revert Marketplace__ZeroPrice();
         }
@@ -225,8 +225,6 @@ contract Marketplace is OwnablePausable, IMarketplace {
         s_listingCount++;
 
         emit Listed(listingId, _msgSender(), _nftContract, _tokenId, _price);
-
-        return listingId;
     }
 
     /**
