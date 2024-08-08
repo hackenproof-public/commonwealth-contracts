@@ -89,6 +89,9 @@ export interface networkConfigItem {
   bonusStakingStartTimestamp: number;
   bonusStakingDuration: number;
   bonusStakingTotalReward: BigNumber;
+  minimumBuyback: BigNumber;
+  profitDistributor: string;
+  profitGenerator: string;
 }
 
 export interface networkConfigItemWithDev extends networkConfigItem {
@@ -145,7 +148,10 @@ const localConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('50'),
   bonusStakingStartTimestamp: 1699971572,
   bonusStakingDuration: 86400,
-  bonusStakingTotalReward: parseEther('1000')
+  bonusStakingTotalReward: parseEther('1000'),
+  minimumBuyback: toUsdc('100'),
+  profitDistributor: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  profitGenerator: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const baseSepoliaConfig: networkConfigItem = {
@@ -192,7 +198,10 @@ const baseSepoliaConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('20'),
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 259200,
-  bonusStakingTotalReward: parseEther('63998117')
+  bonusStakingTotalReward: parseEther('63998117'),
+  minimumBuyback: toUsdc('100'),
+  profitDistributor: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
+  profitGenerator: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63'
 };
 
 const baseConfig: networkConfigItem = {
@@ -210,7 +219,7 @@ const baseConfig: networkConfigItem = {
   wlthName: 'Common Wealth Token',
   wlthSymbol: 'WLTH',
   wlthWallet: '0xE73e27BB167997e886060D5C6eE0ddd7B4736aC6',
-  uniswapWlthUsdcPoolAddress: '', //TODO
+  uniswapWlthUsdcPoolAddress: '0x1536EE1506e24e5A36Be99C73136cD82907A902E',
   poolObservationTime: 1,
   uniswapSwapRouterV3Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
   feeTier: '', //TODO
@@ -239,7 +248,10 @@ const baseConfig: networkConfigItem = {
   alphaFundMinimumInvestment: toUsdc('20'),
   bonusStakingStartTimestamp: 1717244100,
   bonusStakingDuration: 2678400,
-  bonusStakingTotalReward: parseEther('63998117')
+  bonusStakingTotalReward: parseEther('63998117'),
+  minimumBuyback: toUsdc('0'),
+  profitDistributor: '', // TODO
+  profitGenerator: '' // TODO
 };
 const baseSepoliaDevConfig: networkConfigItem = {
   ...baseSepoliaConfig,

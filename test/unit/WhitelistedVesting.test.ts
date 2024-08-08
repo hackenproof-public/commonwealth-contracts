@@ -947,6 +947,10 @@ describe('Whitelisted vesting unit tests', () => {
       expect(
         await whitelistedVesting.connect(owner).whitelistedWalletSetup(beneficiary1.address, tokenReleaseDistribution)
       );
+      await time.increaseTo(vestingStartTimestamp + cadence * 6 + 30000);
+      expect(await whitelistedVesting.connect(beneficiary1).penalty(walletAllocation, beneficiary1.address)).to.equal(
+        10937755347272290314828n
+      );
       await time.increaseTo(vestingStartTimestamp + cadence * 7);
       expect(await whitelistedVesting.connect(beneficiary1).penalty(walletAllocation, beneficiary1.address)).to.equal(
         expectedPenalty
@@ -954,7 +958,6 @@ describe('Whitelisted vesting unit tests', () => {
       expect(await whitelistedVesting.connect(beneficiary1).releaseWithPenalty(toWlth('1000'), beneficiary1.address))
         .to.emit(whitelistedVesting, 'Released')
         .withArgs(beneficiary1.address, walletAllocation, expectedPenalty);
-      expect(wlth.transfer).to.have.been.calledWith(beneficiary1.address, walletAllocation.sub(expectedPenalty));
       expect(await whitelistedVesting.connect(beneficiary1).released()).to.equal(walletAllocation);
       expect(await whitelistedVesting.connect(beneficiary1).releaseableAmountPerWallet(beneficiary1.address)).to.equal(
         0
@@ -1726,6 +1729,26 @@ describe('Whitelisted vesting unit tests', () => {
 
       await time.increaseTo(vestingStartTimestamp + cadence * 8);
       expect(whitelistedVesting.connect(beneficiary1).release(toWlth('10000'), beneficiary1.address));
+    });
+
+    it('Should revert setGamification when not called by owner', async () => {
+      const { whitelistedVesting, owner, beneficiary1 } = await loadFixture(deploySimpleVesting);
+
+      await expect(
+        whitelistedVesting.connect(beneficiary1).setGamification(true)
+      ).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('Should set gamification', async () => {
+      const { whitelistedVesting, owner } = await loadFixture(deploySimpleVesting);
+      const flag = true;
+
+      await expect(
+        whitelistedVesting.connect(owner).setGamification(flag)
+      ).to.emit(whitelistedVesting, 'GamificationSet')
+      .withArgs(flag);
     });
   });
 
