@@ -638,7 +638,7 @@ describe('Investment NFT unit tests', () => {
   });
 
   describe('#NftMarketplaceInteractions', () => {
-    it('should automatically delist NFT from marketplace when transferred to another owner', async function () {
+    it('should automatically delist NFT from marketplace when transferred or approve revoked', async function () {
       const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
       const newName = 'New Name';
       const newDescription = 'New Description';
@@ -667,6 +667,45 @@ describe('Investment NFT unit tests', () => {
 
       await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
       await investmentNft.connect(user).transferFrom(user.address, deployer.address, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+    });
+
+    it('should automatically delist NFT from marketplace when approve revoked', async function () {
+      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await investmentNft.connect(minter).mint(user.address, tokenValue);
+      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
+      await marketplace.connect(owner).addAllowedContract(investmentNft.address);
+      await investmentNft.connect(user).approve(marketplace.address, 0);
+      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+
+      await investmentNft.connect(user).approve(constants.AddressZero, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+
+      await investmentNft.connect(user).approve(marketplace.address, 0);
+      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+
+      await investmentNft.connect(user).setApprovalForAll(marketplace.address, false);
 
       expect(await marketplace.getListingCount()).to.equal(0);
     });
