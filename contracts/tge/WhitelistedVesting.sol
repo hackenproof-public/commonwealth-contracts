@@ -415,6 +415,16 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
     }
 
     /**
+     * @inheritdoc IWhitelistedVesting
+     */
+    function setGamification(bool _flag) external override onlyOwner {
+
+        s_gamification = _flag;
+
+        emit GamificationSet(_flag);
+    }
+
+    /**
      * @inheritdoc IWithdrawal
      */
     function leftoversUnlockDelay() external view override returns (uint256) {
@@ -585,13 +595,12 @@ contract WhitelistedVesting is ReentrancyGuardUpgradeable, OwnablePausable, IWhi
     ) private view gamified afterVestingStart returns (uint256) {
         uint256 vested = _vestedAmountPerWallet(_beneficiary);
         uint256 slashingPool = _amount <= vested ? 0 : _amount - vested;
-        uint256 cadencesAmount = s_cadenceAmount;
+        //uint256 cadencesAmount = s_cadenceAmount;
 
         if (slashingPool == 0) return 0;
         return
-            (slashingPool * MAX_GAMIFICATION_PENALTY * (cadencesAmount - _actualCadence())) /
-            cadencesAmount /
-            BASIS_POINT_DIVISOR;
+            //(slashingPool * MAX_GAMIFICATION_PENALTY * (cadencesAmount - _actualCadence())) / cadencesAmount / BASIS_POINT_DIVISOR;
+            (slashingPool * MAX_GAMIFICATION_PENALTY * (s_vestingStartTimestamp + s_duration - block.timestamp)) / s_duration / BASIS_POINT_DIVISOR;
     }
 
     function _vestedAmountPerWallet(address _wallet) private view returns (uint256) {

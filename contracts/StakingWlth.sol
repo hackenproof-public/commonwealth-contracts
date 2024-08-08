@@ -163,12 +163,10 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             uint256 unstaked = _unstakeEnded(_msgSender(), fund, amountToUnstake);
             if (unstaked < amountToUnstake) {
                 amountToUnstake -= unstaked;
-
                 unstaked = _unstakeUnlocked(_msgSender(), fund, amountToUnstake);
                 if (unstaked < amountToUnstake) {
                     amountToUnstake -= unstaked;
-
-                    (, penalty) = _unstakeLocked(_msgSender(), fund, amountToUnstake);
+                    (amount, penalty) = _unstakeLocked(_msgSender(), fund, amountToUnstake);
                 }
             }
         }
@@ -874,10 +872,12 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
 
     function _reducePosition(uint256 id, uint256 toReduce) private {
         Position memory pos = stakingPositions[id];
+        if(pos.amountInWlth > 0) {
         uint256 newAmount = pos.amountInWlth - toReduce;
 
         stakingPositions[id].amountInWlth = uint128(newAmount);
         stakingPositions[id].amountInUsdc = uint128(Math.mulDiv(pos.amountInUsdc, newAmount, pos.amountInWlth));
+        }
     }
 
     function _getPenaltyFromLocked(address account, address fund, uint256 amount) private view returns (uint256) {

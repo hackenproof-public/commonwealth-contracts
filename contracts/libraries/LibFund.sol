@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 library LibFund {
     uint256 public constant DEFAULT_CARRY_FEE = 4000;
+    uint256 public constant MINIMUM_CARRY_FEE = 1000;
 
     bytes32 public constant STATE_FUNDS_IN = "FundsIn"; // 0x46756e6473496e00000000000000000000000000000000000000000000000000
     bytes32 public constant STATE_CAP_REACHED = "CapReached"; // 0x4361705265616368656400000000000000000000000000000000000000000000
