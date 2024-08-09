@@ -3,8 +3,8 @@ import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTVesting } from '../../typechain-types';
-import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
+import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTVesting, Marketplace, Wlth } from '../../typechain-types';
+import { getInterfaceId, keccak256, missing_role, toWlth, toUsdc } from '../utils';
 import { FakeContract, smock } from '@defi-wonderland/smock';
 
 describe('Genesis NFT unit tests', () => {
@@ -1107,4 +1107,177 @@ describe('Genesis NFT unit tests', () => {
         await expect(genesisNft.getMetadataImageAtIndex(15)).to.be.revertedWith("Index out of bounds");
         });
   });
+
+  describe.only('#NftMarketplaceInteractions', () => {
+    it('should automatically delist NFT from marketplace when transferred or approve revoked', async function () {
+      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [admin.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await genesisNft.connect(minter).mint(minter.address, tokenValue);
+
+      await marketplace.connect(admin).addAllowedContract(genesisNft.address);
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
+
+      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
+      await genesisNft.connect(minter).transferFrom(minter.address, deployer.address, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+    });
+
+    it('should automatically delist NFT from marketplace when approve revoked', async function () {
+      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [admin.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await genesisNft.connect(minter).mint(minter.address, tokenValue);
+      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
+      await marketplace.connect(admin).addAllowedContract(genesisNft.address);
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
+
+      await genesisNft.connect(minter).approve(constants.AddressZero, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
+
+      // extra token to check behavior for deapproving not listed token
+      await genesisNft.connect(minter).mint(minter.address, tokenValue);
+
+      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+    });
+
+    it('should automatically delist NFT from marketplace when approve revoked', async function () {
+      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [admin.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await genesisNft.connect(minter).mint(minter.address, tokenValue);
+      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
+      await marketplace.connect(admin).addAllowedContract(genesisNft.address);
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
+
+      await genesisNft.connect(minter).approve(constants.AddressZero, 0);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
+
+      // extra token to check behavior for deapproving not listed token
+      await genesisNft.connect(minter).mint(minter.address, tokenValue);
+
+      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+
+      expect(await marketplace.getListingCount()).to.equal(0);
+    });
+
+    it('should revert set nft marketplace when not called by owner', async function () {
+      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
+      const newName = 'New Name';
+      const newDescription = 'New Description';
+      const newImage = 'New Image';
+      const newUrl = 'New Url';
+      const newMetadata = {
+        name: newName,
+        description: newDescription,
+        image: newImage,
+        externalUrl: newUrl
+      };
+      const tokenValue = toUsdc('50');
+      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+      const marketplace = (await deployProxy(
+        'Marketplace',
+        [admin.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+        deployer
+      )) as Marketplace;
+
+      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
+
+      await expect(genesisNft.connect(minter).setMarketplaceAddress(marketplace.address)).to.be.revertedWith(
+        'AccessControl: account 0x90f79bf6eb2c4f870365e785982e1f101e93b906 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
+      );
+  });
+
+  it('should revert set nft marketplace when address zero provided', async function () {
+    const { genesisNft, minter, owner, deployer } = await loadFixture(deployGenesisNft);
+    const newName = 'New Name';
+    const newDescription = 'New Description';
+    const newImage = 'New Image';
+    const newUrl = 'New Url';
+    const newMetadata = {
+      name: newName,
+      description: newDescription,
+      image: newImage,
+      externalUrl: newUrl
+    };
+    const tokenValue = toUsdc('50');
+    const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
+    const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
+    const marketplace = (await deployProxy(
+      'Marketplace',
+      [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
+      deployer
+    )) as Marketplace;
+
+    await genesisNft.connect(owner).setMarketplaceAddress(marketplace.address);
+
+    await expect(genesisNft.connect(owner).setMarketplaceAddress(constants.AddressZero)).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
+});
+});
 });
