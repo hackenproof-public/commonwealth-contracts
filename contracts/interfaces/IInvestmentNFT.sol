@@ -75,6 +75,12 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     event MinimumValueChanged(uint256 indexed value);
 
     /**
+     * @notice Emitted when Marketplace address is changed
+     * @param marketplaceAddress address of the marketplace
+     */
+    event MarketplaceAddressChanged(address marketplaceAddress);
+
+    /**
      * @notice Mints NFT with specified investment value and metadata URI
      * @param to Token recipient
      * @param value Investment value assigned to token
@@ -125,6 +131,12 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @param _minimumValue New minimum value
      */
     function setMinimumValue(uint256 _minimumValue) external;
+
+    /**
+     * @notice Set NFT marketplace address
+     * @param _address New marketplace address
+     */
+    function setMarketplaceAddress(address _address) external;
 
     /**
      * @notice Returns summarized investment value from tokens holded by `account`

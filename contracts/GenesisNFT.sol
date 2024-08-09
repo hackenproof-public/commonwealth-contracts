@@ -4,11 +4,12 @@ pragma solidity ^0.8.18;
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
-import {ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {IERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import {IERC721Mintable} from "./interfaces/IERC721Mintable.sol";
 import {IGenesisNFT} from "./interfaces/IGenesisNFT.sol";
 import {IGenesisNFTVesting} from "./interfaces/IGenesisNFTVesting.sol";
+import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -42,6 +43,7 @@ contract GenesisNFT is
     string[] public metadataImages;
 
     IGenesisNFTVesting public genesisNFTVesting;
+    IMarketplace private s_marketplace;
 
     /**
      * @notice Emitted when token URI is changed
@@ -157,6 +159,37 @@ contract GenesisNFT is
         }
     }
 
+    function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
+        super.approve(to, tokenId);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
+            s_marketplace.cancelListing(address(this), tokenId);
+        }
+    }
+
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
+        super.setApprovalForAll(operator, approved);
+        uint256 balance = balanceOf(_msgSender());
+        for (uint256 i; i < balance; ) {
+            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                s_marketplace.cancelListing(address(this), tokenId);
+            }
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_address == address(0)) revert GenesisNFT__ZeroAddress();
+        s_marketplace = IMarketplace(_address);
+
+        emit MarketplaceAddressChanged(_address);
+    }
+
     /**
      * @notice Sets contract owner account
      * @dev Contract owner is necessary for compatibility with third-party dapps requiring ownable interface (e.g. OpenSea)
@@ -248,7 +281,13 @@ contract GenesisNFT is
         metadata.id = _metadata.id;
         metadata.percentage = _metadata.percentage;
 
-        emit MetadataChanged(_metadata.name, _metadata.description, _metadata.externalUrl, _metadata.id, _metadata.percentage);
+        emit MetadataChanged(
+            _metadata.name,
+            _metadata.description,
+            _metadata.externalUrl,
+            _metadata.id,
+            _metadata.percentage
+        );
     }
 
     /**
@@ -338,7 +377,8 @@ contract GenesisNFT is
         returns (uint256)
     {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        uint256 slices = (details.unvested + details.vested - details.claimed - details.penalty) / (token_allocation / 10);
+        uint256 slices = (details.unvested + details.vested - details.claimed - details.penalty) /
+            (token_allocation / 10);
         if (slices > 10) {
             slices = 10;
         }
@@ -364,7 +404,7 @@ contract GenesisNFT is
     /**
      * @notice Returns image url at the index
      * @param index index of the element
-     * @return image_url image url at the index 
+     * @return image_url image url at the index
      */
     function getMetadataImageAtIndex(uint256 index) external view returns (string memory) {
         require(index < metadataImages.length, "Index out of bounds");
@@ -384,9 +424,7 @@ contract GenesisNFT is
     /**
      * @inheritdoc IERC721MetadataUpgradeable
      */
-    function tokenURI(
-        uint256 tokenId
-    ) public view override(ERC721Upgradeable) returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override(ERC721Upgradeable) returns (string memory) {
         _requireMinted(tokenId);
         string memory json = Base64.encode(
             bytes(
@@ -462,5 +500,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
