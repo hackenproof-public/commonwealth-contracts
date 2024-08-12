@@ -217,7 +217,8 @@ contract Marketplace is OwnablePausable, IMarketplace {
             tokenId: _tokenId,
             price: _price,
             listed: true,
-            sold: false
+            sold: false,
+            listingId: listingId
         });
 
         s_tokenIdToListingId[_nftContract][_tokenId] = listingId;
