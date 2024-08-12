@@ -66,6 +66,13 @@ interface IStakingWlth {
     event FundUnregistered(address indexed caller, address indexed fund);
 
     /**
+     * @notice Emitted when investment fund is set as perpetual
+     * @param fund Address of perpetual fund that staking concerns
+     * @param perpetual Whether fund is perpetual
+     */
+    event PerpetualFundSet(address indexed fund, bool indexed perpetual);
+
+    /**
      * @notice Emitted when Uniswap WLTH price oracle is set
      * @param oldOracle Address of old Uniswap WLTH price oracle
      * @param newOracle Address of new Uniswap WLTH price oracle
@@ -255,4 +262,11 @@ interface IStakingWlth {
         address fund,
         uint256 duration
     ) external view returns (uint256);
+
+    /**
+     * @notice Set fund as perpetual
+     * @param fund Address of investment fund
+     * @param perpetual Whether fund is perpetual
+     */
+    function setPerpetual(address fund, bool perpetual) external;
 }

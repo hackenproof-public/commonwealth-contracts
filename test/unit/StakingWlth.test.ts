@@ -292,6 +292,35 @@ describe('Staking WLTH unit tests', () => {
     });
   });
 
+  describe('#setPerpetual()', () => {
+    it('Should set as perpetual if owner', async () => {
+      const { staking, owner, fund } = await setup();
+
+      await expect(staking.connect(owner).setPerpetual(fund.address, true))
+        .to.emit(staking, 'PerpetualFundSet')
+        .withArgs(fund.address, true);
+      expect(await staking.perpetualFunds(fund.address)).to.be.true;
+    });
+
+    it('Should reset perpetual if owner', async () => {
+      const { staking, owner, fund } = await setup();
+      await staking.connect(owner).setPerpetual(fund.address, true);
+
+      await expect(staking.connect(owner).setPerpetual(fund.address, false))
+        .to.emit(staking, 'PerpetualFundSet')
+        .withArgs(fund.address, false);
+      expect(await staking.perpetualFunds(fund.address)).to.be.false;
+    });
+
+    it('Should revert setting perpetual if not owner', async () => {
+      const { staking, user, fund } = await setup();
+
+      await expect(staking.connect(user).setPerpetual(fund.address, true)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+  });
+
   describe('#unregisterFund()', () => {
     it('Should unregister fund if owner', async () => {
       const { staking, fund, owner } = await setup();
@@ -350,6 +379,29 @@ describe('Staking WLTH unit tests', () => {
       const stake = { amount: toWlth('600'), period: ONE_YEAR };
       oracle.estimateAmountOut.returns(toUsdc('300'));
 
+      const stakeTime = (await time.latest()) + 100;
+      await time.setNextBlockTimestamp(stakeTime);
+      const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
+      const stakeId = await getStakeIdFromTx(tx, staking.address);
+
+      expect(await staking.getPositionDetails(0)).to.deep.equal([
+        stakeId,
+        user.address,
+        fund.address,
+        stake.amount,
+        toUsdc('300'),
+        investmentSize,
+        [stakeTime, stake.period],
+        true,
+        0
+      ]);
+    });
+
+    it('Should create staking position if perpetual', async () => {
+      const stake = { amount: toWlth('600'), period: ONE_YEAR };
+      oracle.estimateAmountOut.returns(toUsdc('300'));
+
+      await staking.connect(owner).setPerpetual(fund.address, true);
       const stakeTime = (await time.latest()) + 100;
       await time.setNextBlockTimestamp(stakeTime);
       const tx = await staking.connect(user).stake(fund.address, stake.amount, stake.period);
@@ -701,7 +753,7 @@ describe('Staking WLTH unit tests', () => {
 
         // unstake from various positions: ended(300 WLTH), unlocked(50 WLTH) and locked(100 WLTH)
         expect(await staking.connect(user).getUnstakeSimulation(fund.address, toWlth('450'))).to.deep.equal([
-          toWlth('40.000000634195839675'),
+          toWlth('40'),
           BigNumber.from(2400)
         ]);
       });
@@ -1298,6 +1350,30 @@ describe('Staking WLTH unit tests', () => {
       ).to.equal(800);
     });
 
+    it('Should return maximum discount if perpetual fund', async () => {
+      const { staking, wlth, fund, nft, owner, user } = await setup();
+
+      fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+      fund.investmentNft.returns(nft.address);
+      nft.getInvestmentValue.returns(toUsdc('1000'));
+      wlth.transferFrom.returns(true);
+
+      await staking.connect(owner).registerFund(fund.address);
+      await staking.connect(owner).setPerpetual(fund.address, true);
+      const stakeTime = (await time.latest()) + 1000;
+      const period = { start: stakeTime, duration: ONE_YEAR };
+
+      expect(await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime)).to.equal(
+        800
+      );
+      expect(
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR / 2)
+      ).to.equal(800);
+      expect(
+        await staking.getEstimatedDiscount(user.address, fund.address, toUsdc('100'), period, stakeTime + ONE_YEAR)
+      ).to.equal(800);
+    });
+
     it('Should return correct discount estimation in CDP', async () => {
       const { staking, wlth, fund, nft, owner, user } = await setup();
 
@@ -1633,6 +1709,62 @@ describe('Staking WLTH unit tests', () => {
         await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
 
         expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
+      });
+    });
+
+    describe('when fund is perpertual', async () => {
+      beforeEach(async () => {
+        fund.currentState.returns(formatBytes32String(FundState.FundsIn));
+        await staking.connect(owner).setPerpetual(fund.address, true);
+      });
+
+      it('Should return 0 penalty if fund is in position is finished', async () => {
+        const stake = { amount: toWlth('300'), duration: ONE_YEAR };
+        oracle.estimateAmountOut.returns(toUsdc('300'));
+
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        await time.increase(stake.duration);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(0);
+      });
+
+      it('Should return max penalty if just after stake', async () => {
+        const stake = { amount: toWlth('300'), duration: ONE_YEAR };
+        oracle.estimateAmountOut.returns(toUsdc('300'));
+
+        const stakeTime = Date.now() + 1000;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(toWlth('240'));
+      });
+
+      it('Should return correct penalty if position is active and no tokens unlocked', async () => {
+        const stake = { amount: toWlth('300'), duration: ONE_YEAR };
+        oracle.estimateAmountOut.returns(toUsdc('300'));
+
+        const stakeTime = Date.now() + 1000;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        await time.increaseTo(stakeTime + stake.duration / 2);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(toWlth('120'));
+      });
+
+      it('Should return correct penalty if position is active and tokens unlocked', async () => {
+        const stake = { amount: toWlth('300'), duration: ONE_YEAR };
+        oracle.estimateAmountOut.returns(toUsdc('300'));
+
+        const stakeTime = Date.now() + 1000;
+        await time.setNextBlockTimestamp(stakeTime);
+        await staking.connect(user).stake(fund.address, stake.amount, stake.duration);
+
+        nft.getInvestmentValue.returns(toUsdc('300'));
+
+        const unlocked = stake.amount.div(2);
+        await time.increaseTo(stakeTime + stake.duration / 2);
+        expect(await staking.getPenalty(user.address, fund.address, unlocked)).to.equal(0);
+        expect(await staking.getPenalty(user.address, fund.address, stake.amount)).to.equal(toWlth('60'));
       });
     });
 

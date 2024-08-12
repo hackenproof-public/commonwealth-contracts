@@ -60,6 +60,8 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     EnumerableSetUpgradeable.AddressSet private registeredFunds;
     EnumerableSetUpgradeable.AddressSet private stakingAccounts;
 
+    mapping(address => bool) public perpetualFunds;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -157,7 +159,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         uint256 penalty;
         uint256 amountToUnstake = amount;
 
-        if (_isFundInCRP(fund)) {
+        if (_isFundInCRP(fund) && !perpetualFunds[fund]) {
             _unstakeFromAllPositions(_msgSender(), fund, amountToUnstake);
         } else {
             uint256 unstaked = _unstakeEnded(_msgSender(), fund, amountToUnstake);
@@ -205,7 +207,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             }
         }
 
-        if (_isFundInCRP(fund)) {
+        if (_isFundInCRP(fund) && !perpetualFunds[fund]) {
             _unstakeFromAllPositionsSimulation(
                 _msgSender(),
                 fund,
@@ -306,6 +308,14 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     /**
      * @inheritdoc IStakingWlth
      */
+    function setPerpetual(address fund, bool perpetual) external onlyOwner {
+        perpetualFunds[fund] = perpetual;
+        emit PerpetualFundSet(fund, perpetual);
+    }
+
+    /**
+     * @inheritdoc IStakingWlth
+     */
     function getRegisteredFunds() external view returns (address[] memory) {
         return registeredFunds.values();
     }
@@ -360,7 +370,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
     function getPenalty(address account, address fund, uint256 amount) external view returns (uint256) {
         if (!registeredFunds.contains(fund)) revert StakingWlth__InvestmentFundNotRegistered();
 
-        if (!_isFundInCRP(fund)) {
+        if (!_isFundInCRP(fund) || perpetualFunds[fund]) {
             uint256 totalReleased = _getEndedTokensCount(account, fund) + _getUnlockedTokensCount(account, fund);
             if (amount > totalReleased) {
                 return _getPenaltyFromLocked(account, fund, amount - totalReleased);
@@ -475,7 +485,7 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
             uint128(amountInUsdc),
             investment,
             period,
-            _isFundInCRP(fund),
+            _isFundInCRP(fund) || perpetualFunds[fund],
             0
         );
         return id;
@@ -872,11 +882,11 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
 
     function _reducePosition(uint256 id, uint256 toReduce) private {
         Position memory pos = stakingPositions[id];
-        if(pos.amountInWlth > 0) {
-        uint256 newAmount = pos.amountInWlth - toReduce;
+        if (pos.amountInWlth > 0) {
+            uint256 newAmount = pos.amountInWlth - toReduce;
 
-        stakingPositions[id].amountInWlth = uint128(newAmount);
-        stakingPositions[id].amountInUsdc = uint128(Math.mulDiv(pos.amountInUsdc, newAmount, pos.amountInWlth));
+            stakingPositions[id].amountInWlth = uint128(newAmount);
+            stakingPositions[id].amountInUsdc = uint128(Math.mulDiv(pos.amountInUsdc, newAmount, pos.amountInWlth));
         }
     }
 
@@ -1242,5 +1252,5 @@ contract StakingWlth is OwnablePausable, IStakingWlth, ReentrancyGuardUpgradeabl
         return (totalUnstaked, totalPenalty);
     }
 
-    uint256[38] private __gap;
+    uint256[37] private __gap;
 }
