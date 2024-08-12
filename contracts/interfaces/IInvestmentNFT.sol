@@ -97,6 +97,13 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
     function split(uint256 tokenId, uint256[] calldata values) external;
 
     /**
+     * @notice Sets buyback and burn address
+     * @param _address Address where royalty should be send
+     * @param _value Royalty value
+     */
+    function setRoyalty(address _address, uint96 _value) external;
+
+    /**
      * @notice Set new metadata name
      * @param _name New metadata name
      */

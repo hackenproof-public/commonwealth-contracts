@@ -96,6 +96,13 @@ interface IGenesisNFT {
     event Series1Changed(bool _series1);
 
     /**
+     * @notice Sets buyback and burn address
+     * @param _address Address where royalty should be send
+     * @param _value Royalty value
+     */
+    function setRoyalty(address _address, uint96 _value) external;
+
+    /**
      * @notice Set new metadata name
      * @param _name New metadata name
      */

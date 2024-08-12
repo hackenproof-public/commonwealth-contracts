@@ -232,6 +232,13 @@ contract InvestmentNFT is
     /**
      * @inheritdoc IInvestmentNFT
      */
+    function setRoyalty(address _address, uint96 _value) external onlyOwner {
+        _setDefaultRoyalty(_address, uint96(_value));
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
     function getInvestmentValue(address account) public view virtual returns (uint256) {
         return _accountValueHistory[account].latest();
     }
