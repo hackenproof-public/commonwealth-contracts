@@ -214,6 +214,16 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
+     */
+    function setRoyalty(address _address, uint96 _value) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_address == address(0)) revert GenesisNFT__ZeroAddress();
+        _setDefaultRoyalty(_address, _value);
+
+        emit RoyaltyChanged(_address, _value);
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
      */ function setMetadataName(string memory _name) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_name).length == 0) revert GenesisNFT__EmptyString("name");
         metadata.name = _name;

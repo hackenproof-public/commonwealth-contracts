@@ -25,6 +25,7 @@ error InvestmentNft__TokenNotExists(uint256 _tokenId);
 error InvestmentNft__TokenListed();
 error InvestmentNft__InvalidMarketplaceAddress();
 error InvestmentNft__NotCalledByMarketplace();
+error InvestmentNFT__ZeroAddress();
 
 /**
  * @title Investment NFT contract
@@ -227,6 +228,16 @@ contract InvestmentNFT is
         s_marketplace = IMarketplace(_address);
 
         emit MarketplaceAddressChanged(_address);
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function setRoyalty(address _address, uint96 _value) external onlyOwner {
+        if (_address == address(0)) revert InvestmentNFT__ZeroAddress();
+        _setDefaultRoyalty(_address,_value);
+
+        emit RoyaltyChanged(_address, _value);
     }
 
     /**

@@ -91,9 +91,23 @@ interface IGenesisNFT {
 
     /**
      * @notice Emitted when series1 boolean is changed
+     * @param newAddress new address which will receive royalty
+     * @param value royalty percent in basis points (1/100 of a percent)
+     */
+    event RoyaltyChanged(address indexed newAddress, uint96 indexed value);
+
+    /**
+     * @notice Emitted when series1 boolean is changed
      * @param _series1 if true, s1
      */
     event Series1Changed(bool _series1);
+
+    /**
+     * @notice Sets buyback and burn address
+     * @param _address Address where royalty should be send
+     * @param _value Royalty value
+     */
+    function setRoyalty(address _address, uint96 _value) external;
 
     /**
      * @notice Set new metadata name

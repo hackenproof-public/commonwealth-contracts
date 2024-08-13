@@ -810,5 +810,32 @@ describe('Investment NFT unit tests', () => {
 
     await expect(investmentNft.connect(owner).setMarketplaceAddress(constants.AddressZero)).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvalidMarketplaceAddress');
 });
-});
+  });
+
+  describe('#setRoyalty', function () {
+    it('Should set the royalty parameters correctly', async function () {
+      const { investmentNft, owner } = await loadFixture(deployFixture);
+      const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
+      await expect(investmentNft.connect(owner).setRoyalty(newAddress, 1300)).to.emit(investmentNft, 'RoyaltyChanged').withArgs(newAddress, 1300);
+      expect(await investmentNft.connect(owner).royaltyInfo(0,toWlth('1000'))).to.deep.equal([newAddress, toWlth('130')]); 
+    });
+
+    it('Should revert if caller is not admin', async function () {
+      const { investmentNft, deployer } = await loadFixture(deployFixture);
+      const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
+      await expect(
+        investmentNft.connect(deployer).setRoyalty(newAddress, 650)
+      ).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('Should revert when setting the zero address', async function () {
+      const { investmentNft, owner } = await loadFixture(deployFixture);
+
+      await expect(
+        investmentNft.connect(owner).setRoyalty(ethers.constants.AddressZero, 650)
+      ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNFT__ZeroAddress');
+    });
+  });
 });

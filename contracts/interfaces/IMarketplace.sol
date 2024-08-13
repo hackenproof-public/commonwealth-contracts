@@ -15,6 +15,7 @@ interface IMarketplace {
         address nftContract;
         uint256 tokenId;
         uint256 price;
+        uint256 listingId;
     }
 
     /**
