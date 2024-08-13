@@ -235,7 +235,7 @@ contract InvestmentNFT is
      */
     function setRoyalty(address _address, uint96 _value) external onlyOwner {
         if (_address == address(0)) revert InvestmentNFT__ZeroAddress();
-        _setDefaultRoyalty(_address, uint96(_value));
+        _setDefaultRoyalty(_address,_value);
 
         emit RoyaltyChanged(_address, _value);
     }
