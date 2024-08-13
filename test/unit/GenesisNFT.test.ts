@@ -812,8 +812,8 @@ describe('Genesis NFT unit tests', () => {
     it('Should set the royalty parameters correctly', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
       const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
-      await expect(genesisNft.connect(admin).setRoyalty(newAddress, 650)).to.emit(genesisNft, 'RoyaltyChanged').withArgs(newAddress, 650);
-
+      expect(await genesisNft.connect(admin).setRoyalty(newAddress, 1300)).to.emit(genesisNft, 'RoyaltyChanged').withArgs(newAddress, 1300);
+      expect(await genesisNft.connect(admin).royaltyInfo(0,toWlth('1000'))).to.deep.equal([newAddress, toWlth('130')]);
     });
 
     it('Should revert if caller is not admin', async function () {
