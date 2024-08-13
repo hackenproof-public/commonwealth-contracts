@@ -808,6 +808,31 @@ describe('Genesis NFT unit tests', () => {
     });
   });
 
+  describe('setRoyalty', function () {
+    it('Should set the royalty parameters correctly', async function () {
+      const { genesisNft, admin } = await loadFixture(deployGenesisNft);
+      const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
+      await expect(genesisNft.connect(admin).setRoyalty(newAddress, 650)).to.emit(genesisNft, 'RoyaltyChanged').withArgs(newAddress, 650);
+
+    });
+
+    it('Should revert if caller is not admin', async function () {
+      const { genesisNft, minter } = await loadFixture(deployGenesisNft);
+      const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
+      await expect(
+        genesisNft.connect(minter).setRoyalty(newAddress, 650)
+      ).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE));
+    });
+
+    it('Should revert when setting the zero address', async function () {
+      const { genesisNft, admin } = await loadFixture(deployGenesisNft);
+
+      await expect(
+        genesisNft.connect(admin).setRoyalty(ethers.constants.AddressZero, 650)
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
+    });
+  });
+
   describe('setMetadataImage', function () {
     it('Should set the metadata image', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
@@ -1144,7 +1169,7 @@ describe('Genesis NFT unit tests', () => {
 
       const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
       marketplace['cancelListing(address,uint256)'].returns(true);
-      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500')]);  
+      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500'), 1]);  
 
       await genesisNft.connect(minter).mint(minter.address, 1);
       await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
@@ -1163,7 +1188,7 @@ describe('Genesis NFT unit tests', () => {
 
       const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
       marketplace['cancelListing(address,uint256)'].returns(true);
-      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500')]);
+      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500'), 1]);
 
       await genesisNft.connect(minter).mint(minter.address, 1);
       await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
@@ -1181,7 +1206,7 @@ describe('Genesis NFT unit tests', () => {
       // extra token to check behavior for deapproving not listed token
       await genesisNft.connect(minter).mint(minter.address, 5);
 
-      marketplace.getListingByTokenId.returnsAtCall(3,[false,false,minter.address,genesisNft.address,3,toWlth('500')]);
+      marketplace.getListingByTokenId.returnsAtCall(3,[false,false,minter.address,genesisNft.address,3,toWlth('500'),1]);
       await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
 
       expect(await marketplace.getListingCount()).to.equal(0);
