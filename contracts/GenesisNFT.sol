@@ -507,5 +507,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[38] private __gap;
+    uint256[39] private __gap;
 }
