@@ -43,7 +43,7 @@ contract GenesisNFT is
     string[] public metadataImages;
 
     IGenesisNFTVesting public genesisNFTVesting;
-    IMarketplace private s_marketplace;
+    //IMarketplace private s_marketplace;
 
     /**
      * @notice Emitted when token URI is changed
