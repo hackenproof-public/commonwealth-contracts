@@ -23,12 +23,13 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
 
   const usdc = await getContractAddress(network.config.chainId!, 'USDC');
   const fundRegistry = await getContractAddress(network.config.chainId!, 'InvestmentFundRegistry');
+  const stakingWlth = await getContractAddress(network.config.chainId!, 'StakingWlth');
 
   const metadata: any = {
-    name: "Priceless Fund 'Slice'",
+    name: "Alpha Fund 'Slice'",
     description: 'Priceless Fund NFT',
     image: 'https://gateway.pinata.cloud/ipfs/QmQp6Wk8v6X5Z5Q9ZPjV1Q9u1y1dQ7vF5d5w3YgU7oq4Zp',
-    externalUrl: 'https://priceless.fund'
+    externalUrl: 'https://alpha.fund'
   };
 
   const nftParameters = [
@@ -53,7 +54,7 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'name', value: fundName },
     { name: 'currency', value: usdc },
     { name: 'investmentNft', value: nft.address },
-    { name: 'stakingWlth', value: ethers.constants.AddressZero },
+    { name: 'stakingWlth', value: stakingWlth },
     {
       name: 'feeDistributionAddresses_',
       value: {
@@ -67,7 +68,8 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
     { name: 'cap', value: cap },
     { name: 'maxPercentageWalletInvestmentLimit', value: 200 }, // 200 = 2%
-    { name: 'minimumInvestment', value: deploymentConfig.alphaFundMinimumInvestment }
+    { name: 'minimumInvestment', value: deploymentConfig.alphaFundMinimumInvestment },
+    { name: 'profitProvider', value: deploymentConfig.ownerAccount }
   ];
 
   const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);

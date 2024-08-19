@@ -32,7 +32,8 @@
       "GenesisNFTVesting": "0x5A12da98ABDcAA90a36E80Dc90eAf68a19D9a30e",
       "WlthBonusStaking": "0xc60CcA6F912AAe682F0a4FE3C395Aa487172C080",
       "PricelessProfitProvider": "0x78bd8e666b13FB9DA02184d372199d49bA86E69b",
-      "WlthFund": "0xC95db24f1b2EE903D2042f35BEE239fdA28b2758"
+      "WlthFund": "0xC95db24f1b2EE903D2042f35BEE239fdA28b2758",
+      "Marketplace": "0x56FDc8A940139D0d5d5Fd22C3805539fb26fad28"
     },
     "dev": {
       "GenesisNFTV1": "0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587",
@@ -47,7 +48,7 @@
       "UniswapWlthPriceOracle": "0xb1bACaFDa81212E52c5e9d0E116Ae88dB5d685f8",
       "WlthBonusStaking": "0xF9C2Cd579FEDa77b1D046E3977A8335CA7368Be2",
       "BuybackAndBurn": "0xc21D7448Ba05A8F26313f33EbD72b84571b7B255",
-      "Marketplace": "0x0dDffef2a0ACb1709691Ad3c62fC19612B78DC16",
+      "Marketplace": "0xd7e79f4D270F40117E1287e2fBa7D4D9D7F006D4",
       "WlthFund": "0xA665C3AE7e6f0B62994a71B107536d8a6d926C68"
     },
     "InvestmentFundRegistry": "0x2F06e59Bf511079a66860a097Af03FEb2967646F",

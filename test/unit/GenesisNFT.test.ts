@@ -1,11 +1,18 @@
+import { FakeContract, smock } from '@defi-wonderland/smock';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { expect } from 'chai';
 import { constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import { deployProxy } from '../../scripts/utils';
-import { GenesisNFT, IERC721Mintable__factory, IGenesisNFT__factory, GenesisNFTVesting, Marketplace, Wlth, IERC165Upgradeable__factory } from '../../typechain-types';
-import { getInterfaceId, keccak256, missing_role, toWlth, toUsdc } from '../utils';
-import { FakeContract, smock } from '@defi-wonderland/smock';
+import {
+  GenesisNFT,
+  GenesisNFTVesting,
+  IERC165Upgradeable__factory,
+  IERC721Mintable__factory,
+  IGenesisNFT__factory,
+  Marketplace
+} from '../../typechain-types';
+import { getInterfaceId, keccak256, missing_role, toWlth } from '../utils';
 
 describe('Genesis NFT unit tests', () => {
   const DEFAULT_ADMIN_ROLE = constants.HashZero;
@@ -40,6 +47,7 @@ describe('Genesis NFT unit tests', () => {
     const [deployer, owner, admin, minter, pauser, royaltyWallet] = await ethers.getSigners();
 
     const vestingContractMock: FakeContract<GenesisNFTVesting> = await smock.fake('GenesisNFTVesting');
+    const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
 
     const genesisNft: GenesisNFT = await deployProxy(
       'GenesisNFT',
@@ -61,8 +69,9 @@ describe('Genesis NFT unit tests', () => {
     await genesisNft.connect(owner).grantRole(DEFAULT_ADMIN_ROLE, admin.address);
     await genesisNft.connect(owner).grantRole(MINTER_ROLE, minter.address);
     await genesisNft.connect(owner).grantRole(PAUSER_ROLE, pauser.address);
+    await genesisNft.connect(owner).setMarketplaceAddress(marketplace.address);
 
-    return { genesisNft, deployer, owner, admin, minter, pauser, vestingContractMock };
+    return { genesisNft, deployer, owner, admin, minter, pauser, vestingContractMock, marketplace };
   };
 
   describe('Deployment', () => {
@@ -812,16 +821,18 @@ describe('Genesis NFT unit tests', () => {
     it('Should set the royalty parameters correctly', async function () {
       const { genesisNft, admin } = await loadFixture(deployGenesisNft);
       const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
-      expect(await genesisNft.connect(admin).setRoyalty(newAddress, 1300)).to.emit(genesisNft, 'RoyaltyChanged').withArgs(newAddress, 1300);
-      expect(await genesisNft.connect(admin).royaltyInfo(0,toWlth('1000'))).to.deep.equal([newAddress, toWlth('130')]);
+      expect(await genesisNft.connect(admin).setRoyalty(newAddress, 1300))
+        .to.emit(genesisNft, 'RoyaltyChanged')
+        .withArgs(newAddress, 1300);
+      expect(await genesisNft.connect(admin).royaltyInfo(0, toWlth('1000'))).to.deep.equal([newAddress, toWlth('130')]);
     });
 
     it('Should revert if caller is not admin', async function () {
       const { genesisNft, minter } = await loadFixture(deployGenesisNft);
       const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
-      await expect(
-        genesisNft.connect(minter).setRoyalty(newAddress, 650)
-      ).revertedWith(missing_role(minter.address, DEFAULT_ADMIN_ROLE));
+      await expect(genesisNft.connect(minter).setRoyalty(newAddress, 650)).revertedWith(
+        missing_role(minter.address, DEFAULT_ADMIN_ROLE)
+      );
     });
 
     it('Should revert when setting the zero address', async function () {
@@ -1007,19 +1018,19 @@ describe('Genesis NFT unit tests', () => {
 
   describe('#fetchTokenDetails()', () => {
     it('Should return slice', async () => {
-      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft);
       const tokenDetails = {
-        series1 : false,
-        tokenId : 0,
-        vested: toWlth("200"), // 200
-        unvested: toWlth("100"), // 100
-        released : 0,
-        claimed: toWlth("50"), // 50
-        releasable : 0,
-        penalty: toWlth("10"), // 10
-        bonus : 0,
-        lost : false,
-        gamified : false
+        series1: false,
+        tokenId: 0,
+        vested: toWlth('200'), // 200
+        unvested: toWlth('100'), // 100
+        released: 0,
+        claimed: toWlth('50'), // 50
+        releasable: 0,
+        penalty: toWlth('10'), // 10
+        bonus: 0,
+        lost: false,
+        gamified: false
       };
       await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
       await genesisNft.connect(owner).setSeries1(series1);
@@ -1027,235 +1038,268 @@ describe('Genesis NFT unit tests', () => {
       const owner2 = await genesisNft.ownerOf(1);
       await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
       const result = await genesisNft.fetchTokenDetails(1);
-      expect(result).to.equal("240");
-  });
-    
-    it('Should revert if token details are not set', async () => {
-        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+      expect(result).to.equal('240');
+    });
 
-        // Attempt to fetch details for a token that doesn't exist
-        const tokenId = 2;
-        await expect(genesisNft.fetchTokenDetails(tokenId)).to.be.reverted;
+    it('Should revert if token details are not set', async () => {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+      // Attempt to fetch details for a token that doesn't exist
+      const tokenId = 2;
+      await expect(genesisNft.fetchTokenDetails(tokenId)).to.be.reverted;
     });
   });
 
   describe('#getSlices()', () => {
     it('Should return slice', async () => {
-      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft);
       const tokenDetails = {
-        series1 : false,
-        tokenId : 0,
-        vested: toWlth("20000"), // 200
-        unvested: toWlth("10000"), // 100
-        released : 0,
-        claimed: toWlth("5000"), // 50
-        releasable : 0,
-        penalty: toWlth("1000"), // 10
-        bonus : 0,
-        lost : false,
-        gamified : false
+        series1: false,
+        tokenId: 0,
+        vested: toWlth('20000'), // 200
+        unvested: toWlth('10000'), // 100
+        released: 0,
+        claimed: toWlth('5000'), // 50
+        releasable: 0,
+        penalty: toWlth('1000'), // 10
+        bonus: 0,
+        lost: false,
+        gamified: false
       };
       await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
       await genesisNft.connect(owner).setSeries1(series1);
-      await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
+      await genesisNft.connect(owner).setTokenAllocation(toWlth('44000'));
       await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
       const owner2 = await genesisNft.ownerOf(1);
       await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
       const result = await genesisNft.getSlices(1);
       expect(result).to.equal(5);
-  });
-  it('Should return max 10', async () => {
-    const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
-    const tokenDetails = {
-      series1 : false,
-      tokenId : 0,
-      vested: toWlth("2000000"), // 200
-      unvested: toWlth("10000"), // 100
-      released : 0,
-      claimed: toWlth("5000"), // 50
-      releasable : 0,
-      penalty: toWlth("1000"), // 10
-      bonus : 0,
-      lost : false,
-      gamified : false
-    };
-    await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
-    await genesisNft.connect(owner).setSeries1(series1);
-    await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
-    await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
-    const owner2 = await genesisNft.ownerOf(1);
-    await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
-    const result = await genesisNft.getSlices(1);
-    expect(result).to.equal(10);
+    });
+    it('Should return max 10', async () => {
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft);
+      const tokenDetails = {
+        series1: false,
+        tokenId: 0,
+        vested: toWlth('2000000'), // 200
+        unvested: toWlth('10000'), // 100
+        released: 0,
+        claimed: toWlth('5000'), // 50
+        releasable: 0,
+        penalty: toWlth('1000'), // 10
+        bonus: 0,
+        lost: false,
+        gamified: false
+      };
+      await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
+      await genesisNft.connect(owner).setSeries1(series1);
+      await genesisNft.connect(owner).setTokenAllocation(toWlth('44000'));
+      await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
+      vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+      const result = await genesisNft.getSlices(1);
+      expect(result).to.equal(10);
     });
     it('Should revert if token details are not set', async () => {
-        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
 
-        // Attempt to fetch details for a token that doesn't exist
-        const tokenId = 2;
-        await expect(genesisNft.connect(owner).getSlices(tokenId)).to.be.reverted;
+      // Attempt to fetch details for a token that doesn't exist
+      const tokenId = 2;
+      await expect(genesisNft.connect(owner).getSlices(tokenId)).to.be.reverted;
     });
-
   });
 
   describe('#tokenURI()', () => {
     it('Should return uri', async () => {
-      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft); 
+      const { genesisNft, owner, vestingContractMock } = await loadFixture(deployGenesisNft);
       const tokenDetails = {
-        series1 : false,
-        tokenId : 0,
-        vested: toWlth("2000000"), // 200
-        unvested: toWlth("10000"), // 100
-        released : 0,
-        claimed: toWlth("5000"), // 50
-        releasable : 0,
-        penalty: toWlth("1000"), // 10
-        bonus : 0,
-        lost : false,
-        gamified : false
+        series1: false,
+        tokenId: 0,
+        vested: toWlth('2000000'), // 200
+        unvested: toWlth('10000'), // 100
+        released: 0,
+        claimed: toWlth('5000'), // 50
+        releasable: 0,
+        penalty: toWlth('1000'), // 10
+        bonus: 0,
+        lost: false,
+        gamified: false
       };
       const newMetadata = {
-        name: "Name",
-        description: "Description",
-        externalUrl: "https://example.com",
-        id: "ID123",
-        percentage: "50%"
+        name: 'Name',
+        description: 'Description',
+        externalUrl: 'https://example.com',
+        id: 'ID123',
+        percentage: '50%'
       };
 
-      const newImages = ["image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+      const newImages = [
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url'
+      ];
 
       await genesisNft.connect(owner).setVestingAddress(vestingContractMock.address);
       await genesisNft.connect(owner).setSeries1(series1);
-      await genesisNft.connect(owner).setTokenAllocation(toWlth("44000"));
+      await genesisNft.connect(owner).setTokenAllocation(toWlth('44000'));
       await genesisNft.connect(owner).setAllMetadata(newMetadata);
       await genesisNft.connect(owner).setMetadataImage(newImages);
       await genesisNft.connect(owner).mintWithIds(owner.address, [0, 1]);
-      const owner2 = await genesisNft.ownerOf(1);
-      await vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
+      vestingContractMock.getTokenDetails.whenCalledWith(true, 1).returns(tokenDetails);
       const result = await genesisNft.tokenURI(1);
-      expect(result).to.equal("data:application/json;base64,eyJuYW1lIjogIk5hbWUiLCJkZXNjcmlwdGlvbiI6ICJEZXNjcmlwdGlvbiIsImltYWdlIjogImltYWdlX3VybCIsImV4dGVybmFsX3VybCI6ICJodHRwczovL2V4YW1wbGUuY29tIiwic2VyaWVzX2lkIjogIklEMTIzIiwiYXR0cmlidXRlcyI6IFt7InRyYWl0X3R5cGUiOiJXTFRIX3Rva2VucyIsInZhbHVlIjoiMjAwNDAwMCJ9LHsidHJhaXRfdHlwZSI6IlByb2ZpdF9TaGFyZSIsInZhbHVlIjoiNTAlIn1dfQ==");
-      });
+      expect(result).to.equal(
+        'data:application/json;base64,eyJuYW1lIjogIk5hbWUiLCJkZXNjcmlwdGlvbiI6ICJEZXNjcmlwdGlvbiIsImltYWdlIjogImltYWdlX3VybCIsImV4dGVybmFsX3VybCI6ICJodHRwczovL2V4YW1wbGUuY29tIiwic2VyaWVzX2lkIjogIklEMTIzIiwiYXR0cmlidXRlcyI6IFt7InRyYWl0X3R5cGUiOiJXTFRIX3Rva2VucyIsInZhbHVlIjoiMjAwNDAwMCJ9LHsidHJhaXRfdHlwZSI6IlByb2ZpdF9TaGFyZSIsInZhbHVlIjoiNTAlIn1dfQ=='
+      );
+    });
 
     it('Should revert if token details are not set', async () => {
-        const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
 
-        // Attempt to fetch details for a token that doesn't exist
-        const tokenId = 2;
-        await expect(genesisNft.connect(owner).tokenURI(tokenId)).to.be.reverted;
+      // Attempt to fetch details for a token that doesn't exist
+      const tokenId = 2;
+      await expect(genesisNft.connect(owner).tokenURI(tokenId)).to.be.reverted;
     });
   });
   describe('#getMetadataImageAtIndex()', () => {
     it('Should return image', async () => {
-      const { genesisNft, owner } = await loadFixture(deployGenesisNft); 
-      const newImages = ["image_url","image_url1","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+      const newImages = [
+        'image_url',
+        'image_url1',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url'
+      ];
 
       await genesisNft.connect(owner).setMetadataImage(newImages);
       const result = await genesisNft.getMetadataImageAtIndex(1);
-      expect(result).to.equal("image_url1");
-      });
+      expect(result).to.equal('image_url1');
+    });
 
-      it('Should revert with out of bounds', async () => {
-        const { genesisNft, owner } = await loadFixture(deployGenesisNft); 
-        const newImages = ["image_url","image_url1","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url","image_url"];
-  
-        await genesisNft.connect(owner).setMetadataImage(newImages);
-        await expect(genesisNft.getMetadataImageAtIndex(15)).to.be.revertedWith("Index out of bounds");
-        });
+    it('Should revert with out of bounds', async () => {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+      const newImages = [
+        'image_url',
+        'image_url1',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url',
+        'image_url'
+      ];
+
+      await genesisNft.connect(owner).setMetadataImage(newImages);
+      await expect(genesisNft.getMetadataImageAtIndex(15)).to.be.revertedWith('Index out of bounds');
+    });
   });
 
   describe('#NftMarketplaceInteractions', () => {
+    beforeEach(async () => {
+      const { marketplace } = await loadFixture(deployGenesisNft);
+      marketplace.getListingByTokenId.reset();
+      marketplace['cancelListing(address,uint256)'].reset();
+    });
     it('should automatically delist NFT from marketplace when transferred', async function () {
-      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
-
-      const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
-      marketplace['cancelListing(address,uint256)'].returns(true);
-      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500'), 1]);  
+      const { genesisNft, minter, deployer, marketplace } = await loadFixture(deployGenesisNft);
 
       await genesisNft.connect(minter).mint(minter.address, 1);
-      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
-
-      await marketplace.connect(admin).addAllowedContract(genesisNft.address);
-      await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
-
+      marketplace.getListingByTokenId.returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
       await genesisNft.connect(minter).transferFrom(minter.address, deployer.address, 0);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      expect(marketplace['cancelListing(address,uint256)']).to.be.calledWith(genesisNft.address, 0);
     });
 
     it('should automatically delist NFT from marketplace when approve revoked', async function () {
-      const { genesisNft, minter, admin } = await loadFixture(deployGenesisNft);
-
-      const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
-      marketplace['cancelListing(address,uint256)'].returns(true);
-      marketplace.getListingByTokenId.returns([true,false,minter.address,genesisNft.address,0,toWlth('500'), 1]);
+      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
       await genesisNft.connect(minter).mint(minter.address, 1);
-      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
-      await marketplace.connect(admin).addAllowedContract(genesisNft.address);
       await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
-
+      marketplace.getListingByTokenId.returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
       await genesisNft.connect(minter).approve(constants.AddressZero, 0);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 0);
+    });
 
+    it('should automatically delist NFTs from marketplace when all approvals revoked', async function () {
+      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+      await genesisNft.connect(minter).mint(minter.address, 2);
       await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await marketplace.connect(minter).listNFT(genesisNft.address, 0, toWlth('500'));
-
-      // extra token to check behavior for deapproving not listed token
-      await genesisNft.connect(minter).mint(minter.address, 5);
-
-      marketplace.getListingByTokenId.returnsAtCall(3,[false,false,minter.address,genesisNft.address,3,toWlth('500'),1]);
+      await genesisNft.connect(minter).approve(marketplace.address, 1);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, 0)
+        .returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, 1)
+        .returns([true, false, minter.address, genesisNft.address, 1, toWlth('500'), 2]);
       await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledTwice;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 0);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 1);
+    });
+
+    it("Should not delist NFT if transfered but it's not listed", async function () {
+      const { genesisNft, minter, deployer, marketplace } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(minter).mint(minter.address, 1);
+      await genesisNft.connect(minter).transferFrom(minter.address, deployer.address, 0);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+    });
+
+    it("Should not delist NFT if all approvals revoked but it's not listed", async function () {
+      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(minter).mint(minter.address, 2);
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await genesisNft.connect(minter).approve(marketplace.address, 1);
+      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+    });
+
+    it("Should not delist NFT if approval revoked but it's not listed", async function () {
+      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+
+      await genesisNft.connect(minter).mint(minter.address, 1);
+      await genesisNft.connect(minter).approve(marketplace.address, 0);
+      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
     });
 
     it('should revert set nft marketplace when not called by owner', async function () {
-      const { genesisNft, minter, admin, deployer } = await loadFixture(deployGenesisNft);
-      const newName = 'New Name';
-      const newDescription = 'New Description';
-      const newImage = 'New Image';
-      const newUrl = 'New Url';
-      const newMetadata = {
-        name: newName,
-        description: newDescription,
-        image: newImage,
-        externalUrl: newUrl
-      };
-      const tokenValue = toUsdc('50');
-      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
+      const { genesisNft, minter } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(admin).setMarketplaceAddress(marketplace.address);
-
-      await expect(genesisNft.connect(minter).setMarketplaceAddress(marketplace.address)).to.be.revertedWith(
+      await expect(
+        genesisNft.connect(minter).setMarketplaceAddress(ethers.Wallet.createRandom().address)
+      ).to.be.revertedWith(
         'AccessControl: account 0x90f79bf6eb2c4f870365e785982e1f101e93b906 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000'
       );
+    });
+
+    it('should revert set nft marketplace when address zero provided', async function () {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+      await expect(
+        genesisNft.connect(owner).setMarketplaceAddress(constants.AddressZero)
+      ).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
+    });
   });
-
-  it('should revert set nft marketplace when address zero provided', async function () {
-    const { genesisNft, minter, owner, deployer } = await loadFixture(deployGenesisNft);
-    const newName = 'New Name';
-    const newDescription = 'New Description';
-    const newImage = 'New Image';
-    const newUrl = 'New Url';
-    const newMetadata = {
-      name: newName,
-      description: newDescription,
-      image: newImage,
-      externalUrl: newUrl
-    };
-    const tokenValue = toUsdc('50');
-    const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-    const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-    const marketplace: FakeContract<Marketplace> = await smock.fake('Marketplace');
-
-    await genesisNft.connect(owner).setMarketplaceAddress(marketplace.address);
-
-    await expect(genesisNft.connect(owner).setMarketplaceAddress(constants.AddressZero)).to.be.revertedWithCustomError(genesisNft, 'GenesisNFT__ZeroAddress');
-});
-});
 });

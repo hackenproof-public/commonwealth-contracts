@@ -11,10 +11,10 @@ const deployMarketplace: DeployFunction = async (hre: HardhatRuntimeEnvironment)
   const wlth = await getContractAddress(network.config.chainId!, 'Wlth');
 
   const parameters = [
-    { name: '_owner', value: deploymentCofing.ownerAccount },
-    { name: '_paymentToken', value: wlth },
-    { name: '_feeAddress', value: deploymentCofing.communityFundWallet },
-    { name: '_royaltyAddress', value: deploymentCofing.genesisNftRoyaltyAccount }
+    { name: 'owner', value: deploymentCofing.ownerAccount },
+    { name: 'paymentToken', value: wlth },
+    { name: 'feeAddress', value: deploymentCofing.communityFundWallet },
+    { name: 'royaltyAddress', value: deploymentCofing.genesisNftRoyaltyAccount }
   ];
 
   await deploy(hre, 'Marketplace', parameters, true, true);

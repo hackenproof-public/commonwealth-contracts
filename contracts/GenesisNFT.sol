@@ -370,22 +370,16 @@ contract GenesisNFT is
      * @notice Returns Unvested Tokens
      * @return Tokens unclaimed tokens
      */
-    function fetchTokenDetails(uint256 _tokenId)
-        public view
-        returns (string memory)
-    {
+    function fetchTokenDetails(uint256 _tokenId) public view returns (string memory) {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
-        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty)/1e18); // Access the first element
+        return Strings.toString((details.unvested + details.vested - details.claimed - details.penalty) / 1e18); // Access the first element
     }
 
     /**
      * @notice Returns Number of Slices
      * @return Number of slices
      */
-    function getSlices(uint256 _tokenId)
-        public view
-        returns (uint256)
-    {
+    function getSlices(uint256 _tokenId) public view returns (uint256) {
         IGenesisNFTVesting.TokenDetails memory details = genesisNFTVesting.getTokenDetails(series1, _tokenId);
         uint256 slices = (details.unvested + details.vested - details.claimed - details.penalty) /
             (token_allocation / 10);
@@ -494,6 +488,9 @@ contract GenesisNFT is
         uint256 _batchSize
     ) internal override whenNotPaused {
         super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
+        if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed) {
+            s_marketplace.cancelListing(address(this), _tokenId);
+        }
     }
 
     function _burn(uint256 _tokenId) internal override {
