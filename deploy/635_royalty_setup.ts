@@ -13,7 +13,7 @@ const royaltyChange: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
   const genesisNFT2Address = await getContractAddress(hre.network.config.chainId!, 'GenesisNFTV2');
   const alphaFundNFTAddress = undefined;
   const pricelessFundNFTAddress = undefined;
-  const secondarySalesWallet = await getContractAddress(hre.network.config.chainId!, 'communityFundWallet');
+  const secondarySalesWallet = await getContractAddress(hre.network.config.chainId!, 'secondarySalesWallet');
   const deploymentConfig = getDeploymentConfig();
   const royalty = deploymentConfig.nftRoyalty;
 
@@ -67,8 +67,8 @@ const royaltyChange: DeployFunction = async (hre: HardhatRuntimeEnvironment) => 
   await alphatx.wait();
   console.log('Setting royalty for AlphaFundNFT contract done. tx hash: ', alphatx.hash);
 
-  console.log('Upgrading PricelessFundNFT contract');
-  await upgrade(hre, 'InvestmentNFT', pricelessFundNFTAddress);
+  // console.log('Upgrading PricelessFundNFT contract');
+  // await upgrade(hre, 'InvestmentNFT', pricelessFundNFTAddress);
   console.log('Setting royalty for PricelessFundNFT contract');
   const pricelesstx = await pricelessFundNFT.setRoyalty(secondarySalesWallet, royalty);
   await pricelesstx.wait();

@@ -171,16 +171,16 @@ contract GenesisNFT is
         bool approved
     ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
-        uint256 balance = balanceOf(_msgSender());
-        for (uint256 i; i < balance; ) {
-            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-            // if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
-            //     s_marketplace.cancelListing(address(this), tokenId);
-            // }
-            unchecked {
-                i++;
-            }
-        }
+        // uint256 balance = balanceOf(_msgSender());
+        // for (uint256 i; i < balance; ) {
+        //     uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+        //     if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+        //         s_marketplace.cancelListing(address(this), tokenId);
+        //     }
+        //     unchecked {
+        //         i++;
+        //     }
+        // }
     }
 
     // function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
