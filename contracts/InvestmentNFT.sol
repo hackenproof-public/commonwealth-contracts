@@ -220,15 +220,15 @@ contract InvestmentNFT is
         emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl);
     }
 
-    /**
-     * @inheritdoc IInvestmentNFT
-     */
-    function setMarketplaceAddress(address _address) external onlyOwner {
-        if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
-        s_marketplace = IMarketplace(_address);
+    // /**
+    //  * @inheritdoc IInvestmentNFT
+    //  */
+    // function setMarketplaceAddress(address _address) external onlyOwner {
+    //     if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
+    //     s_marketplace = IMarketplace(_address);
 
-        emit MarketplaceAddressChanged(_address);
-    }
+    //     emit MarketplaceAddressChanged(_address);
+    // }
 
     /**
      * @inheritdoc IInvestmentNFT
