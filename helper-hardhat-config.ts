@@ -49,7 +49,7 @@ export interface networkConfigItem {
   genesisNftV1Series: number;
   genesisNftV2Series: number;
   ownerAccount: string;
-  genesisNftRoyalty: number;
+  nftRoyalty: number;
   genesisNftRoyaltyAccount: string;
   genesisNftV1TokenUri: string;
   genesisNftV2TokenUri: string;
@@ -64,7 +64,7 @@ export interface networkConfigItem {
   usdc?: string;
   usdt?: string;
   stakingTransactionFee: number;
-  communityFundWallet: string;
+  secondarySalesWallet: string;
   maxDiscount: number;
   periods: number[];
   coefficients: number[];
@@ -112,7 +112,7 @@ const localConfig: networkConfigItem = {
   genesisNftV1Series: 1,
   genesisNftV2Series: 2,
   ownerAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftRoyalty: 650,
+  nftRoyalty: 650,
   genesisNftRoyaltyAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
@@ -124,7 +124,7 @@ const localConfig: networkConfigItem = {
   uniswapSwapRouterV3Address: '0x18921C5bd7137eF0761909ea39FF7B6dC9A89405',
   feeTier: '3000',
   stakingTransactionFee: 100,
-  communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
+  secondarySalesWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
   maxDiscount: 3000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
@@ -162,7 +162,7 @@ const baseSepoliaConfig: networkConfigItem = {
   genesisNftV1Series: 1,
   genesisNftV2Series: 2,
   ownerAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
-  genesisNftRoyalty: 650,
+  nftRoyalty: 650,
   genesisNftRoyaltyAccount: '0xa232A34F6fbF466E54f7FB060d033B1CB53e7B63',
   genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
@@ -174,7 +174,7 @@ const baseSepoliaConfig: networkConfigItem = {
   uniswapSwapRouterV3Address: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4', //SwapRouter02
   feeTier: '500',
   stakingTransactionFee: 100,
-  communityFundWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
+  secondarySalesWallet: '0x1B2a823B225B80a767CFA6B6c88Aff8397a57cC9',
   maxDiscount: 3000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
@@ -212,7 +212,7 @@ const baseConfig: networkConfigItem = {
   genesisNftV1Series: 1,
   genesisNftV2Series: 2,
   ownerAccount: '0xbe7A65e6B0A252C71a666CaC8cA2e3c2D741F4aF',
-  genesisNftRoyalty: 650,
+  nftRoyalty: 650,
   genesisNftRoyaltyAccount: '0xa653879692D4D0e6b6E0847ceDd58eAD2F1CC136',
   genesisNftV1TokenUri: 'ipfs://QmecFbuBURVP8fF9phJztSaaSUkPRNuhpEYsQtPRKQPxnc',
   genesisNftV2TokenUri: 'ipfs://QmdhZy5AnctWp9Rg1L4byVRNZgdkHUkodwveSG9xrv9W3R',
@@ -224,7 +224,7 @@ const baseConfig: networkConfigItem = {
   uniswapSwapRouterV3Address: '0x2626664c2603336E57B271c5C0b26F421741e481',
   feeTier: '', //TODO
   stakingTransactionFee: 100,
-  communityFundWallet: '0xA205fD6A798A9Ba8b107A00b8A6a5Af742d6aCb5',
+  secondarySalesWallet: '0xA205fD6A798A9Ba8b107A00b8A6a5Af742d6aCb5',
   maxDiscount: 3000,
   periods: [ONE_YEAR, TWO_YEARS, THREE_YEARS, FOUR_YEARS],
   coefficients: [5000, 3750, 3125, 2500],
