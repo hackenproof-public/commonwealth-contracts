@@ -2,13 +2,14 @@
 pragma solidity ^0.8.18;
 
 import {PerpetualNFT} from "./PerpetualNFT.sol";
-import {ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import {IERC721Upgradeable, ERC721Upgradeable, ERC721EnumerableUpgradeable, IERC165Upgradeable, IERC721MetadataUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {ERC721PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import {ERC721URIStorageUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import {ERC2981Upgradeable} from "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import {CheckpointsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CheckpointsUpgradeable.sol";
 import {CountersUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
 import {EnumerableSetUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import {IPerpetualNFT} from "./interfaces/IPerpetualNFT.sol";
 import {_add, _subtract} from "./libraries/Utils.sol";
 import {OwnablePausable} from "./OwnablePausable.sol";
@@ -28,6 +29,7 @@ error PerpetualNFT__TokenValuesBeforeAfterSplitMismatch();
 error PerpetualNFT__NewPrincipalExceedsPrevious(uint256 tokenId);
 error PerpetualNFT__ZeroAddress();
 error PerpetualNFT_PerpetualFundAlreadySet();
+error PerpetualFund__TokenListedOnSale();
 
 /**
  * @title Perpetual NFT contract
@@ -62,6 +64,8 @@ contract PerpetualNFT is
      */
     address private s_perpetualFund;
 
+    IMarketplace private s_marketplace;
+
     /**
      * @notice Token ID counter
      */
@@ -73,6 +77,11 @@ contract PerpetualNFT is
     uint256 private s_minimumValue;
 
     /**
+     * @notice Metadata structure
+     */
+    Metadata private s_metadata;
+
+    /**
      * @notice Investors list
      */
     EnumerableSetUpgradeable.AddressSet private s_investors;
@@ -81,11 +90,6 @@ contract PerpetualNFT is
      * @notice Total investment value history
      */
     CheckpointsUpgradeable.History private s_totalValueHistory;
-
-    /**
-     * @notice Metadata structure
-     */
-    Metadata private s_metadata;
 
     /**
      * @notice Minter list
@@ -122,6 +126,7 @@ contract PerpetualNFT is
      * @param _minimumValue Minimum investment value
      * @param _profitDistributor Address of profit distributor
      * @param _metadata Metadata structure
+     * @param _marketplace Marketplace contract
      */
     function initialize(
         string memory name,
@@ -131,7 +136,8 @@ contract PerpetualNFT is
         uint96 royaltyValue,
         uint256 _minimumValue,
         address _profitDistributor,
-        Metadata memory _metadata
+        Metadata memory _metadata,
+        IMarketplace _marketplace
     ) public initializer {
         __Context_init();
         __ERC165_init();
@@ -152,6 +158,7 @@ contract PerpetualNFT is
             image: _metadata.image,
             externalUrl: _metadata.externalUrl
         });
+        s_marketplace = _marketplace;
     }
 
     /**
@@ -307,6 +314,55 @@ contract PerpetualNFT is
         s_minimumValue = _minimumValue;
 
         emit MinimumValueChanged(_minimumValue);
+    }
+
+    /**
+     * @inheritdoc IPerpetualNFT
+     */
+    function setMarketplace(address _marketplace) external onlyOwner {
+        if (_marketplace == address(0)) revert PerpetualNFT__ZeroAddress();
+        s_marketplace = IMarketplace(_marketplace);
+
+        emit MarketplaceSet(_marketplace);
+    }
+
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
+    function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
+        super.approve(to, tokenId);
+        if (to != address(s_marketplace) && s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+            s_marketplace.cancelListing(address(this), tokenId);
+        }
+    }
+
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
+        super.setApprovalForAll(operator, approved);
+        if (operator == address(s_marketplace) && !approved) {
+            uint256 balance = balanceOf(_msgSender());
+            for (uint256 i; i < balance; ) {
+                uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+                if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                    s_marketplace.cancelListing(address(this), tokenId);
+                }
+                unchecked {
+                    i++;
+                }
+            }
+        }
+    }
+
+    /**
+     * @inheritdoc IPerpetualNFT
+     */
+    function marketplace() external view override returns (address) {
+        return address(s_marketplace);
     }
 
     /**
@@ -524,6 +580,8 @@ contract PerpetualNFT is
         uint256 batchSize
     ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721PausableUpgradeable) whenNotPaused {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
+            s_marketplace.cancelListing(address(this), tokenId);
     }
 
     function _afterTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal override {
@@ -581,6 +639,9 @@ contract PerpetualNFT is
     }
 
     function _validateSplit(uint256 _tokenId, uint256[] calldata _values) private view {
+        if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed)
+            revert PerpetualFund__TokenListedOnSale();
+
         if (_msgSender() != ownerOf(_tokenId)) revert PerpetualNFT__NotTokenOwner(_msgSender(), _tokenId);
         if (_values.length > SPLIT_LIMIT) revert PerpetualNFT__SplitLimitExceeded();
         uint256 valuesSum = 0;

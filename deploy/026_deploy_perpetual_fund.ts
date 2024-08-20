@@ -23,6 +23,7 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
   const usdc = await getContractAddress(network.config.chainId!, 'USDC');
   const fundRegistry = await getContractAddress(network.config.chainId!, 'InvestmentFundRegistry');
   const stakingWlth = await getContractAddress(network.config.chainId!, 'StakingWlth');
+  const marketplace = await getContractAddress(network.config.chainId!, 'Marketplace');
 
   const metadata: any = {
     name: 'Perpetual Fund Slice',
@@ -40,6 +41,7 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'minimumValue', value: deploymentConfig.alphaFundMinimumInvestment },
     { name: 'profitDistributor', value: deploymentConfig.profitDistributor },
     { name: 'metadata', value: metadata }
+    { name: 'marketplace', value: marketplace }
   ];
 
   const nft = await deploy(hre, 'PerpetualNFT', nftParameters, true, false);

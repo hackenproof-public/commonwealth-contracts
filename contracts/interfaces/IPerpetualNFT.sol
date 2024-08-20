@@ -99,6 +99,12 @@ interface IPerpetualNFT is IERC721EnumerableUpgradeable {
     event PerpetualFundSet(address indexed fund);
 
     /**
+     * @notice Emitted when marketplace is set
+     * @param marketplace Marketplace address
+     */
+    event MarketplaceSet(address indexed marketplace);
+
+    /**
      * @notice Add new minter account
      * @param _account Address of new minter
      */
@@ -175,6 +181,17 @@ interface IPerpetualNFT is IERC721EnumerableUpgradeable {
      * @param _minimumValue New minimum value
      */
     function setMinimumValue(uint256 _minimumValue) external;
+
+    /**
+     * @notice Set marketplace address
+     * @param _marketplace Address of the marketplace
+     */
+    function setMarketplace(address _marketplace) external;
+
+    /**
+     * @notice Returns address of the marketplace
+     */
+    function marketplace() external view returns (address);
 
     /**
      * @notice Returns true if account is minter
