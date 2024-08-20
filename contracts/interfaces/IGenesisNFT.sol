@@ -83,11 +83,11 @@ interface IGenesisNFT {
      */
     event TokenAllocationChanged(uint256 tokenAllocation);
 
-    // /**
-    //  * @notice Emitted when Marketplace address is changed
-    //  * @param marketplaceAddress address of the marketplace
-    //  */
-    // event MarketplaceAddressChanged(address marketplaceAddress);
+    /**
+     * @notice Emitted when Marketplace address is changed
+     * @param marketplaceAddress address of the marketplace
+     */
+    event MarketplaceAddressChanged(address marketplaceAddress);
 
     /**
      * @notice Emitted when series1 boolean is changed

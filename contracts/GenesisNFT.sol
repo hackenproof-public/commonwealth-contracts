@@ -43,7 +43,7 @@ contract GenesisNFT is
     string[] public metadataImages;
 
     IGenesisNFTVesting public genesisNFTVesting;
-    //IMarketplace private s_marketplace;
+    IMarketplace private s_marketplace;
 
     /**
      * @notice Emitted when token URI is changed
@@ -161,9 +161,9 @@ contract GenesisNFT is
 
     function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.approve(to, tokenId);
-        // if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
-        //     s_marketplace.cancelListing(address(this), tokenId);
-        // }
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
+            s_marketplace.cancelListing(address(this), tokenId);
+        }
     }
 
     function setApprovalForAll(
@@ -171,24 +171,24 @@ contract GenesisNFT is
         bool approved
     ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
-        // uint256 balance = balanceOf(_msgSender());
-        // for (uint256 i; i < balance; ) {
-        //     uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-        //     if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
-        //         s_marketplace.cancelListing(address(this), tokenId);
-        //     }
-        //     unchecked {
-        //         i++;
-        //     }
-        // }
+        uint256 balance = balanceOf(_msgSender());
+        for (uint256 i; i < balance; ) {
+            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                s_marketplace.cancelListing(address(this), tokenId);
+            }
+            unchecked {
+                i++;
+            }
+        }
     }
 
-    // function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    //     if (_address == address(0)) revert GenesisNFT__ZeroAddress();
-    //     s_marketplace = IMarketplace(_address);
+    function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_address == address(0)) revert GenesisNFT__ZeroAddress();
+        s_marketplace = IMarketplace(_address);
 
-    //     emit MarketplaceAddressChanged(_address);
-    // }
+        emit MarketplaceAddressChanged(_address);
+    }
 
     /**
      * @notice Sets contract owner account
@@ -488,9 +488,9 @@ contract GenesisNFT is
         uint256 _batchSize
     ) internal override whenNotPaused {
         super._beforeTokenTransfer(_from, _to, _tokenId, _batchSize);
-        // if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed) {
-        //     s_marketplace.cancelListing(address(this), _tokenId);
-        // }
+        if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed) {
+            s_marketplace.cancelListing(address(this), _tokenId);
+        }
     }
 
     function _burn(uint256 _tokenId) internal override {
@@ -507,5 +507,5 @@ contract GenesisNFT is
         }
     }
 
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }
