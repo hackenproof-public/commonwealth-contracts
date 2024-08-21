@@ -146,11 +146,11 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      */
     function setMinimumValue(uint256 _minimumValue) external;
 
-    // /**
-    //  * @notice Set NFT marketplace address
-    //  * @param _address New marketplace address
-    //  */
-    // function setMarketplaceAddress(address _address) external;
+    /**
+     * @notice Set NFT marketplace address
+     * @param _address New marketplace address
+     */
+    function setMarketplaceAddress(address _address) external;
 
     /**
      * @notice Returns summarized investment value from tokens holded by `account`

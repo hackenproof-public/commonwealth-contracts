@@ -64,7 +64,7 @@ contract InvestmentNFT is
     CheckpointsUpgradeable.History private _totalValueHistory;
 
     Metadata public metadata;
-    //IMarketplace private s_marketplace;
+    IMarketplace private s_marketplace;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -152,7 +152,7 @@ contract InvestmentNFT is
      * @inheritdoc IInvestmentNFT
      */
     function split(uint256 tokenId, uint256[] calldata values) external whenNotPaused {
-        //if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) revert InvestmentNft__TokenListed();
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) revert InvestmentNft__TokenListed();
         _validateSplit(tokenId, values);
 
         _burn(tokenId);
@@ -220,15 +220,15 @@ contract InvestmentNFT is
         emit MetadataChanged(_metadata.name, _metadata.description, _metadata.image, _metadata.externalUrl);
     }
 
-    // /**
-    //  * @inheritdoc IInvestmentNFT
-    //  */
-    // function setMarketplaceAddress(address _address) external onlyOwner {
-    //     if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
-    //     s_marketplace = IMarketplace(_address);
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function setMarketplaceAddress(address _address) external onlyOwner {
+        if (_address == address(0)) revert InvestmentNft__InvalidMarketplaceAddress();
+        s_marketplace = IMarketplace(_address);
 
-    //     emit MarketplaceAddressChanged(_address);
-    // }
+        emit MarketplaceAddressChanged(_address);
+    }
 
     /**
      * @inheritdoc IInvestmentNFT
@@ -450,8 +450,8 @@ contract InvestmentNFT is
         uint256 value = tokenValue[tokenId];
         _subtractAccountValue(from, value);
         _addAccountValue(to, value);
-        // if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
-        //     s_marketplace.cancelListing(address(this), tokenId);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
+            s_marketplace.cancelListing(address(this), tokenId);
     }
 
     function _addAccountValue(address account, uint256 value) internal virtual {
@@ -461,9 +461,9 @@ contract InvestmentNFT is
 
     function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.approve(to, tokenId);
-        // if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
-        //     s_marketplace.cancelListing(address(this), tokenId);
-        // }
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
+            s_marketplace.cancelListing(address(this), tokenId);
+        }
     }
 
     function setApprovalForAll(
@@ -471,16 +471,16 @@ contract InvestmentNFT is
         bool approved
     ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
-        // uint256 balance = balanceOf(_msgSender());
-        // for (uint256 i; i < balance; ) {
-        //     uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-        //     if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
-        //         s_marketplace.cancelListing(address(this), tokenId);
-        //     }
-        //     unchecked {
-        //         i++;
-        //     }
-        // }
+        uint256 balance = balanceOf(_msgSender());
+        for (uint256 i; i < balance; ) {
+            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                s_marketplace.cancelListing(address(this), tokenId);
+            }
+            unchecked {
+                i++;
+            }
+        }
     }
 
     function _subtractAccountValue(address account, uint256 value) internal virtual {
