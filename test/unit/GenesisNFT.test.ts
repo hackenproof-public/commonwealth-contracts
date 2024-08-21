@@ -1215,73 +1215,194 @@ describe('Genesis NFT unit tests', () => {
       marketplace.getListingByTokenId.reset();
       marketplace['cancelListing(address,uint256)'].reset();
     });
-    it('should automatically delist NFT from marketplace when transferred', async function () {
-      const { genesisNft, minter, deployer, marketplace } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(minter).mint(minter.address, 1);
-      marketplace.getListingByTokenId.returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
-      await genesisNft.connect(minter).transferFrom(minter.address, deployer.address, 0);
+    it('Should cancel marketplace listing when a token is transfered', async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
-      expect(marketplace['cancelListing(address,uint256)']).to.be.calledWith(genesisNft.address, 0);
+      const tokenId = 0;
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 1);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+
+      await genesisNft.connect(owner).transferFrom(owner.address, minter.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, tokenId);
     });
 
-    it('should automatically delist NFT from marketplace when approve revoked', async function () {
-      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+    it('Should cancel marketplace listing when a token approval is revoked', async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(minter).mint(minter.address, 1);
-      await genesisNft.connect(minter).approve(marketplace.address, 0);
-      marketplace.getListingByTokenId.returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
-      await genesisNft.connect(minter).approve(constants.AddressZero, 0);
+      const tokenId = 0;
 
-      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 0);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 1);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+
+      await genesisNft.connect(owner).approve(minter.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, tokenId);
     });
 
-    it('should automatically delist NFTs from marketplace when all approvals revoked', async function () {
-      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
-      await genesisNft.connect(minter).mint(minter.address, 2);
-      await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await genesisNft.connect(minter).approve(marketplace.address, 1);
+    it("Shouldn't cancel marketplace listing when a token approved to the marketplace", async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+
+      const tokenId = 0;
+
       marketplace.getListingByTokenId
-        .whenCalledWith(genesisNft.address, 0)
-        .returns([true, false, minter.address, genesisNft.address, 0, toWlth('500'), 1]);
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 1);
+
       marketplace.getListingByTokenId
-        .whenCalledWith(genesisNft.address, 1)
-        .returns([true, false, minter.address, genesisNft.address, 1, toWlth('500'), 2]);
-      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+        .whenCalledWith(genesisNft.address, tokenId)
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+
+      await genesisNft.connect(owner).approve(marketplace.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+    });
+
+    it("Should cancel marketplace listing when all user's approvals revoked from marketplace", async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+
+      const firstTokenId = 0;
+      const secondTokenId = 1;
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 2);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500'), 1]);
+
+      await genesisNft.connect(owner).setApprovalForAll(marketplace.address, false);
 
       expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledTwice;
-      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 0);
-      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, 1);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, firstTokenId);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, secondTokenId);
     });
 
-    it("Should not delist NFT if transfered but it's not listed", async function () {
-      const { genesisNft, minter, deployer, marketplace } = await loadFixture(deployGenesisNft);
+    it("Shouldn't cancel all user's marketplace listings when revoke all approvales and a token is not listed", async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(minter).mint(minter.address, 1);
-      await genesisNft.connect(minter).transferFrom(minter.address, deployer.address, 0);
+      const firstTokenId = 0;
+      const secondTokenId = 1;
 
-      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 2);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).setApprovalForAll(marketplace.address, false);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(genesisNft.address, firstTokenId);
     });
 
-    it("Should not delist NFT if all approvals revoked but it's not listed", async function () {
-      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+    it("Shouldn't cancel marketplace listing when set approval for all to marketplace", async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(minter).mint(minter.address, 2);
-      await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await genesisNft.connect(minter).approve(marketplace.address, 1);
-      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+      const firstTokenId = 0;
+      const secondTokenId = 1;
 
-      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 2);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).setApprovalForAll(marketplace.address, true);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.calledOnce;
     });
 
-    it("Should not delist NFT if approval revoked but it's not listed", async function () {
-      const { genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
+    it("Shouldn't cancel marketplace listing when set approval for all not to marketplace", async () => {
+      const { owner, genesisNft, minter, marketplace } = await loadFixture(deployGenesisNft);
 
-      await genesisNft.connect(minter).mint(minter.address, 1);
-      await genesisNft.connect(minter).approve(marketplace.address, 0);
-      await genesisNft.connect(minter).setApprovalForAll(marketplace.address, false);
+      const firstTokenId = 0;
+      const secondTokenId = 1;
 
-      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await genesisNft.connect(owner).mint(owner.address, 2);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, firstTokenId)
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(genesisNft.address, secondTokenId)
+        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500'), 1]);
+
+      await genesisNft.connect(owner).setApprovalForAll(minter.address, true);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.calledOnce;
+    });
+
+    it('Should set new marketplace address', async () => {
+      const { genesisNft, owner } = await loadFixture(deployGenesisNft);
+
+      const newMarketplaceAddress = ethers.Wallet.createRandom().address;
+
+      await expect(genesisNft.connect(owner).setMarketplaceAddress(newMarketplaceAddress))
+        .to.emit(genesisNft, 'MarketplaceAddressChanged')
+        .withArgs(newMarketplaceAddress);
+
+      expect(await genesisNft.marketplace()).to.equal(newMarketplaceAddress);
     });
 
     it('should revert set nft marketplace when not called by owner', async function () {

@@ -168,4 +168,16 @@ interface IGenesisNFT {
      * @return Genesis NFT series number
      */
     function getSeries() external view returns (uint256);
+
+    /**
+     * @notice Returns market address
+     * @return Market address
+     */
+    function marketplace() external view returns (address);
+
+    /**
+     * @notice Returns metadata name
+     * @param _marketplace New marketplace address
+     */
+    function setMarketplaceAddress(address _marketplace) external;
 }

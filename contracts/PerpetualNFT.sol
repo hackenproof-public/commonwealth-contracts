@@ -64,6 +64,9 @@ contract PerpetualNFT is
      */
     address private s_perpetualFund;
 
+    /**
+     * @notice Address of marketplace contract
+     */
     IMarketplace private s_marketplace;
 
     /**
@@ -580,8 +583,9 @@ contract PerpetualNFT is
         uint256 batchSize
     ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721PausableUpgradeable) whenNotPaused {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
             s_marketplace.cancelListing(address(this), tokenId);
+        }
     }
 
     function _afterTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal override {
@@ -639,8 +643,9 @@ contract PerpetualNFT is
     }
 
     function _validateSplit(uint256 _tokenId, uint256[] calldata _values) private view {
-        if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed)
+        if (s_marketplace.getListingByTokenId(address(this), _tokenId).listed) {
             revert PerpetualFund__TokenListedOnSale();
+        }
 
         if (_msgSender() != ownerOf(_tokenId)) revert PerpetualNFT__NotTokenOwner(_msgSender(), _tokenId);
         if (_values.length > SPLIT_LIMIT) revert PerpetualNFT__SplitLimitExceeded();

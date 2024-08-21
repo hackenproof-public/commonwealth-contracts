@@ -88,7 +88,8 @@ contract InvestmentNFT is
         address royaltyAccount,
         uint96 royaltyValue,
         uint256 _minimumValue,
-        Metadata memory _metadata
+        Metadata memory _metadata,
+        IMarketplace _marketplace
     ) public initializer {
         __Context_init();
         __ERC165_init();
@@ -107,6 +108,7 @@ contract InvestmentNFT is
             image: _metadata.image,
             externalUrl: _metadata.externalUrl
         });
+        s_marketplace = _marketplace;
     }
 
     /**
@@ -152,7 +154,6 @@ contract InvestmentNFT is
      * @inheritdoc IInvestmentNFT
      */
     function split(uint256 tokenId, uint256[] calldata values) external whenNotPaused {
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) revert InvestmentNft__TokenListed();
         _validateSplit(tokenId, values);
 
         _burn(tokenId);
@@ -235,7 +236,7 @@ contract InvestmentNFT is
      */
     function setRoyalty(address _address, uint96 _value) external onlyOwner {
         if (_address == address(0)) revert InvestmentNFT__ZeroAddress();
-        _setDefaultRoyalty(_address,_value);
+        _setDefaultRoyalty(_address, _value);
 
         emit RoyaltyChanged(_address, _value);
     }
@@ -287,6 +288,13 @@ contract InvestmentNFT is
      */
     function getInvestors() external view returns (address[] memory) {
         return _investors.values();
+    }
+
+    /**
+     * @inheritdoc IInvestmentNFT
+     */
+    function marketplace() external view returns (address) {
+        return address(s_marketplace);
     }
 
     /**
@@ -392,6 +400,9 @@ contract InvestmentNFT is
     }
 
     function _validateSplit(uint256 tokenId, uint256[] calldata values) private view {
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+            revert InvestmentNft__TokenListed();
+        }
         if (_msgSender() != ownerOf(tokenId)) revert InvestmentNft__NotTokenOwner();
         if (values.length > SPLIT_LIMIT) revert InvestmentNft__SplitLimitExceeded();
         uint256 valuesSum = 0;
@@ -413,6 +424,9 @@ contract InvestmentNFT is
         uint256 batchSize
     ) internal override(ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721PausableUpgradeable) whenNotPaused {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+            s_marketplace.cancelListing(address(this), tokenId);
+        }
     }
 
     function _afterTokenTransfer(
@@ -450,8 +464,6 @@ contract InvestmentNFT is
         uint256 value = tokenValue[tokenId];
         _subtractAccountValue(from, value);
         _addAccountValue(to, value);
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed)
-            s_marketplace.cancelListing(address(this), tokenId);
     }
 
     function _addAccountValue(address account, uint256 value) internal virtual {
@@ -459,26 +471,34 @@ contract InvestmentNFT is
         _investors.add(account);
     }
 
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
     function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.approve(to, tokenId);
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
+        if (to != address(s_marketplace) && s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
             s_marketplace.cancelListing(address(this), tokenId);
         }
     }
 
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
     function setApprovalForAll(
         address operator,
         bool approved
     ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
-        uint256 balance = balanceOf(_msgSender());
-        for (uint256 i; i < balance; ) {
-            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
-                s_marketplace.cancelListing(address(this), tokenId);
-            }
-            unchecked {
-                i++;
+        if (operator == address(s_marketplace) && !approved) {
+            uint256 balance = balanceOf(_msgSender());
+            for (uint256 i; i < balance; ) {
+                uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+                if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                    s_marketplace.cancelListing(address(this), tokenId);
+                }
+                unchecked {
+                    i++;
+                }
             }
         }
     }

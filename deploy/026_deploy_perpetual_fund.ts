@@ -40,7 +40,7 @@ const deployAlphaFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) =
     { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
     { name: 'minimumValue', value: deploymentConfig.alphaFundMinimumInvestment },
     { name: 'profitDistributor', value: deploymentConfig.profitDistributor },
-    { name: 'metadata', value: metadata }
+    { name: 'metadata', value: metadata },
     { name: 'marketplace', value: marketplace }
   ];
 

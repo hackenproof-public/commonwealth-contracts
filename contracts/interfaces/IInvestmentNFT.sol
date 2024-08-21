@@ -216,4 +216,10 @@ interface IInvestmentNFT is IERC721EnumerableUpgradeable {
      * @return Token investment value
      */
     function tokenValue(uint256 tokenId) external returns (uint256);
+
+    /**
+     * @notice Returns marketplace address
+     * @return Marketplace address
+     */
+    function marketplace() external view returns (address);
 }

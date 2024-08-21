@@ -159,35 +159,46 @@ contract GenesisNFT is
         }
     }
 
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
     function approve(address to, uint256 tokenId) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.approve(to, tokenId);
-        if (s_marketplace.getListingByTokenId(address(this), tokenId).listed && to == address(0)) {
+        if (to != address(s_marketplace) && s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
             s_marketplace.cancelListing(address(this), tokenId);
         }
     }
 
+    /**
+     * @inheritdoc ERC721Upgradeable
+     */
     function setApprovalForAll(
         address operator,
         bool approved
     ) public virtual override(ERC721Upgradeable, IERC721Upgradeable) {
         super.setApprovalForAll(operator, approved);
-        uint256 balance = balanceOf(_msgSender());
-        for (uint256 i; i < balance; ) {
-            uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
-            if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
-                s_marketplace.cancelListing(address(this), tokenId);
-            }
-            unchecked {
-                i++;
+        if (operator == address(s_marketplace) && !approved) {
+            uint256 balance = balanceOf(_msgSender());
+            for (uint256 i; i < balance; ) {
+                uint256 tokenId = tokenOfOwnerByIndex(_msgSender(), i);
+                if (s_marketplace.getListingByTokenId(address(this), tokenId).listed) {
+                    s_marketplace.cancelListing(address(this), tokenId);
+                }
+                unchecked {
+                    i++;
+                }
             }
         }
     }
 
-    function setMarketplaceAddress(address _address) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_address == address(0)) revert GenesisNFT__ZeroAddress();
-        s_marketplace = IMarketplace(_address);
+    /**
+     * @inheritdoc IGenesisNFT
+     */
+    function setMarketplaceAddress(address _marketplace) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_marketplace == address(0)) revert GenesisNFT__ZeroAddress();
+        s_marketplace = IMarketplace(_marketplace);
 
-        emit MarketplaceAddressChanged(_address);
+        emit MarketplaceAddressChanged(_marketplace);
     }
 
     /**
@@ -224,7 +235,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataName(string memory _name) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataName(string memory _name) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_name).length == 0) revert GenesisNFT__EmptyString("name");
         metadata.name = _name;
 
@@ -233,7 +245,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataDescription(string memory _description) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataDescription(string memory _description) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_description).length == 0) revert GenesisNFT__EmptyString("description");
         metadata.description = _description;
 
@@ -242,7 +255,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataImage(string[] memory _metadataImages) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataImage(string[] memory _metadataImages) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_metadataImages.length != 11) revert GenesisNFT__LengthMismatch();
         metadataImages = _metadataImages;
 
@@ -251,7 +265,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataExternalUrl(string memory _externalUrl) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataExternalUrl(string memory _externalUrl) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_externalUrl).length == 0) revert GenesisNFT__EmptyString("externalUrl");
         metadata.externalUrl = _externalUrl;
 
@@ -260,7 +275,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataId(string memory _id) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataId(string memory _id) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_id).length == 0) revert GenesisNFT__EmptyString("id");
         metadata.id = _id;
 
@@ -269,7 +285,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setMetadataPercentage(string memory _percentage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setMetadataPercentage(string memory _percentage) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_percentage).length == 0) revert GenesisNFT__EmptyString("percentage");
         metadata.percentage = _percentage;
 
@@ -278,7 +295,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setAllMetadata(Metadata memory _metadata) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setAllMetadata(Metadata memory _metadata) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bytes(_metadata.name).length == 0) revert GenesisNFT__EmptyString("name");
         if (bytes(_metadata.description).length == 0) revert GenesisNFT__EmptyString("description");
         if (bytes(_metadata.externalUrl).length == 0) revert GenesisNFT__EmptyString("externalUrl");
@@ -302,7 +320,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setTokenAllocation(uint256 _token_allocation) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setTokenAllocation(uint256 _token_allocation) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         token_allocation = _token_allocation;
 
         emit TokenAllocationChanged(_token_allocation);
@@ -310,7 +329,8 @@ contract GenesisNFT is
 
     /**
      * @inheritdoc IGenesisNFT
-     */ function setSeries1(bool _series1) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+     */
+    function setSeries1(bool _series1) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         series1 = _series1;
 
         emit Series1Changed(_series1);
@@ -403,6 +423,13 @@ contract GenesisNFT is
      */
     function getSeries1() external view returns (bool) {
         return series1;
+    }
+
+    /**
+     * @inheritdoc IGenesisNFT
+     */
+    function marketplace() external view returns (address) {
+        return address(s_marketplace);
     }
 
     /**

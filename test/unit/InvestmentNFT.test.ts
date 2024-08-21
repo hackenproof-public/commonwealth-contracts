@@ -9,8 +9,7 @@ import {
   IERC721EnumerableUpgradeable__factory,
   IInvestmentNFT__factory,
   InvestmentNFT,
-  Marketplace,
-  Wlth
+  Marketplace
 } from '../../typechain-types';
 import { getInterfaceIdWithBase, toUsdc, toWlth } from '../utils';
 
@@ -39,7 +38,6 @@ describe('Investment NFT unit tests', () => {
 
   let owner: SignerWithAddress;
   let user: SignerWithAddress;
-  let user2: SignerWithAddress;
   let minter: SignerWithAddress;
   let restorer: SnapshotRestorer;
   let royaltyWallet: SignerWithAddress;
@@ -55,18 +53,18 @@ describe('Investment NFT unit tests', () => {
 
     const investmentNft: InvestmentNFT = await deployProxy(
       'InvestmentNFT',
-      [name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue, metadata],
+      [name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue, metadata, marketplace.address],
       deployer
     );
     await investmentNft.connect(owner).addMinter(minter.address);
     await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
 
-    return { investmentNft, deployer, owner, user, minter, royaltyWallet, royalty };
+    return { investmentNft, deployer, owner, user, minter, royaltyWallet, royalty, marketplace };
   };
 
   describe('Deployment', () => {
     it('Should deploy and return initial parameters', async () => {
-      const { investmentNft, deployer, user, minter, royaltyWallet } = await loadFixture(deployFixture);
+      const { investmentNft, deployer, user, minter, royaltyWallet, marketplace } = await loadFixture(deployFixture);
 
       expect(await investmentNft.name()).to.equal(name);
       expect(await investmentNft.symbol()).to.equal(symbol);
@@ -82,38 +80,57 @@ describe('Investment NFT unit tests', () => {
       expect((await investmentNft.metadata()).description).to.deep.equal(metadata.description);
       expect((await investmentNft.metadata()).image).to.deep.equal(metadata.image);
       expect((await investmentNft.metadata()).externalUrl).to.deep.equal(metadata.externalUrl);
+      expect(await investmentNft.marketplace()).to.be.equal(marketplace.address);
     });
 
     it('Should revert deployment if owner is zero address', async () => {
-      const { investmentNft, royaltyWallet, royalty } = await loadFixture(deployFixture);
+      const { investmentNft, royaltyWallet, royalty, marketplace } = await loadFixture(deployFixture);
       const [deployer] = await ethers.getSigners();
 
       await expect(
         deployProxy(
           'InvestmentNFT',
-          [name, symbol, constants.AddressZero, royaltyWallet.address, royalty, minimumValue, metadata],
+          [
+            name,
+            symbol,
+            constants.AddressZero,
+            royaltyWallet.address,
+            royalty,
+            minimumValue,
+            metadata,
+            marketplace.address
+          ],
           deployer
         )
       ).to.be.revertedWithCustomError(investmentNft, 'OwnablePausable__OwnerAccountZeroAddress');
     });
 
     it('Should revert deployment if invalid royalty parameters', async () => {
-      const { owner, royaltyWallet, deployer } = await loadFixture(deployFixture);
+      const { owner, royaltyWallet, deployer, marketplace } = await loadFixture(deployFixture);
 
       await expect(
         deployProxy(
           'InvestmentNFT',
-          [name, symbol, owner.address, royaltyWallet.address, 10001, minimumValue, metadata],
+          [name, symbol, owner.address, royaltyWallet.address, 10001, minimumValue, metadata, marketplace.address],
           deployer
         )
       ).to.be.revertedWith('ERC2981: royalty fee will exceed salePrice');
     });
 
     it('Should revert when initialize again', async () => {
-      const { owner, investmentNft, royaltyWallet, royalty } = await loadFixture(deployFixture);
+      const { owner, investmentNft, royaltyWallet, royalty, marketplace } = await loadFixture(deployFixture);
 
       await expect(
-        investmentNft.initialize(name, symbol, owner.address, royaltyWallet.address, royalty, minimumValue, metadata)
+        investmentNft.initialize(
+          name,
+          symbol,
+          owner.address,
+          royaltyWallet.address,
+          royalty,
+          minimumValue,
+          metadata,
+          marketplace.address
+        )
       ).to.be.revertedWith('Initializable: contract is already initialized');
     });
   });
@@ -251,37 +268,19 @@ describe('Investment NFT unit tests', () => {
         ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvestmentTooLow');
       });
 
-      it('should revert splitting nft when listed on marketplace', async function () {
-        const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-        const newName = 'New Name';
-        const newDescription = 'New Description';
-        const newImage = 'New Image';
-        const newUrl = 'New Url';
-        const newMetadata = {
-          name: newName,
-          description: newDescription,
-          image: newImage,
-          externalUrl: newUrl
-        };
-        const tokenValue = toUsdc('50');
-        const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-        const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-        const marketplace = (await deployProxy(
-          'Marketplace',
-          [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-          deployer
-        )) as Marketplace;
+      it('Should revert when a token is listed on the marketplace', async () => {
+        const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+        const tokenValue = toUsdc('100');
+        await investmentNft.connect(owner).mint(user.address, tokenValue);
 
-        await investmentNft.connect(minter).mint(user.address, tokenValue);
-        await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
-        await marketplace.connect(owner).addAllowedContract(investmentNft.address);
+        marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, toWlth('500'), 1]);
 
-        await investmentNft.connect(user).approve(marketplace.address, 0);
-        await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
-
-        await expect(
-          investmentNft.connect(user).split(tokenId, [toUsdc('50'), toUsdc('70')])
-        ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__TokenListed');
+        await expect(investmentNft.connect(user).split(0, [toUsdc('50'), toUsdc('50')])).to.be.revertedWithCustomError(
+          investmentNft,
+          'InvestmentNft__TokenListed'
+        );
       });
     });
   });
@@ -638,194 +637,249 @@ describe('Investment NFT unit tests', () => {
   });
 
   describe('#NftMarketplaceInteractions', () => {
-    it('should automatically delist NFT from marketplace when transferred or approve revoked', async function () {
-      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-      const newName = 'New Name';
-      const newDescription = 'New Description';
-      const newImage = 'New Image';
-      const newUrl = 'New Url';
-      const newMetadata = {
-        name: newName,
-        description: newDescription,
-        image: newImage,
-        externalUrl: newUrl
-      };
-      const tokenValue = toUsdc('50');
-      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const marketplace = (await deployProxy(
-        'Marketplace',
-        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-        deployer
-      )) as Marketplace;
-
-      await investmentNft.connect(minter).mint(user.address, tokenValue);
-
-      await marketplace.connect(owner).addAllowedContract(investmentNft.address);
-      await investmentNft.connect(user).approve(marketplace.address, 0);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
-
-      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
-      await investmentNft.connect(user).transferFrom(user.address, deployer.address, 0);
-
-      expect(await marketplace.getListingCount()).to.equal(0);
+    beforeEach(async () => {
+      const { marketplace } = await loadFixture(deployFixture);
+      marketplace.getListingByListingId.reset();
+      marketplace['cancelListing(address,uint256)'].reset();
     });
 
-    it('should automatically delist NFT from marketplace when approve revoked', async function () {
-      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-      const newName = 'New Name';
-      const newDescription = 'New Description';
-      const newImage = 'New Image';
-      const newUrl = 'New Url';
-      const newMetadata = {
-        name: newName,
-        description: newDescription,
-        image: newImage,
-        externalUrl: newUrl
-      };
-      const tokenValue = toUsdc('50');
-      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const marketplace = (await deployProxy(
-        'Marketplace',
-        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-        deployer
-      )) as Marketplace;
+    it('Should cancel marketplace listing when a token is transfered', async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
 
-      await investmentNft.connect(minter).mint(user.address, tokenValue);
-      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
-      await marketplace.connect(owner).addAllowedContract(investmentNft.address);
-      await investmentNft.connect(user).approve(marketplace.address, 0);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+      const tokenId = 0;
+      const tokenValue = toUsdc('100');
 
-      await investmentNft.connect(user).approve(constants.AddressZero, 0);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      await investmentNft.connect(owner).mint(user.address, tokenValue);
 
-      await investmentNft.connect(user).approve(marketplace.address, 0);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
 
-      // extra token to check behavior for deapproving not listed token
-      await investmentNft.connect(minter).mint(user.address, tokenValue);
+      await investmentNft.connect(user).transferFrom(user.address, owner.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(investmentNft.address, tokenId);
+    });
+
+    it('Should cancel marketplace listing when a token approval is revoked', async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+
+      const tokenId = 0;
+      const tokenValue = toUsdc('100');
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(owner).mint(user.address, tokenValue);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
+
+      await investmentNft.connect(user).approve(owner.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(investmentNft.address, tokenId);
+    });
+
+    it("Shouldn't cancel marketplace listing when a token approved to the marketplace", async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+
+      const tokenId = 0;
+      const tokenValue = toUsdc('100');
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(owner).mint(user.address, tokenValue);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, tokenId)
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
+
+      await investmentNft.connect(user).approve(marketplace.address, tokenId);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.called;
+    });
+
+    it("Should cancel marketplace listing when all user's approvals revoked from marketplace", async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+
+      const firstTokenId = 0;
+      const fistTokenValue = toUsdc('100');
+      const secondTokenId = 1;
+      const secondTokenValue = toUsdc('200');
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(owner).mint(user.address, fistTokenValue);
+      await investmentNft.connect(owner).mint(user.address, secondTokenValue);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500'), 1]);
 
       await investmentNft.connect(user).setApprovalForAll(marketplace.address, false);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledTwice;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(
+        investmentNft.address,
+        firstTokenId
+      );
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(
+        investmentNft.address,
+        secondTokenId
+      );
     });
 
-    it('should automatically delist NFT from marketplace when approve revoked', async function () {
-      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-      const newName = 'New Name';
-      const newDescription = 'New Description';
-      const newImage = 'New Image';
-      const newUrl = 'New Url';
-      const newMetadata = {
-        name: newName,
-        description: newDescription,
-        image: newImage,
-        externalUrl: newUrl
-      };
-      const tokenValue = toUsdc('50');
-      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const marketplace = (await deployProxy(
-        'Marketplace',
-        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-        deployer
-      )) as Marketplace;
+    it("Shouldn't cancel all user's marketplace listings when revoke all approvales and a token is not listed", async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
 
-      await investmentNft.connect(minter).mint(user.address, tokenValue);
-      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
-      await marketplace.connect(owner).addAllowedContract(investmentNft.address);
-      await investmentNft.connect(user).approve(marketplace.address, 0);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+      const firstTokenId = 0;
+      const fistTokenValue = toUsdc('100');
+      const secondTokenId = 1;
+      const secondTokenValue = toUsdc('200');
 
-      await investmentNft.connect(user).approve(constants.AddressZero, 0);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
 
-      await investmentNft.connect(user).approve(marketplace.address, 0);
-      await marketplace.connect(user).listNFT(investmentNft.address, 0, toWlth('500'));
+      await investmentNft.connect(owner).mint(user.address, fistTokenValue);
+      await investmentNft.connect(owner).mint(user.address, secondTokenValue);
 
-      // extra token to check behavior for deapproving not listed token
-      await investmentNft.connect(minter).mint(user.address, tokenValue);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
 
       await investmentNft.connect(user).setApprovalForAll(marketplace.address, false);
 
-      expect(await marketplace.getListingCount()).to.equal(0);
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledOnce;
+      expect(marketplace['cancelListing(address,uint256)']).to.have.been.calledWith(
+        investmentNft.address,
+        firstTokenId
+      );
+    });
+
+    it("Shouldn't cancel marketplace listing when set approval for all to marketplace", async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+
+      const firstTokenId = 0;
+      const fistTokenValue = toUsdc('100');
+      const secondTokenId = 1;
+      const secondTokenValue = toUsdc('200');
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(owner).mint(user.address, fistTokenValue);
+      await investmentNft.connect(owner).mint(user.address, secondTokenValue);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(user).setApprovalForAll(marketplace.address, true);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.calledOnce;
+    });
+
+    it("Shouldn't cancel marketplace listing when set approval for all not to marketplace", async () => {
+      const { owner, investmentNft, user, marketplace } = await loadFixture(deployFixture);
+
+      const firstTokenId = 0;
+      const fistTokenValue = toUsdc('100');
+      const secondTokenId = 1;
+      const secondTokenValue = toUsdc('200');
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+
+      await investmentNft.connect(owner).mint(user.address, fistTokenValue);
+      await investmentNft.connect(owner).mint(user.address, secondTokenValue);
+
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, firstTokenId)
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+      marketplace.getListingByTokenId
+        .whenCalledWith(investmentNft.address, secondTokenId)
+        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500'), 1]);
+
+      await investmentNft.connect(user).setApprovalForAll(owner.address, true);
+
+      expect(marketplace['cancelListing(address,uint256)']).to.not.have.been.calledOnce;
     });
 
     it('should revert set nft marketplace when not called by owner', async function () {
-      const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-      const newName = 'New Name';
-      const newDescription = 'New Description';
-      const newImage = 'New Image';
-      const newUrl = 'New Url';
-      const newMetadata = {
-        name: newName,
-        description: newDescription,
-        image: newImage,
-        externalUrl: newUrl
-      };
-      const tokenValue = toUsdc('50');
-      const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-      const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-      const marketplace = (await deployProxy(
-        'Marketplace',
-        [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-        deployer
-      )) as Marketplace;
+      const { investmentNft, user } = await loadFixture(deployFixture);
 
-      await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
+      const newMarketplace = ethers.Wallet.createRandom().address;
 
-
-      await expect(investmentNft.connect(user).setMarketplaceAddress(marketplace.address)).to.be.revertedWith(
+      await expect(investmentNft.connect(user).setMarketplaceAddress(newMarketplace)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
-  });
+    });
 
-  it('should revert set nft marketplace when address zero provided', async function () {
-    const { investmentNft, user, minter, owner, deployer } = await loadFixture(deployFixture);
-    const newName = 'New Name';
-    const newDescription = 'New Description';
-    const newImage = 'New Image';
-    const newUrl = 'New Url';
-    const newMetadata = {
-      name: newName,
-      description: newDescription,
-      image: newImage,
-      externalUrl: newUrl
-    };
-    const tokenValue = toUsdc('50');
-    const [communityFund, genesisNftRoyaltyAccount] = await ethers.getSigners();
-    const wlth: FakeContract<Wlth> = await smock.fake('Wlth');
-    const marketplace = (await deployProxy(
-      'Marketplace',
-      [owner.address, wlth.address, communityFund.address, genesisNftRoyaltyAccount.address],
-      deployer
-    )) as Marketplace;
+    it('should revert set nft marketplace when address zero provided', async function () {
+      const { investmentNft, owner } = await loadFixture(deployFixture);
 
-    await investmentNft.connect(owner).setMarketplaceAddress(marketplace.address);
-
-
-    await expect(investmentNft.connect(owner).setMarketplaceAddress(constants.AddressZero)).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvalidMarketplaceAddress');
-});
+      await expect(
+        investmentNft.connect(owner).setMarketplaceAddress(constants.AddressZero)
+      ).to.be.revertedWithCustomError(investmentNft, 'InvestmentNft__InvalidMarketplaceAddress');
+    });
   });
 
   describe('#setRoyalty', function () {
     it('Should set the royalty parameters correctly', async function () {
       const { investmentNft, owner } = await loadFixture(deployFixture);
       const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
-      await expect(investmentNft.connect(owner).setRoyalty(newAddress, 1300)).to.emit(investmentNft, 'RoyaltyChanged').withArgs(newAddress, 1300);
-      expect(await investmentNft.connect(owner).royaltyInfo(0,toWlth('1000'))).to.deep.equal([newAddress, toWlth('130')]); 
+      await expect(investmentNft.connect(owner).setRoyalty(newAddress, 1300))
+        .to.emit(investmentNft, 'RoyaltyChanged')
+        .withArgs(newAddress, 1300);
+      expect(await investmentNft.connect(owner).royaltyInfo(0, toWlth('1000'))).to.deep.equal([
+        newAddress,
+        toWlth('130')
+      ]);
     });
 
     it('Should revert if caller is not admin', async function () {
       const { investmentNft, deployer } = await loadFixture(deployFixture);
       const newAddress = '0xCB0Ef07D6cFFEc9490c15E39a0a029B0B9F84587';
-      await expect(
-        investmentNft.connect(deployer).setRoyalty(newAddress, 650)
-      ).to.be.revertedWith(
+      await expect(investmentNft.connect(deployer).setRoyalty(newAddress, 650)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       );
     });
