@@ -510,5 +510,5 @@ contract InvestmentNFT is
         return string(buffer);
     }
 
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }
