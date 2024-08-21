@@ -13,7 +13,7 @@ const deployWlthBonusStaking: DeployFunction = async (hre: HardhatRuntimeEnviron
   const parameters = [
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'wlth', value: wlth },
-    { name: 'communityFund', value: deploymentConfig.communityFundWallet },
+    { name: 'secondarySalesWallet', value: deploymentConfig.secondarySalesWallet },
     { name: 'stakingStartTimestamp', value: deploymentConfig.bonusStakingStartTimestamp },
     { name: 'stakingDuration', value: deploymentConfig.bonusStakingDuration },
     { name: 'totalReward', value: deploymentConfig.bonusStakingTotalReward }

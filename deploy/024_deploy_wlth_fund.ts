@@ -18,7 +18,7 @@ const wlthFund: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'wlth', value: wlthAddress },
     { name: 'usdc', value: usdcAddress },
-    { name: 'secondarySalesWallet', value: deploymentConfig.communityFundWallet }
+    { name: 'secondarySalesWallet', value: deploymentConfig.secondarySalesWallet }
   ];
 
   await deploy(hre, 'WlthFund', parameters, true, true, 'WlthFund');

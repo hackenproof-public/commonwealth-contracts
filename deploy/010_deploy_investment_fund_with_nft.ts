@@ -41,7 +41,7 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
-    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
+    { name: 'royaltyValue', value: deploymentConfig.nftRoyalty },
     { name: 'minimumValue', value: deploymentConfig.defaultMinimumInvestment },
     {
       name: 'metadata',
@@ -73,7 +73,7 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
         treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
         lpPool: deploymentConfig.lpPoolAddress,
         burn: deploymentConfig.burnAddress,
-        communityFund: deploymentConfig.communityFundWallet,
+        secondarySalesWallet: deploymentConfig.secondarySalesWallet,
         genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
       }
     },

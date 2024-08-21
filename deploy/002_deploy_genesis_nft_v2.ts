@@ -12,7 +12,7 @@ const deployGenesisNftV2: DeployFunction = async (hre: HardhatRuntimeEnvironment
     { name: 'series', value: deploymentCofing.genesisNftV2Series },
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'royaltyAccount', value: deploymentCofing.genesisNftRoyaltyAccount },
-    { name: 'royaltyValue', value: deploymentCofing.genesisNftRoyalty },
+    { name: 'royaltyValue', value: deploymentCofing.nftRoyalty },
     { name: 'tokenUri', value: deploymentCofing.genesisNftV2TokenUri }
   ];
 
