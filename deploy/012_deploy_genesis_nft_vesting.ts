@@ -17,7 +17,7 @@ const deployGenesisNFTVesting: DeployFunction = async (hre: HardhatRuntimeEnviro
     { name: 'genNFTseries1', value: genNFTseries1 },
     { name: 'genNFTseries2', value: genNFTseries2 },
     { name: 'wlth', value: wlth },
-    { name: 'communityFund', value: deploymentCofing.communityFundWallet },
+    { name: 'secondarySalesWallet', value: deploymentCofing.secondarySalesWallet },
     { name: 'duration', value: deploymentCofing.nftVestingDuration },
     { name: 'cadence', value: deploymentCofing.nftVestingCadence },
     { name: 'allocation', value: deploymentCofing.genesisNftVestingAllocation },

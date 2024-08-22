@@ -13,7 +13,7 @@ const deployMarketplace: DeployFunction = async (hre: HardhatRuntimeEnvironment)
   const parameters = [
     { name: 'owner', value: deploymentCofing.ownerAccount },
     { name: 'paymentToken', value: wlth },
-    { name: 'feeAddress', value: deploymentCofing.communityFundWallet },
+    { name: 'feeAddress', value: deploymentCofing.secondarySalesWallet },
     { name: 'royaltyAddress', value: deploymentCofing.genesisNftRoyaltyAccount }
   ];
 

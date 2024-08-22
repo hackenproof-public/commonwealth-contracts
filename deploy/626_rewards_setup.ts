@@ -35,7 +35,7 @@ const rewardsSetup: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     { name: '_gamification', value: vestingParameters.gamification },
     { name: '_owner', value: deploymentConfig.ownerAccount },
     { name: '_wlth', value: wlth },
-    { name: '_communityFund', value: deploymentConfig.communityFundWallet },
+    { name: '_secondarySalesWallet', value: deploymentConfig.secondarySalesWallet },
     { name: '_allocation', value: toWlth(vestingParameters.allocation.toString()) },
     { name: '_duration', value: vestingParameters.duration },
     { name: '_cadence', value: vestingParameters.cadence },

@@ -233,7 +233,7 @@ async function createFund(
         treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
         lpPool: deploymentConfig.lpPoolAddress,
         burn: deploymentConfig.burnAddress,
-        communityFund: deploymentConfig.communityFundWallet,
+        secondarySalesWallet: deploymentConfig.secondarySalesWallet,
         genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
       }
     },

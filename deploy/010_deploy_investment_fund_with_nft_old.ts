@@ -30,7 +30,7 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     { name: 'symbol', value: nftSymbol },
     { name: 'owner', value: deploymentConfig.ownerAccount },
     { name: 'royaltyAccount', value: deploymentConfig.genesisNftRoyaltyAccount },
-    { name: 'royaltyValue', value: deploymentConfig.genesisNftRoyalty },
+    { name: 'royaltyValue', value: deploymentConfig.nftRoyalty },
     { name: 'minimumValue', value: deploymentConfig.defaultMinimumInvestment }
   ];
 
@@ -40,36 +40,6 @@ const deployInvestmentFund: DeployFunction = async (hre: HardhatRuntimeEnvironme
     throw Error('InvestmentNFT deployment failed');
   }
 
-  // const fundParameters = [
-  //   { name: 'owner', value: deploymentConfig.ownerAccount },
-  //   { name: 'unlocker', value: deploymentConfig.unlocker },
-  //   { name: 'name', value: fundName },
-  //   { name: 'currency', value: usdc },
-  //   { name: 'investmentNft', value: nft.address },
-  //   { name: 'stakingWlth', value: ethers.constants.AddressZero },
-  //   {
-  //     name: 'feeDistributionAddresses_',
-  //     value: {
-  //       treasuryWallet: deploymentConfig.investmentFundTreasuryWallet,
-  //       lpPool: deploymentConfig.lpPoolAddress,
-  //       burn: deploymentConfig.burnAddress,
-  //       communityFund: deploymentConfig.communityFundWallet,
-  //       genesisNftRevenue: deploymentConfig.genesisNftRevenueAddress
-  //     }
-  //   },
-  //   { name: 'managementFee', value: deploymentConfig.investmentFundManagementFee },
-  //   { name: 'cap', value: cap },
-  //   { name: 'maxPercentageWalletInvestmentLimit', value: 200 },
-  //   { name: 'minimumInvestment', value: deploymentConfig.defaultMinimumInvestment }
-  // ];
-
-  // const investmentFund = await deploy(hre, 'InvestmentFund', fundParameters, true, false);
-
-  // if (investmentFund) {
-  //   await registerMinter(nft.address, investmentFund.address);
-  //   await addToFundRegistry(fundRegistry, investmentFund.address);
-  //   // await registerFundIntoStaking(stakingWlth, investmentFund.address);
-  // }
 };
 
 export default deployInvestmentFund;

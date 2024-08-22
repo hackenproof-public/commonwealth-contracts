@@ -18,7 +18,7 @@ const deployStakingWlth: DeployFunction = async (hre: HardhatRuntimeEnvironment)
     { name: 'usdc', value: usdc },
     { name: 'uniswapWlthPrice', value: wlthPriceOracle },
     { name: 'fee', value: deploymentCofing.stakingTransactionFee },
-    { name: 'communityFund', value: deploymentCofing.communityFundWallet },
+    { name: 'secondarySalesWallet', value: deploymentCofing.secondarySalesWallet },
     { name: 'maxDiscount', value: deploymentCofing.maxDiscount },
     { name: 'periods', value: deploymentCofing.periods },
     { name: 'coefficients', value: deploymentCofing.coefficients }
