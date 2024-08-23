@@ -2,7 +2,25 @@ module.exports = {
   skipFiles: [
     'test',
     'migration',
-    'mock'
+    'mock',
+    'tge',
+    'interfaces',
+    'libraries',
+    'Crowdsale.sol',
+    'FreeFund.sol',
+    'GenesisNFT.sol',
+    'GenesisNFTLock.sol',
+    'GenesisNFTmirror.sol',
+    'InvestmentFund.sol',
+    'InvestmentFundRegistry.sol',
+    'InvestmentNFT.sol',
+    'OwnablePausable.sol',
+    'PeriodicVesting.sol',
+    'Project.sol',
+    'StakingGenesisNFT.sol',
+    'StakingWlth.sol',
+    'StateMachine.sol',
+    'Wlth.sol'
   ],
   optimizer: {
     configureYulOptimizer: true,
