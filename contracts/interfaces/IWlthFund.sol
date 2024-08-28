@@ -3,11 +3,11 @@ pragma solidity ^0.8.18;
 
 interface IWlthFund {
     /**
-     * @notice Emitted when new minter account is added to contract
-     * @param proposalId Address of new minter
-     * @param investee asd
-     * @param fundAmount Address of new minter
-     * @param burnAmount Address of new minter
+     * @notice Emitted when Investee is funded
+     * @param proposalId id of the proposal
+     * @param investee funded investee wallet address
+     * @param fundAmount amount sent to investee
+     * @param burnAmount amount burned
      */
     event InvesteeFunded(
         uint256 indexed proposalId,
@@ -17,50 +17,63 @@ interface IWlthFund {
     );
 
     /**
-     * @notice Emitted when new minter account is added to contract
-     * @param id Address of new minter
-     * @param stakers asd
+     * @notice Emitted when top50stahers list is stored
+     * @param id stakers list id
+     * @param stakers stakers list
      */
     event Top50StakersStored(uint256 indexed id, bytes32[50] indexed stakers);
 
     /**
      * @notice Emitted when new minter account is added to contract
-     * @param proposalId Address of new minter
-     * @param keccakHash asd
+     * @param proposalId id of the proposal
+     * @param keccakHash hashed proposal data
      */
     event ProposalHashStored(uint256 indexed proposalId, bytes32 indexed keccakHash);
 
     /**
-     * @notice Burns the amount of tokens
-     * @param proposalId Amount to be burned
-     * @param keccakHash Amount to be burned
+     * @notice Emitted when new writer account is set
+     * @param oldWriter Address of old writer
+     * @param newWriter Address of new writer
+     */
+    event NewWriterSet(address oldWriter, address newWriter);
+
+    /**
+     * @notice put proposal hash
+     * @param proposalId id of the proposal
+     * @param keccakHash hashed proposal data
      */
     function putProposalHash(uint256 proposalId, bytes32 keccakHash) external;
 
     /**
-     * @notice Burns the amount of tokens
-     * @param id to be burned
+     * @notice put top 50 stakers list
+     * @param id if of the top 50 stakers list
      * @param stakers top 50 stakers list
      */
     function putTop50Stakers(uint256 id, bytes32[50] calldata stakers) external;
 
     /**
-     * @notice Returns the amount of tokens burned
-     * @param proposalId to be burned
-     * @param investee top 50 stakers list
-     * @param fundAmount to be burned
-     * @param burnAmount top 50 stakers list
+     * @notice send tokens from Secondary Sales Wallet to Investee and burn tokens
+     * @param proposalId id of the proposal
+     * @param investee address to be funded
+     * @param fundAmount to be funded
+     * @param burnAmount to be burned
      */
     function fundInvestee(uint256 proposalId, address investee, uint256 fundAmount, uint256 burnAmount) external;
 
     /**
-     * @notice Burns the amount of tokens
+     * @notice Set new writer address
+     * @param _newWriter new writer address
+     */
+    function setWriter(address _newWriter) external;
+
+    /**
+     * @notice Returns top 50 stakers list
      * @param id to be burned
      */
     function getTop50Stakers(uint256 id) external view returns (bytes32[50] memory);
 
     /**
-     * @notice Burns the amount of tokens
+     * @notice Returns proposal hash
      * @param proposalId to be burned
      */
     function getProposalHash(uint256 proposalId) external view returns (bytes32);
@@ -79,4 +92,9 @@ interface IWlthFund {
      * @notice Returns secondary sales wallet address;
      */
     function secondarySalesWallet() external view returns (address);
+
+    /**
+     * @notice Returns writer address
+     */
+    function writer() external view returns (address);
 }

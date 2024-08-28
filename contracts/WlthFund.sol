@@ -16,6 +16,8 @@ error WlthFund__UsdcZeroAddress();
 error WlthFund__InvesteeZeroAddress();
 error WlthFund__SecondarySalesWalletZeroAddress();
 error WlthFund__InvesteeAlreadyFunded();
+error WlthFund__NotWriterOrOwner();
+error WlthFund__WriterZeroAddress();
 
 contract WlthFund is OwnablePausable, IWlthFund {
     /// @notice WLTH ERC-20 contract address
@@ -27,6 +29,9 @@ contract WlthFund is OwnablePausable, IWlthFund {
     /// @notice Secondary Sales Wallet address
     address private s_secondarySalesWallet;
 
+    /// @notice Address allowed to do write and transfer operations
+    address private s_writer;
+
     /// @notice proposal data hash
     mapping(uint256 => bytes32) private s_proposals;
 
@@ -35,6 +40,11 @@ contract WlthFund is OwnablePausable, IWlthFund {
 
     /// @notice Address of Investee.
     mapping(uint256 => bytes32[50]) private s_top50stakers;
+
+    modifier onlyWriterOrOwner() {
+        if(msg.sender != s_writer && msg.sender != owner()) revert WlthFund__NotWriterOrOwner();
+        _;
+    }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -47,21 +57,25 @@ contract WlthFund is OwnablePausable, IWlthFund {
      * @param _wlth The initial voting period
      * @param _usdc The initial voting period
      * @param _secondarySalesWallet The initial voting period
+     * @param _writer The initial voting period
      */
     function initialize(
         address _owner,
         address _wlth,
         address _usdc,
-        address _secondarySalesWallet
+        address _secondarySalesWallet,
+        address _writer
     ) public initializer {
         if (_owner == address(0)) revert WlthFund__OwnerZeroAddress();
         if (_wlth == address(0)) revert WlthFund__WlthZeroAddress();
         if (_usdc == address(0)) revert WlthFund__UsdcZeroAddress();
         if (_secondarySalesWallet == address(0)) revert WlthFund__SecondarySalesWalletZeroAddress();
+        if (_writer == address(0)) revert WlthFund__WriterZeroAddress();
 
         s_wlth = _wlth;
         s_usdc = _usdc;
         s_secondarySalesWallet = _secondarySalesWallet;
+        s_writer = _writer;
 
         __OwnablePausable_init(_owner);
     }
@@ -74,7 +88,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
         address _investee,
         uint256 _fundAmount,
         uint256 _burnAmount
-    ) external onlyOwner {
+    ) external onlyWriterOrOwner {
         if (_investee == address(0)) revert WlthFund__InvesteeZeroAddress();
         if (s_proposalsFunded[_proposalId]) revert WlthFund__InvesteeAlreadyFunded();
         if (s_proposals[_proposalId] == bytes32(0)) revert WlthFund__InvalidProposal();
@@ -91,7 +105,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
     /**
      * @inheritdoc IWlthFund
      */
-    function putTop50Stakers(uint256 _id, bytes32[50] calldata _stakers) external onlyOwner {
+    function putTop50Stakers(uint256 _id, bytes32[50] calldata _stakers) external onlyWriterOrOwner {
         if (s_top50stakers[_id][0] != 0) revert WlthFund__Top50StakersEntityAlreadyExist();
         s_top50stakers[_id] = _stakers;
 
@@ -101,11 +115,22 @@ contract WlthFund is OwnablePausable, IWlthFund {
     /**
      * @inheritdoc IWlthFund
      */
-    function putProposalHash(uint256 _proposalId, bytes32 _keccakHash) external onlyOwner {
+    function putProposalHash(uint256 _proposalId, bytes32 _keccakHash) external onlyWriterOrOwner {
         if (s_proposals[_proposalId] != bytes32(0)) revert WlthFund__ProposalAlreadyExist();
         s_proposals[_proposalId] = _keccakHash;
 
         emit ProposalHashStored(_proposalId, _keccakHash);
+    }
+
+    /**
+     * @inheritdoc IWlthFund
+     */
+    function setWriter(address _newWriter) external onlyOwner {
+        if (_newWriter == address(0)) revert WlthFund__WriterZeroAddress();
+        address oldWriter = s_writer;
+        s_writer = _newWriter;
+
+        emit NewWriterSet(oldWriter, _newWriter);
     }
 
     /**
@@ -142,5 +167,12 @@ contract WlthFund is OwnablePausable, IWlthFund {
      */
     function secondarySalesWallet() external view returns (address) {
         return s_secondarySalesWallet;
+    }
+
+    /**
+     * @inheritdoc IWlthFund
+     */
+    function writer() external view returns (address) {
+        return s_writer;
     }
 }
