@@ -16,10 +16,22 @@ interface IBuybackAndBurn {
     event MinimumBuybackSet(uint256 minimumBuyback);
 
     /**
+     * @notice Emit when slippage percentage is updated
+     * @param slippageInBasisPoints New slippage percentage
+     */
+    event SlippageSet(uint256 slippageInBasisPoints);
+
+    /**
      * @notice Set minimum amount of USDC to perform buyback
      * @param _minimumBuyback Minimum amount of USDC to perform buyback
      */
     function setMinimumBuyback(uint256 _minimumBuyback) external;
+
+    /**
+     * @notice Set slippage percentage
+     * @param _slippageInBasisPoints Slippage percentage
+     */
+    function setSlippage(uint256 _slippageInBasisPoints) external;
 
     /**
      * @notice Get minimum amount of USDC to perform buyback
@@ -50,4 +62,16 @@ interface IBuybackAndBurn {
      * @return Address of USDC/WLTH Uniswap V3 pool
      */
     function pool() external view returns (address);
+
+    /**
+     * @notice Get slippage percentage
+     * @return Slippage percentage
+     */
+    function slippageInBasisPoints() external view returns (uint256);
+
+    /**
+     * @notice Get address of UniswapWlthPrice contract
+     * @return Address of UniswapWlthPrice contract
+     */
+    function wlthPriceOracle() external view returns (address);
 }
