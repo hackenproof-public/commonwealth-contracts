@@ -6,7 +6,7 @@ import { deployProxy } from '../../scripts/utils';
 import { BuybackAndBurn, IUniswapV3Pool, IUniswapWlthPrice, UniswapSwapper, USDC, Wlth } from '../../typechain-types';
 import { toUsdc } from '../utils';
 
-describe.only('BuybackAndBurn', () => {
+describe('BuybackAndBurn', () => {
   const deployBuybackAndBurn = async () => {
     const [deployer, owner] = await ethers.getSigners();
     const minimumBuyback = toUsdc('10');
