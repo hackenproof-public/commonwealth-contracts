@@ -8,7 +8,6 @@ import {IUniswapWlthPrice} from "./interfaces/IUniswapWlthPrice.sol";
 error UniswapWlthPriceOracle__WlthZeroAddress();
 error UniswapWlthPriceOracle__UsdcZeroAddress();
 error UniswapWlthPriceOracle__PoolZeroAddress();
-error UniswapWlthPriceOracle__TokenNotSupported();
 error UniswapWlthPriceOracle__ZeroAmount();
 error UniswapWlthPriceOracle__ObservationTimeZero();
 

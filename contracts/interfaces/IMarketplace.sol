@@ -15,7 +15,6 @@ interface IMarketplace {
         address nftContract;
         uint256 tokenId;
         uint256 price;
-        uint256 listingId;
     }
 
     /**
@@ -156,8 +155,9 @@ interface IMarketplace {
      * Emits Sale event
      *
      * @param _listingId id of the listing to be sold
+     * @param _price price of the listing
      */
-    function buyNFT(uint256 _listingId) external;
+    function buyNFT(uint256 _listingId, uint256 _price) external;
 
     /**
      * @notice Returns a listing with specific listing id

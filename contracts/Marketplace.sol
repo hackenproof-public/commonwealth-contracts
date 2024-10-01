@@ -27,10 +27,10 @@ error Marketplace__NotSeller();
 error Marketplace__NotEnoughWlthApproved();
 error Marketplace__InvalidListingId();
 error Marketplace__NftAlreadyListed();
-error Marketplace__NftContractZeroAddress();
-error Marketplace__NoERC721InterfaceSupported();
 error Marketplace__ZeroPrice();
 error Marketplace__SellerCannotBuy();
+error Marketplace__ListingAlreadyCancelled();
+error Marketplace__InvalidPrice();
 
 contract Marketplace is OwnablePausable, IMarketplace {
     /**
@@ -166,6 +166,10 @@ contract Marketplace is OwnablePausable, IMarketplace {
         ) {
             revert Marketplace__NotOwnerOrSellerOrAllowedColletion();
         }
+        if (!s_listings[_listingId].listed) {
+            revert Marketplace__ListingAlreadyCancelled(); 
+        }
+
         s_tokenIdToListingId[s_listings[_listingId].nftContract][s_listings[_listingId].tokenId] = 0;
         s_listings[_listingId].listed = false;
         s_listingCount--;
@@ -217,8 +221,7 @@ contract Marketplace is OwnablePausable, IMarketplace {
             tokenId: _tokenId,
             price: _price,
             listed: true,
-            sold: false,
-            listingId: listingId
+            sold: false
         });
 
         s_tokenIdToListingId[_nftContract][_tokenId] = listingId;
@@ -231,13 +234,16 @@ contract Marketplace is OwnablePausable, IMarketplace {
     /**
      * @inheritdoc IMarketplace
      */
-    function buyNFT(uint256 _listingId) external {
+    function buyNFT(uint256 _listingId, uint256 _price) external {
         Listing memory listing = s_listings[_listingId];
         if (listing.seller == _msgSender()) {
             revert Marketplace__SellerCannotBuy();
         }
         if (!listing.listed) {
             revert Marketplace__ListingNotActive();
+        }
+        if (listing.price != _price) {
+            revert Marketplace__InvalidPrice();
         }
         if (IERC20(s_paymentToken).allowance(_msgSender(), address(this)) < listing.price) {
             revert Marketplace__NotEnoughWlthApproved();
