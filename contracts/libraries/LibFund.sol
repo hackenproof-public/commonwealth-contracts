@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity 0.8.18;
 
 library LibFund {
     uint256 public constant DEFAULT_CARRY_FEE = 4000;
