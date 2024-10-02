@@ -210,13 +210,62 @@ describe('WlthBonusStaking', () => {
     });
   });
 
+  describe('Replenish rewards balance', () => {
+    describe('Success', () => {
+      it('Should replenish rewards balance successfully', async () => {
+        const { wlthBonusStaking, owner, wlth, totalReward } = await loadFixture(deployWlthBonusStaking);
+
+        wlth.balanceOf.returns(totalReward);
+
+        await expect(wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address)).to.emit(
+          wlthBonusStaking,
+          'TotalRewardsReplenished'
+        );
+
+        expect(wlth.transferFrom).to.be.calledWith(owner.address, wlthBonusStaking.address, totalReward);
+      });
+    });
+    describe('Reverts', () => {
+      it("Should revert if the caller's address is not the owner's address", async () => {
+        const { wlthBonusStaking, user1 } = await loadFixture(deployWlthBonusStaking);
+
+        await expect(wlthBonusStaking.connect(user1).replenishRewardsBalance(user1.address)).to.be.revertedWith(
+          'Ownable: caller is not the owner'
+        );
+      });
+
+      it('Should revert if already replenished', async () => {
+        const { wlthBonusStaking, owner } = await loadFixture(deployWlthBonusStaking);
+
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
+
+        await expect(
+          wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address)
+        ).to.be.revertedWithCustomError(wlthBonusStaking, 'WlthBonusStaking__TotalRewardAlreadyReplenished');
+      });
+
+      it("Should revert when transfering the total rewards wasn't successful", async () => {
+        const { wlthBonusStaking, owner, wlth, totalReward } = await loadFixture(deployWlthBonusStaking);
+
+        wlth.balanceOf.returns(totalReward);
+        wlth.transferFrom.returns(false);
+
+        await expect(
+          wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address)
+        ).to.be.revertedWithCustomError(wlthBonusStaking, 'WlthBonusStaking__TotalRewardTransferFailed');
+      });
+    });
+  });
+
   describe('Stake', () => {
     describe('Success', () => {
       it('Should stake successfully', async () => {
-        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp, communityFund } = await loadFixture(
+        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp, communityFund, owner } = await loadFixture(
           deployWlthBonusStaking
         );
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const fee = amount.div(100);
         const amountAfterFee = amount.sub(fee);
@@ -243,8 +292,12 @@ describe('WlthBonusStaking', () => {
       });
 
       it('Should add stake successfully', async () => {
-        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp } = await loadFixture(deployWlthBonusStaking);
+        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp, owner } = await loadFixture(
+          deployWlthBonusStaking
+        );
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const fee = amount.div(100);
         const amountAfterFee = amount.sub(fee);
@@ -269,10 +322,12 @@ describe('WlthBonusStaking', () => {
       });
 
       it('Should second user stake successfully', async () => {
-        const { wlthBonusStaking, user1, user2, wlth, stakingStartTimestamp } = await loadFixture(
+        const { wlthBonusStaking, user1, user2, wlth, stakingStartTimestamp, owner } = await loadFixture(
           deployWlthBonusStaking
         );
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const fee = amount.div(100);
         const amountAfterFee = amount.sub(fee);
@@ -308,9 +363,23 @@ describe('WlthBonusStaking', () => {
         );
       });
 
-      it('Should revert if the amount is 0', async () => {
-        const { wlthBonusStaking, user1, stakingStartTimestamp } = await loadFixture(deployWlthBonusStaking);
+      it("Should revert when total rewards wasn't replenished", async () => {
+        const { wlthBonusStaking, user1, stakingStartTimestamp, owner } = await loadFixture(deployWlthBonusStaking);
 
+        const amount = parseEther('100');
+
+        await time.increaseTo(stakingStartTimestamp);
+
+        await expect(wlthBonusStaking.connect(user1).stake(amount)).to.be.revertedWithCustomError(
+          wlthBonusStaking,
+          'WlthBonusStaking__TotalRewardNotReplenished'
+        );
+      });
+
+      it('Should revert if the amount is 0', async () => {
+        const { wlthBonusStaking, user1, stakingStartTimestamp, owner } = await loadFixture(deployWlthBonusStaking);
+
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         await time.increaseTo(stakingStartTimestamp);
 
         await expect(wlthBonusStaking.connect(user1).stake(0)).to.be.revertedWithCustomError(
@@ -358,10 +427,12 @@ describe('WlthBonusStaking', () => {
   describe('Unstake', () => {
     describe('Success', () => {
       it('Should unstake successfully', async () => {
-        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp, communityFund } = await loadFixture(
+        const { wlthBonusStaking, user1, wlth, stakingStartTimestamp, communityFund, owner } = await loadFixture(
           deployWlthBonusStaking
         );
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const stakedFee = amount.div(100);
         const stakedAmountAfterFee = amount.sub(stakedFee);
@@ -519,8 +590,10 @@ describe('WlthBonusStaking', () => {
     });
 
     it("Should return only staked value if the staking peried hasn't ended yet", async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp } = await loadFixture(deployWlthBonusStaking);
+      const { wlthBonusStaking, user1, stakingStartTimestamp, owner, wlth } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -537,10 +610,11 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 100% penalty if just after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward } = await loadFixture(
-        deployWlthBonusStaking
-      );
+      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, owner, wlth } =
+        await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -559,9 +633,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 100% penalty if just before 3 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, THREE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        THREE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -580,9 +664,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 75% penalty if 3 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, THREE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        THREE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -601,9 +695,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 75% penalty if just before 6 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, SIX_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        SIX_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -622,9 +726,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 50% penalty if 6 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, SIX_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        SIX_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -643,9 +757,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 50% penalty if just before 9 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, NINE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        NINE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -664,9 +788,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 25% penalty if 9 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, NINE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        NINE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -685,9 +819,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 25% penalty if just before 12 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, TWELVE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        TWELVE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -706,9 +850,19 @@ describe('WlthBonusStaking', () => {
     });
 
     it('Should return info with 0% penalty if 12 months after staking period ended', async () => {
-      const { wlthBonusStaking, user1, stakingStartTimestamp, stakingDuration, totalReward, TWELVE_MONTHS_IN_SECONDS } =
-        await loadFixture(deployWlthBonusStaking);
+      const {
+        wlthBonusStaking,
+        user1,
+        stakingStartTimestamp,
+        stakingDuration,
+        totalReward,
+        TWELVE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
+      } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount = parseEther('100');
       const fee = amount.div(100);
       const amountAfterFee = amount.sub(fee);
@@ -734,9 +888,13 @@ describe('WlthBonusStaking', () => {
         stakingStartTimestamp,
         stakingDuration,
         totalReward,
-        TWELVE_MONTHS_IN_SECONDS
+        TWELVE_MONTHS_IN_SECONDS,
+        owner,
+        wlth
       } = await loadFixture(deployWlthBonusStaking);
 
+      wlth.transferFrom.returns(true);
+      await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
       const amount1 = parseEther('100');
       const fee1 = amount1.div(100);
       const amountAfterFee1 = amount1.sub(fee1);
@@ -776,9 +934,12 @@ describe('WlthBonusStaking', () => {
           stakingStartTimestamp,
           stakingDuration,
           TWELVE_MONTHS_IN_SECONDS,
-          communityFund
+          communityFund,
+          owner
         } = await loadFixture(deployWlthBonusStaking);
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const fee = amount.div(100);
 
@@ -821,9 +982,12 @@ describe('WlthBonusStaking', () => {
           stakingStartTimestamp,
           stakingDuration,
           SIX_MONTHS_IN_SECONDS,
-          communityFund
+          communityFund,
+          owner
         } = await loadFixture(deployWlthBonusStaking);
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount = parseEther('100');
         const fee = amount.div(100);
 
@@ -869,9 +1033,12 @@ describe('WlthBonusStaking', () => {
           stakingDuration,
           totalReward,
           SIX_MONTHS_IN_SECONDS,
-          communityFund
+          communityFund,
+          owner
         } = await loadFixture(deployWlthBonusStaking);
 
+        wlth.transferFrom.returns(true);
+        await wlthBonusStaking.connect(owner).replenishRewardsBalance(owner.address);
         const amount1 = ethers.BigNumber.from(10);
         const fee1 = amount1.div(100);
         const amountAfterFee1 = amount1.sub(fee1);

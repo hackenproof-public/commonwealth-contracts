@@ -18,6 +18,9 @@ error WlthBonusStaking__ClaimRewardPeriodNotActive();
 error WlthBonusStaking__CommunityFundZeroAddress();
 error WlthBonusStaking__OwnerAccountZeroAddress();
 error WlthBonusStaking__WrongStakingDuration();
+error WlthBonusStaking__TotalRewardAlreadyReplenished();
+error WlthBonusStaking__TotalRewardNotReplenished();
+error WlthBonusStaking__TotalRewardTransferFailed();
 
 contract WlthBonusStaking is IWlthBonusStaking, Ownable2StepUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
@@ -61,6 +64,11 @@ contract WlthBonusStaking is IWlthBonusStaking, Ownable2StepUpgradeable {
      * @notice Stake amount for each user
      */
     mapping(address => uint256) private s_stakes;
+
+    /**
+     * @notice Total reward transfer status
+     */
+    bool private s_totalRewardTransfered;
 
     /**
      * @notice Check if the staking period is active
@@ -143,7 +151,27 @@ contract WlthBonusStaking is IWlthBonusStaking, Ownable2StepUpgradeable {
     /**
      * @inheritdoc IWlthBonusStaking
      */
+    function replenishRewardsBalance(address _wallet) external override onlyOwner {
+        if (s_totalRewardTransfered) {
+            revert WlthBonusStaking__TotalRewardAlreadyReplenished();
+        }
+
+        if (!IERC20Upgradeable(s_wlth).transferFrom(_wallet, address(this), s_totalReward)) {
+            revert WlthBonusStaking__TotalRewardTransferFailed();
+        }
+
+        s_totalRewardTransfered = true;
+
+        emit TotalRewardsReplenished();
+    }
+
+    /**
+     * @inheritdoc IWlthBonusStaking
+     */
     function stake(uint256 _amount) external override stakingActive {
+        if (!s_totalRewardTransfered) {
+            revert WlthBonusStaking__TotalRewardNotReplenished();
+        }
         if (_amount == 0) {
             revert WlthBonusStaking__CannotStakeZeroTokens();
         }

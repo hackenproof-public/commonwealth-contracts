@@ -65,6 +65,17 @@ interface IWlthBonusStaking {
     event StakingScheduleSet(uint256 indexed stakingStartTimestamp, uint256 indexed stakingEndTimestamp);
 
     /**
+     * @notice Emitted when rewards balance is replenished
+     */
+    event TotalRewardsReplenished();
+
+    /**
+     * @notice Emitted when rewards balance is replenished
+     * @param _wallet The address of the wallet from which the rewards are replenished
+     */
+    function replenishRewardsBalance(address _wallet) external;
+
+    /**
      * @notice Stake tokens
      * @param _amount The amount of tokens to stake
      */
