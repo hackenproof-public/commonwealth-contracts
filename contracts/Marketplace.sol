@@ -2,7 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {MARKETPLACE_FEE_PERCENTAGE, TRANSACTION_FEE, ROYALTY_PERCENTAGE, BASIS_POINT_DIVISOR} from "./libraries/Constants.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IMarketplace} from "./interfaces/IMarketplace.sol";
 import {IInvestmentNFT} from "./interfaces/IInvestmentNFT.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
@@ -32,7 +32,7 @@ error Marketplace__SellerCannotBuy();
 error Marketplace__ListingAlreadyCancelled();
 error Marketplace__InvalidPrice();
 
-contract Marketplace is OwnablePausable, IMarketplace {
+contract Marketplace is Ownable2StepUpgradeable, IMarketplace {
     /**
      * @notice The address off the Revenue Wallet
      */
@@ -104,9 +104,8 @@ contract Marketplace is OwnablePausable, IMarketplace {
             revert Marketplace__RoyaltyZeroAddress();
         }
         __Context_init();
-        {
-            __OwnablePausable_init(_owner);
-        }
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
         s_paymentToken = IERC20(_paymentToken);
         s_revenueWallet = _revenueWallet;
         s_secondarySales = _royaltyAddress;
@@ -167,7 +166,7 @@ contract Marketplace is OwnablePausable, IMarketplace {
             revert Marketplace__NotOwnerOrSellerOrAllowedColletion();
         }
         if (!s_listings[_listingId].listed) {
-            revert Marketplace__ListingAlreadyCancelled(); 
+            revert Marketplace__ListingAlreadyCancelled();
         }
 
         s_tokenIdToListingId[s_listings[_listingId].nftContract][s_listings[_listingId].tokenId] = 0;

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 error OwnablePausable__OwnerAccountZeroAddress();
 
-contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
+contract OwnablePausable is Ownable2StepUpgradeable, PausableUpgradeable {
     // solhint-disable-next-line func-name-mixedcase
     function __OwnablePausable_init(address owner_) internal onlyInitializing {
         __OwnablePausable_init_unchained(owner_);
@@ -16,7 +16,7 @@ contract OwnablePausable is OwnableUpgradeable, PausableUpgradeable {
     function __OwnablePausable_init_unchained(address owner_) internal onlyInitializing {
         if (owner_ == address(0)) revert OwnablePausable__OwnerAccountZeroAddress();
 
-        __Ownable_init();
+        __Ownable2Step_init();
         __Pausable_init();
 
         _transferOwnership(owner_);

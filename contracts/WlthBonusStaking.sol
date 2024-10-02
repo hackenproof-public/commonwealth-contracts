@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.18;
 
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IWlth} from "./interfaces/IWlth.sol";
 import {IERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {MathUpgradeable as Math} from "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
@@ -19,7 +19,7 @@ error WlthBonusStaking__CommunityFundZeroAddress();
 error WlthBonusStaking__OwnerAccountZeroAddress();
 error WlthBonusStaking__WrongStakingDuration();
 
-contract WlthBonusStaking is IWlthBonusStaking, OwnablePausable {
+contract WlthBonusStaking is IWlthBonusStaking, Ownable2StepUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
@@ -87,7 +87,9 @@ contract WlthBonusStaking is IWlthBonusStaking, OwnablePausable {
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /**
      * @notice Initialize the contract
@@ -119,7 +121,8 @@ contract WlthBonusStaking is IWlthBonusStaking, OwnablePausable {
             revert WlthBonusStaking__WrongTotalRewardValue();
         }
         __Context_init();
-        __OwnablePausable_init(_owner);
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
         s_wlth = _wlth;
         s_communityFund = _communityFund;
 
@@ -280,7 +283,7 @@ contract WlthBonusStaking is IWlthBonusStaking, OwnablePausable {
 
         uint256 maxUserReward = (s_totalReward * stakedAmount) / s_totalStaked;
         rewardInfo.maxReward = maxUserReward;
-        uint duration = block.timestamp - s_stakingEndTimestamp;
+        uint256 duration = block.timestamp - s_stakingEndTimestamp;
 
         if (duration < 3 * 30 days) {
             rewardInfo.penalty = maxUserReward; // 100% penalty

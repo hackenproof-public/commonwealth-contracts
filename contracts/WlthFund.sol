@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import {IWlth} from "./interfaces/IWlth.sol";
 import {IWlthFund} from "./interfaces/IWlthFund.sol";
 import {_transferFrom} from "./libraries/Utils.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
 error WlthFund__InvalidProposal();
 error WlthFund__ProposalAlreadyExist();
@@ -19,7 +19,7 @@ error WlthFund__InvesteeAlreadyFunded();
 error WlthFund__NotWriterOrOwner();
 error WlthFund__WriterZeroAddress();
 
-contract WlthFund is OwnablePausable, IWlthFund {
+contract WlthFund is Ownable2StepUpgradeable, IWlthFund {
     /// @notice WLTH ERC-20 contract address
     address private s_wlth;
 
@@ -42,7 +42,7 @@ contract WlthFund is OwnablePausable, IWlthFund {
     mapping(uint256 => bytes32[50]) private s_top50stakers;
 
     modifier onlyWriterOrOwner() {
-        if(msg.sender != s_writer && msg.sender != owner()) revert WlthFund__NotWriterOrOwner();
+        if (msg.sender != s_writer && msg.sender != owner()) revert WlthFund__NotWriterOrOwner();
         _;
     }
 
@@ -77,7 +77,8 @@ contract WlthFund is OwnablePausable, IWlthFund {
         s_secondarySalesWallet = _secondarySalesWallet;
         s_writer = _writer;
 
-        __OwnablePausable_init(_owner);
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
     }
 
     /**

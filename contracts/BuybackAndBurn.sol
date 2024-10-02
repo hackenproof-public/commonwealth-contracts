@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IUniswapV3Pool} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import {IUniswapV3Factory} from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import {TransferHelper} from "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
@@ -22,7 +22,7 @@ error BuybackAndBurn__InvalidBalance();
 error BuybackAndBurn__UniswapWlthPriceZeroAddress();
 error BuybackAndBurn__InvalidSlippage();
 
-contract BuybackAndBurn is IBuybackAndBurn, AutomationCompatibleInterface, OwnablePausable {
+contract BuybackAndBurn is IBuybackAndBurn, AutomationCompatibleInterface, Ownable2StepUpgradeable {
     uint256 private constant ONE_WLTH_TOKEN = 1e18;
 
     /**
@@ -61,7 +61,9 @@ contract BuybackAndBurn is IBuybackAndBurn, AutomationCompatibleInterface, Ownab
     IUniswapWlthPrice private s_uniswapWlthPriceOracle;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
+    constructor() {
+        _disableInitializers();
+    }
 
     /**
      * @dev Initializes the contract
@@ -106,7 +108,9 @@ contract BuybackAndBurn is IBuybackAndBurn, AutomationCompatibleInterface, Ownab
             revert BuybackAndBurn__InvalidSlippage();
         }
 
-        __OwnablePausable_init(_owner);
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
+
         s_wlth = _wlth;
         s_usdc = _usdc;
         s_swapper = _swapper;

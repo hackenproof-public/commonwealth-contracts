@@ -10,7 +10,7 @@ import {IStakingWlth} from "./interfaces/IStakingWlth.sol";
 import {LibFund} from "./libraries/LibFund.sol";
 import {BASIS_POINT_DIVISOR, LOWEST_CARRY_FEE} from "./libraries/Constants.sol";
 import {_transfer, _transferFrom} from "./libraries/Utils.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {StateMachine} from "./StateMachine.sol";
@@ -29,7 +29,13 @@ error PerpetualFund__ProfitToAssingExceedProvidedProfit(
     uint256 provided
 );
 
-contract PerpetualFund is OwnablePausable, IPerpetualFund, ReentrancyGuardUpgradeable, ERC165Upgradeable, StateMachine {
+contract PerpetualFund is
+    Ownable2StepUpgradeable,
+    IPerpetualFund,
+    ReentrancyGuardUpgradeable,
+    ERC165Upgradeable,
+    StateMachine
+{
     using SafeERC20 for IERC20;
 
     uint256 private constant MAXIMUM_MANAGEMENT_FEE = 10000;
@@ -162,9 +168,8 @@ contract PerpetualFund is OwnablePausable, IPerpetualFund, ReentrancyGuardUpgrad
         address _profitDistributor
     ) public initializer {
         __Context_init();
-        {
-            __OwnablePausable_init(_owner);
-        }
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
         __StateMachine_init(LibFund.STATE_FUNDS_IN);
         __ReentrancyGuard_init();
         __ERC165_init();

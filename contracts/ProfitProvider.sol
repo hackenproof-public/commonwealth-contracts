@@ -7,14 +7,14 @@ import {IProfitProvider} from "./interfaces/IProfitProvider.sol";
 import {IStateMachine} from "./interfaces/IStateMachine.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import {OwnablePausable} from "./OwnablePausable.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {LibFund} from "./libraries/LibFund.sol";
 
 error ProfitProvider__OwnerAccountZeroAddress();
 error ProfitProvider__CurrencyZeroAddress();
 error ProfitProvider__UpkeepNotNeeded(uint256 balance, bytes32 fundState);
 
-contract ProfitProvider is IProfitProvider, AutomationCompatibleInterface, OwnablePausable {
+contract ProfitProvider is IProfitProvider, AutomationCompatibleInterface, Ownable2StepUpgradeable {
     using SafeERC20 for IERC20;
 
     /**
@@ -33,7 +33,9 @@ contract ProfitProvider is IProfitProvider, AutomationCompatibleInterface, Ownab
     uint256 private s_minimumProfit;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {}
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(
         address _owner,
@@ -47,7 +49,9 @@ contract ProfitProvider is IProfitProvider, AutomationCompatibleInterface, Ownab
         if (address(_currency) == address(0)) {
             revert ProfitProvider__CurrencyZeroAddress();
         }
-        __OwnablePausable_init(_owner);
+        __Ownable2Step_init();
+        _transferOwnership(_owner);
+
         s_fund = _fund;
         s_currency = _currency;
         s_minimumProfit = _minimumProfit;
@@ -64,11 +68,10 @@ contract ProfitProvider is IProfitProvider, AutomationCompatibleInterface, Ownab
         ) {
             revert ProfitProvider__UpkeepNotNeeded(currentBalance, IStateMachine(address(s_fund)).currentState());
         }
-        uint256 amount = s_currency.balanceOf(address(this));
-        s_currency.safeIncreaseAllowance(address(s_fund), amount);
-        s_fund.provideProfit(amount, true);
+        s_currency.safeIncreaseAllowance(address(s_fund), currentBalance);
+        s_fund.provideProfit(currentBalance, true);
 
-        emit ProfitProvided(amount);
+        emit ProfitProvided(currentBalance);
     }
 
     /**
