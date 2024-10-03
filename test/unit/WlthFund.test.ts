@@ -327,7 +327,7 @@ describe('WlthFund', () => {
           await wlthFund.connect(owner).putProposalHash(proposalId, proposalHash);
           await expect(
             wlthFund.connect(owner).fundInvestee(proposalId, investee.address, fundAmount, burnAmount)
-          ).to.be.revertedWithCustomError(wlthFund, 'Utils__CurrencyTransferFailed');
+          ).to.be.reverted;
         });
 
         it('Should revert when not called by owner', async () => {

@@ -174,6 +174,7 @@ contract PerpetualFund is
         __ReentrancyGuard_init();
         __ERC165_init();
 
+        if (_owner == address(0)) revert PerpetualFund__ZeroAddress();
         if (_currency == address(0)) revert PerpetualFund__ZeroAddress();
         if (_perpetualNFT == address(0)) revert PerpetualFund__ZeroAddress();
         if (_stakingWlth == address(0)) revert PerpetualFund__ZeroAddress();

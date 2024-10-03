@@ -13,6 +13,7 @@ import {
   PerpetualNFT
 } from '../../typechain-types';
 import { getInterfaceIdWithBase, toUsdc, toWlth } from '../utils';
+import { token } from '../../typechain-types/@openzeppelin/contracts';
 
 describe('PerpetualNFT', () => {
   const deployPerpetualNFT = async () => {
@@ -575,7 +576,7 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, 0)
-          .returns([true, false, user1.address, perpetualNFT.address, 0, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, 0, toWlth('500')]);
 
         await expect(perpetualNFT.connect(user1).split(0, [toUsdc('50'), toUsdc('50')])).to.be.revertedWithCustomError(
           perpetualNFT,
@@ -627,10 +628,14 @@ describe('PerpetualNFT', () => {
   describe('Update principal', async () => {
     describe('Success', async () => {
       it('Should update principal for a single nft', async () => {
-        const { owner, perpetualNFT, user1, profitDistributor } = await loadFixture(deployPerpetualNFT);
+        const { owner, perpetualNFT, user1, profitDistributor, marketplace } = await loadFixture(deployPerpetualNFT);
 
         const investmentValue = toUsdc('1000');
         const tokenId = 0;
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, investmentValue]);
 
         await perpetualNFT.connect(owner).mint(user1.address, investmentValue);
         const principal = { tokenId: tokenId, value: toUsdc('500') };
@@ -642,9 +647,13 @@ describe('PerpetualNFT', () => {
       });
 
       it('Should update principal for few NFTs', async () => {
-        const { owner, perpetualNFT, user1, profitDistributor } = await loadFixture(deployPerpetualNFT);
+        const { owner, perpetualNFT, user1, profitDistributor, marketplace } = await loadFixture(deployPerpetualNFT);
 
         const investmentValue = toUsdc('1000');
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, investmentValue]);
 
         await perpetualNFT.connect(owner).mint(user1.address, investmentValue);
         await perpetualNFT.connect(owner).mint(user1.address, investmentValue);
@@ -677,10 +686,14 @@ describe('PerpetualNFT', () => {
       });
 
       it('Should revert when new princiapl exceeds the previous one', async () => {
-        const { owner, perpetualNFT, user1, profitDistributor } = await loadFixture(deployPerpetualNFT);
+        const { owner, perpetualNFT, user1, profitDistributor, marketplace } = await loadFixture(deployPerpetualNFT);
 
         const investmentValue = toUsdc('1000');
         const tokenId = 0;
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, investmentValue]);
 
         await perpetualNFT.connect(owner).mint(user1.address, investmentValue);
         const principal = { tokenId: tokenId, value: investmentValue.add(1) };
@@ -881,10 +894,14 @@ describe('PerpetualNFT', () => {
   describe('Get information', () => {
     describe('Success', () => {
       it('Should return correct token uri', async function () {
-        const { perpetualNFT, user1, owner, metadata } = await loadFixture(deployPerpetualNFT);
+        const { perpetualNFT, user1, owner, marketplace } = await loadFixture(deployPerpetualNFT);
 
         const tokenValue = toUsdc('50');
         await perpetualNFT.connect(owner).mint(user1.address, tokenValue);
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, tokenValue]);
 
         expect(await perpetualNFT.tokenURI(0)).to.equal(
           'data:application/json;base64,eyJuYW1lIjogIlBlcnBldHVhbCIsImRlc2NyaXB0aW9uIjogIlBlcnBldHVhbCBkZXNjcmlwdGlvbiIsImltYWdlIjogImlwZnM6Ly9pbWFnZSIsImV4dGVybmFsX3VybCI6ICJodHRwczovL3BlcnBldHVhbC5jb20iLCJhdHRyaWJ1dGVzIjogW3sidHJhaXRfdHlwZSI6InZhbHVlIiwidmFsdWUiOiIxMDAuMDAwMCUifV19'
@@ -892,7 +909,7 @@ describe('PerpetualNFT', () => {
       });
 
       it('Should return correct share for tokens', async function () {
-        const { perpetualNFT, user1, owner, profitDistributor } = await loadFixture(deployPerpetualNFT);
+        const { perpetualNFT, user1, owner, marketplace } = await loadFixture(deployPerpetualNFT);
 
         const firstInvestment = toUsdc('6');
         const secondInvestment = toUsdc('4');
@@ -900,6 +917,10 @@ describe('PerpetualNFT', () => {
         const firstTokenId = 0;
         const secondTokenId = 1;
         const thirdTokenId = 2;
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, firstInvestment]);
 
         await perpetualNFT.connect(owner).setMinimumValue(toUsdc('1'));
         await perpetualNFT.connect(owner).mint(user1.address, firstInvestment);
@@ -929,8 +950,11 @@ describe('PerpetualNFT', () => {
   describe('History change', async () => {
     describe('Success', async () => {
       it('Should properly track history', async () => {
-        const { owner, perpetualNFT, user1, user2 } = await loadFixture(deployPerpetualNFT);
-
+        const { owner, perpetualNFT, user1, user2, marketplace } = await loadFixture(deployPerpetualNFT);
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, toWlth('100')]);
         await perpetualNFT.connect(owner).mint(user1.address, toUsdc('100'));
         const blockAfterFirstMint = await time.latestBlock();
 
@@ -969,7 +993,11 @@ describe('PerpetualNFT', () => {
     });
     describe('Revert', async () => {
       it('Should transfer revert when paused', async () => {
-        const { owner, perpetualNFT, user1 } = await loadFixture(deployPerpetualNFT);
+        const { owner, perpetualNFT, user1, marketplace } = await loadFixture(deployPerpetualNFT);
+        marketplace.isAllowedContract.returns(true);
+        marketplace.getListingByTokenId
+          .whenCalledWith(perpetualNFT.address, 0)
+          .returns([true, false, user1.address, perpetualNFT.address, 0, toWlth('100')]);
         await perpetualNFT.connect(owner).mint(user1.address, toUsdc('100'));
         await perpetualNFT.connect(owner).pause();
         await expect(perpetualNFT.connect(user1).transferFrom(user1.address, owner.address, 0)).to.be.revertedWith(
@@ -995,13 +1023,13 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, tokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500')]);
 
         await perpetualNFT.connect(user1).transferFrom(user1.address, user2.address, tokenId);
 
@@ -1017,13 +1045,13 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, tokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500')]);
 
         await perpetualNFT.connect(user1).approve(user2.address, tokenId);
 
@@ -1039,13 +1067,13 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, tokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, tokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, tokenId, toWlth('500')]);
 
         await perpetualNFT.connect(user1).approve(marketplace.address, tokenId);
 
@@ -1062,21 +1090,21 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, fistTokenValue);
         await perpetualNFT.connect(owner).mint(user1.address, secondTokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500')]);
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, secondTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, secondTokenId, toWlth('500')]);
 
         await perpetualNFT.connect(user1).setApprovalForAll(marketplace.address, false);
 
@@ -1101,21 +1129,21 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, fistTokenValue);
         await perpetualNFT.connect(owner).mint(user1.address, secondTokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500')]);
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(user1).setApprovalForAll(marketplace.address, false);
 
@@ -1136,21 +1164,21 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, fistTokenValue);
         await perpetualNFT.connect(owner).mint(user1.address, secondTokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500')]);
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(user1).setApprovalForAll(marketplace.address, true);
 
@@ -1167,21 +1195,21 @@ describe('PerpetualNFT', () => {
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+          .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
         await perpetualNFT.connect(owner).mint(user1.address, fistTokenValue);
         await perpetualNFT.connect(owner).mint(user1.address, secondTokenValue);
 
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, firstTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, firstTokenId, toWlth('500')]);
         marketplace.getListingByTokenId
           .whenCalledWith(perpetualNFT.address, secondTokenId)
-          .returns([true, false, user1.address, perpetualNFT.address, secondTokenId, toWlth('500'), 1]);
+          .returns([true, false, user1.address, perpetualNFT.address, secondTokenId, toWlth('500')]);
 
         await perpetualNFT.connect(user1).setApprovalForAll(user2.address, true);
 

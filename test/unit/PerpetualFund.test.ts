@@ -217,7 +217,7 @@ describe('PerpetualFund', () => {
             ],
             deployer
           )
-        ).to.be.revertedWithCustomError(perpetualFund, 'OwnablePausable__OwnerAccountZeroAddress');
+        ).to.be.revertedWithCustomError(perpetualFund, 'PerpetualFund__ZeroAddress');
       });
 
       it('Should revert when currency address is zero address', async () => {

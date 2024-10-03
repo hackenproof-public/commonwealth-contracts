@@ -1223,13 +1223,13 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 1);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500')]);
 
       await genesisNft.connect(owner).transferFrom(owner.address, minter.address, tokenId);
 
@@ -1244,13 +1244,13 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 1);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500')]);
 
       await genesisNft.connect(owner).approve(minter.address, tokenId);
 
@@ -1265,13 +1265,13 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 1);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, tokenId)
-        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, tokenId, toWlth('500')]);
 
       await genesisNft.connect(owner).approve(marketplace.address, tokenId);
 
@@ -1286,20 +1286,20 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 2);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500')]);
 
       await genesisNft.connect(owner).setApprovalForAll(marketplace.address, false);
 
@@ -1316,20 +1316,20 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 2);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).setApprovalForAll(marketplace.address, false);
 
@@ -1345,20 +1345,20 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 2);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).setApprovalForAll(marketplace.address, true);
 
@@ -1373,20 +1373,20 @@ describe('Genesis NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await genesisNft.connect(owner).mint(owner.address, 2);
 
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, firstTokenId)
-        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(genesisNft.address, secondTokenId)
-        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500'), 1]);
+        .returns([true, false, owner.address, genesisNft.address, secondTokenId, toWlth('500')]);
 
       await genesisNft.connect(owner).setApprovalForAll(minter.address, true);
 

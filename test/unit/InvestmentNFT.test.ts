@@ -273,9 +273,10 @@ describe('Investment NFT unit tests', () => {
         const tokenValue = toUsdc('100');
         await investmentNft.connect(owner).mint(user.address, tokenValue);
 
+        marketplace.isAllowedContract.returns(true);
         marketplace.getListingByTokenId
           .whenCalledWith(investmentNft.address, 0)
-          .returns([true, false, user.address, investmentNft.address, 0, toWlth('500'), 1]);
+          .returns([true, false, user.address, investmentNft.address, 0, toWlth('500')]);
 
         await expect(investmentNft.connect(user).split(0, [toUsdc('50'), toUsdc('50')])).to.be.revertedWithCustomError(
           investmentNft,
@@ -289,8 +290,11 @@ describe('Investment NFT unit tests', () => {
     const tokenValue = toUsdc('50');
 
     it('Should return investment value', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
-
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
       expect(await investmentNft.getInvestmentValue(user.address)).to.equal(tokenValue);
@@ -298,7 +302,11 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should return investment value if multiple mints', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
 
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
@@ -312,7 +320,11 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should return investment value if multiple mints', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
 
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
@@ -326,7 +338,11 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should return investment value from specific block', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
 
       await investmentNft.connect(minter).mint(user.address, tokenValue);
       const blockNumber = await ethers.provider.getBlockNumber();
@@ -344,7 +360,11 @@ describe('Investment NFT unit tests', () => {
     });
 
     it('Should return investment value from specific block after transfer', async () => {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
 
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
@@ -584,24 +604,37 @@ describe('Investment NFT unit tests', () => {
       );
     });
     it('should give correct percentages', async function () {
-      const { investmentNft, user, minter } = await loadFixture(deployFixture);
-
+      const { investmentNft, user, minter, marketplace } = await loadFixture(deployFixture);
       const tokenValue = toUsdc('50');
+      marketplace.isAllowedContract.returns(true);
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
+
       await investmentNft.connect(minter).mint(user.address, tokenValue);
       expect(await investmentNft.getSharePercentage(0)).to.equal('100.0000%');
 
       const tokenValue2 = toUsdc('100');
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue2]);
       await investmentNft.connect(minter).mint(user.address, tokenValue2);
       expect(await investmentNft.getSharePercentage(0)).to.equal('33.3333%');
       expect(await investmentNft.getSharePercentage(1)).to.equal('66.6666%');
 
       const tokenValue3 = toUsdc('150');
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue3]);
       await investmentNft.connect(minter).mint(minter.address, tokenValue3);
       expect(await investmentNft.getSharePercentage(0)).to.equal('16.6666%');
       expect(await investmentNft.getSharePercentage(1)).to.equal('33.3333%');
       expect(await investmentNft.getSharePercentage(2)).to.equal('50.0000%');
 
       const tokenValue4 = toUsdc('200');
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue4]);
       await investmentNft.connect(minter).mint(minter.address, tokenValue4);
       expect(await investmentNft.getSharePercentage(0)).to.equal('10.0000%');
       expect(await investmentNft.getSharePercentage(1)).to.equal('20.0000%');
@@ -612,7 +645,7 @@ describe('Investment NFT unit tests', () => {
 
   describe('#tokenUri', () => {
     it('should return correct metadata', async function () {
-      const { investmentNft, user, minter, owner } = await loadFixture(deployFixture);
+      const { investmentNft, user, minter, owner, marketplace } = await loadFixture(deployFixture);
       const newName = 'New Name';
       const newDescription = 'New Description';
       const newImage = 'New Image';
@@ -623,11 +656,15 @@ describe('Investment NFT unit tests', () => {
         image: newImage,
         externalUrl: newUrl
       };
+      
       await expect(investmentNft.connect(owner).setAllMetadata(newMetadata))
         .to.emit(investmentNft, 'MetadataChanged')
         .withArgs(newMetadata.name, newMetadata.description, newMetadata.image, newMetadata.externalUrl);
 
       const tokenValue = toUsdc('50');
+      marketplace.getListingByTokenId
+          .whenCalledWith(investmentNft.address, 0)
+          .returns([true, false, user.address, investmentNft.address, 0, tokenValue]);
       await investmentNft.connect(minter).mint(user.address, tokenValue);
 
       expect(await investmentNft.tokenURI(0)).to.equal(
@@ -651,13 +688,13 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, tokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500')]);
 
       await investmentNft.connect(user).transferFrom(user.address, owner.address, tokenId);
 
@@ -673,13 +710,13 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, tokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500')]);
 
       await investmentNft.connect(user).approve(owner.address, tokenId);
 
@@ -695,13 +732,13 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, tokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, tokenId)
-        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, tokenId, toWlth('500')]);
 
       await investmentNft.connect(user).approve(marketplace.address, tokenId);
 
@@ -718,21 +755,21 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, fistTokenValue);
       await investmentNft.connect(owner).mint(user.address, secondTokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500')]);
 
       await investmentNft.connect(user).setApprovalForAll(marketplace.address, false);
 
@@ -757,21 +794,21 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, fistTokenValue);
       await investmentNft.connect(owner).mint(user.address, secondTokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(user).setApprovalForAll(marketplace.address, false);
 
@@ -792,21 +829,21 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, fistTokenValue);
       await investmentNft.connect(owner).mint(user.address, secondTokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(user).setApprovalForAll(marketplace.address, true);
 
@@ -823,21 +860,21 @@ describe('Investment NFT unit tests', () => {
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0, 0]);
+        .returns([false, false, ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0]);
 
       await investmentNft.connect(owner).mint(user.address, fistTokenValue);
       await investmentNft.connect(owner).mint(user.address, secondTokenValue);
 
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, firstTokenId)
-        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, firstTokenId, toWlth('500')]);
       marketplace.getListingByTokenId
         .whenCalledWith(investmentNft.address, secondTokenId)
-        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500'), 1]);
+        .returns([true, false, user.address, investmentNft.address, secondTokenId, toWlth('500')]);
 
       await investmentNft.connect(user).setApprovalForAll(owner.address, true);
 
