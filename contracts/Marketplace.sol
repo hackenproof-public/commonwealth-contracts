@@ -183,9 +183,11 @@ contract Marketplace is Ownable2StepUpgradeable, IMarketplace {
         if (!s_listings[_listingId].listed) {
             revert Marketplace__InvalidListingId();
         }
-
         if (_msgSender() != s_listings[_listingId].seller) {
             revert Marketplace__NotSeller();
+        }
+        if (_price == 0) {
+            revert Marketplace__ZeroPrice();
         }
 
         s_listings[_listingId].price = _price;
